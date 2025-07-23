@@ -43,16 +43,16 @@ Here is the status of the transcribing of LLVM values into types
 ** TODO Fast Math
 ** TODO Use order
 ** TODO Source filename
-* TODO Type Type System
-** TODO Void type
-** TODO Function type
-** TODO Opaque structure
-** TODO First class
-*** TODO Single value
-*** TODO Label
-*** TODO Token
-*** TODO Metadata
-*** TODO Aggregate
+* DONE Type Type System
+** DONE Void type
+** DONE Function type
+** DONE Opaque structure
+** DONE First class
+*** DONE Single value
+*** DONE Label
+*** DONE Token
+*** DONE Metadata
+*** DONE Aggregate
 * TODO Constants
 ** TODO Simple
 ** TODO Complex
