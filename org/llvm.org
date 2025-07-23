@@ -1,0 +1,74 @@
+#+SEQ_TODO: TODO PART | DONE
+* LLVM document
+Here is the status of the transcribing of LLVM values into types
+* TODO High Level Structure
+** TODO [1/2] Module
+** PART Linkage
+** PART Calling
+** PART Visibility
+** PART Dll storage
+** PART Thread local
+** PART Preemption
+** PART Structure
+** TODO Non-int
+** TODO [1/2] Global
+** TODO [1/2] Functions
+** TODO [1/2] Aliases
+** TODO [1/2] IFuncs
+** TODO Comdats
+** TODO Named meta
+** TODO [1/2] Param attr
+** TODO Garbage Collecter
+** TODO Prefix
+** TODO Prolouge
+** TODO Personality
+** TODO Attribute groups
+** TODO Function attributes
+** TODO Call attributes
+** TODO Global attributes
+** TODO Operand bundles
+** TODO Inlines asm
+** TODO Data layout
+** TODO Target Triple
+** TODO Allocated Objects
+** TODO Object lifetime
+** TODO Point aliasing
+** TODO Pointer cap
+** TODO Volatiale
+** TODO Memory model
+** TODO Atomic memory
+** TODO Floating point
+** TODO NaN
+** TODO Floating point semantics
+** TODO Fast Math
+** TODO Use order
+** TODO Source filename
+* TODO Type Type System
+** TODO Void type
+** TODO Function type
+** TODO Opaque structure
+** TODO First class
+*** TODO Single value
+*** TODO Label
+*** TODO Token
+*** TODO Metadata
+*** TODO Aggregate
+* TODO Constants
+** TODO Simple
+** TODO Complex
+** TODO Global
+** TODO Undefined
+** TODO Poison
+** TODO Well-defined
+** TODO Addresses
+** TODO DSO Local Equivalent
+** TODO No CFI
+** TODO Pointer auth
+** TODO  Constant expr
+* TODO Other values
+** TODO Inline assembler
+*** TODO Inline string
+*** TODO Asm template
+*** TODO Inline asm 
+* TODO Metadata
+* TODO Instructions

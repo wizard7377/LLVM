@@ -1,0 +1,134 @@
+module Data.LLVM.Types
+  
+data Name : Type where 
+  ||| %...
+  Local : String -> Name
+  ||| \@...
+  Global : String -> Name
+  ||| \$...
+  Special : String -> Name
+  ||| User defined
+  CustomN : String -> Name
+
+namespace LType 
+  public export
+  data LType : Type where
+    LPtr : LType
+    LVoid : LType
+    LFun : LType -> List LType -> LType
+    LOpaque : LType 
+    LInt : Int -> LType
+    LFloat : ? -> LType
+    LVector : ? -> LType
+    LLabel : LType
+    LToken : LType
+    LArray : LType -> Int -> LType
+    LStruct : List LType -> LType
+
+namespace LConst 
+  public export
+  data LConst : Type where 
+    LInt : Int -> LConst
+    LFloat : ? -> LConst
+    LBool : Bool -> LConst 
+    LNull : LConst
+    LToken : LConst 
+    LString : String -> LConst
+data Linkage = Private | Internal | Available | LinkOnce | Weak | Common | Appending | ExternWeak | LinkOnceODR | WeakODR | External
+data CallingConvention = C | Fast | Cold | GHC | CC11 | AnyReg | PreserveMost | PreserveAll | PreserveNone | CxxFastTL | Tail | Swift | SwiftTail | CFGuardCheck | CustomCC Int 
+data Visibility = Default | Hidden | Protected
+data DLLStorage = DLLExport | DLLImport
+data ThreadLocality = LocalDynamic | InitialExec | LocalExec 
+data Preemption = Preemptible | NonPreemptible
+data AddressInfo = UnnamedGlobal | UnamedLocal
+data ParameterAttr = ZeroExt -- TODO: 
+-- PARAM attributes
+-- data layout
+AddressSpace = Int
+
+data LTag : Type where 
+  ||| A custom tag 
+  CTag : String -> LTag
+
+record SymbolInfo where 
+  constructor MkSymbolInfo 
+  linkage : Maybe Linkage
+  preemption : Maybe Preemption
+  visibility : Maybe Visibility
+  dllStorage : Maybe DLLStorage
+record GVarDef where
+  constructor MkGVarDef
+  name : String 
+  symbolInfo : SymbolInfo
+  threadLocality : Maybe ThreadLocality
+  addressInfo : Maybe AddressInfo
+  addressSpace : Maybe AddressSpace
+  externallyInitialized : Maybe Bool
+  isConst : Bool 
+  gtpe : LType.LType
+  initializer : Maybe String
+  tags : List LTag
+
+record FunctionArgSpec where 
+  constructor MkFunctionArgSpec
+  name : String 
+  type : LType
+  attrs : List ParameterAttr
+|||define [linkage] [PreemptionSpecifier] [visibility] [DLLStorageClass]
+|||       [cconv] [ret attrs]
+|||       <ResultType> @<FunctionName> ([argument list])
+|||       [(unnamed_addr|local_unnamed_addr)] [AddrSpace] [fn Attrs]
+|||       [section "name"] [partition "name"] [comdat [($name)]] [align N]
+|||       [gc] [prefix Constant] [prologue Constant] [personality Constant]
+|||       (!name !N)* { ... }
+record FunctionDef where
+  constructor MkFunctionDef
+  name : String 
+  symbolInfo : SymbolInfo
+  callingConvention : Maybe CallingConvention
+  returnAttrs : List ParameterAttr
+  returnType : LType 
+  args : List FunctionArgSpec
+  addressInfo : Maybe AddressInfo
+  addressSpace : Maybe AddressSpace
+  tags: List LTag
+
+record FunctionDec where
+  constructor MkFunctionDec
+  name : String 
+  symbolInfo : SymbolInfo
+  callingConvention : Maybe CallingConvention
+  returnAttrs : List ParameterAttr
+  returnType : LType 
+  args : List FunctionArgSpec
+  addressInfo : Maybe AddressInfo
+  alignment : Maybe Int
+  gc : Maybe String 
+  fprefix: Maybe LConst 
+  prologue: Maybe LConst
+  tags: List LTag
+  
+record Alias where 
+  constructor MkAlias
+  name : String 
+  symbolInfo : SymbolInfo
+  threadLocality : Maybe ThreadLocality
+  addressInfo : Maybe AddressInfo
+  aliasTpe : LType
+  ptrType : LType
+  aliasee : String 
+  tags: List LTag
+
+record IFunc where 
+  constructor MkIFunc
+  name : String 
+  symbolInfo : SymbolInfo
+  threadLocality : Maybe ThreadLocality
+  addressInfo : Maybe AddressInfo
+  funTpe : LType
+  resTpe : LType
+  resolver : String 
+  tags: List LTag
+
+-- TODO Comdats
+-- TODO fin param attributes
