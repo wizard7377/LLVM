@@ -5,3 +5,7 @@
 # Idris 1
 *.ibc
 *.o
+
+build/
+personal/
+*~

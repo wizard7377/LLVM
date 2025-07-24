@@ -6,109 +6,106 @@ import Data.LLVM.Ops
 import Data.LLVM.Write
 import Data.LLVM.Class
 import Test.Helper
-
--- Test printing encoded forms of LLVM types
-testLLVMTypeEncoding : IO TestResult
-testLLVMTypeEncoding = do
-  putStrLn "=== LLVM Type Encodings ==="
-  putStrLn $ "LVoid: " ++ encode LVoid
-  putStrLn $ "i32: " ++ encode (LInt 32)
-  putStrLn $ "i64: " ++ encode (LInt 64)
-  putStrLn $ "ptr: " ++ encode LPtr
-  putStrLn $ "float: " ++ encode (LFloating Half)
-  putStrLn $ "[10 x i32]: " ++ encode (LArray 10 (LInt 32))
-  putStrLn $ "{i32, i64}: " ++ encode (LStruct [LInt 32, LInt 64])
-  putStrLn $ "label: " ++ encode LLabel
-  putStrLn $ "token: " ++ encode LToken
-  putStrLn ""
-  assertTrue "Type encoding test" True
-
--- Test printing encoded forms of binary operations
-testBinaryOpEncoding : IO TestResult
-testBinaryOpEncoding = do
-  putStrLn "=== Binary Operation Encodings ==="
-  let i32 = LInt 32
-  let val1 = LocalRef "x"
-  let val2 = LocalRef "y"
-  
-  -- Note: We can't directly encode operations without Show instances
-  -- So we'll just print the operation types for now
-  putStrLn "Available Binary Operations:"
-  putStrLn "- Add"
-  putStrLn "- Sub" 
-  putStrLn "- Mul"
-  putStrLn "- UDiv, SDiv"
-  putStrLn "- URem, SRem"
-  putStrLn "- Shl, LShr, AShr"
-  putStrLn "- And, Or, Xor"
-  putStrLn "- FAdd, FSub, FMul, FDiv, FRem (floating point)"
-  putStrLn ""
-  assertTrue "Binary op encoding test" True
-
--- Test printing encoded forms of terminators
-testTerminatorEncoding : IO TestResult  
-testTerminatorEncoding = do
-  putStrLn "=== Terminator Encodings ==="
-  putStrLn "Available Terminators:"
-  putStrLn "- RetVoid"
-  putStrLn "- Ret <type> <value>"
-  putStrLn "- CondBr <condition> <true_label> <false_label>"
-  putStrLn "- JumpBr <label>"
-  putStrLn "- Switch <type> <value> <default> [cases...]"
-  putStrLn "- IndirectBr <address> [labels...]"
-  putStrLn "- Invoke <call_info>"
-  putStrLn "- Resume <type> <value>"
-  putStrLn "- Unreachable"
-  putStrLn ""
-  assertTrue "Terminator encoding test" True
-
--- Test printing encoded forms of calling conventions
-testCallingConventionEncoding : IO TestResult
-testCallingConventionEncoding = do
-  putStrLn "=== Calling Convention Encodings ==="
-  putStrLn $ "C: " ++ encode C
-  putStrLn $ "Fast: " ++ encode Fast
-  putStrLn $ "Cold: " ++ encode Cold
-  putStrLn $ "GHC: " ++ encode GHC
-  putStrLn $ "Swift: " ++ encode Swift
-  putStrLn $ "Tail: " ++ encode Tail
-  putStrLn $ "Custom(42): " ++ encode (CustomCC 42)
-  putStrLn ""
-  assertTrue "Calling convention encoding test" True
-
--- Test printing encoded forms of names and addresses
-testNameEncoding : IO TestResult
-testNameEncoding = do
-  putStrLn "=== Name Encodings ==="
-  putStrLn $ "Local variable: " ++ encode (Local "myvar")
-  putStrLn $ "Global variable: " ++ encode (Global "myglobal")
-  putStrLn $ "Special name: " ++ encode (Special "special")
-  putStrLn $ "Custom name: " ++ encode (CustomN "custom")
-  putStrLn ""
-  assertTrue "Name encoding test" True
-
--- Test printing encoded forms of linkage types
-testLinkageEncoding : IO TestResult
-testLinkageEncoding = do
-  putStrLn "=== Linkage Encodings ==="
-  putStrLn $ "Private: " ++ encode Private
-  putStrLn $ "Internal: " ++ encode Internal
-  putStrLn $ "External: " ++ encode External
-  putStrLn $ "LinkOnce: " ++ encode LinkOnce
-  putStrLn $ "Weak: " ++ encode Weak
-  putStrLn $ "Common: " ++ encode Common
-  putStrLn $ "Appending: " ++ encode Appending
-  putStrLn ""
-  assertTrue "Linkage encoding test" True
-
--- Export test suite for LLVM encoding tests
-export
-encodingTestsSuite : TestSuite
-encodingTestsSuite = MkTestSuite "LLVM Encoding Tests" [
-  MkTestCase "Type Encoding" testLLVMTypeEncoding,
-  MkTestCase "Binary Op Encoding" testBinaryOpEncoding,
-  MkTestCase "Terminator Encoding" testTerminatorEncoding,
-  MkTestCase "Calling Convention Encoding" testCallingConventionEncoding,
-  MkTestCase "Name Encoding" testNameEncoding,
-  MkTestCase "Linkage Encoding" testLinkageEncoding
-]
+public export
+encodingTests : IO ()
+encodingTests = do
+    putStrLn "=== Running LLVM Encoding Tests ==="
+    
+    -- Test basic types
+    debugTest "Integer Type 32" (LType.LInt 32)
+    debugTest "Integer Type 64" (LType.LInt 64)
+    debugTest "Void Type" LType.LVoid
+    debugTest "Pointer Type" LType.LPtr
+    debugTest "Float Type" (LType.LFloating LType.LFloat)
+    debugTest "Double Type" (LType.LFloating LType.LDouble)
+    
+    -- Test aggregate types
+    debugTest "Array Type" (LType.LArray 10 (LType.LInt 32))
+    debugTest "Struct Type" (LType.LStruct [LType.LInt 32, LType.LInt 64, LType.LPtr])
+    debugTest "Packed Struct Type" (LType.LPackedStruct [LType.LInt 8, LType.LInt 16])
+    debugTest "Vector Type" (LType.LVector 4 (LType.LFloating LType.LFloat))
+    
+    -- Test function types
+    debugTest "Function Type" (LType.LFun (LType.LInt 32) [LType.LInt 32, LType.LPtr])
+    debugTest "VarArg Function Type" (LType.LFunVarArg (LType.LVoid) [LType.LInt 32] (LType.LInt 32))
+    
+    -- Test linkage types
+    debugTest "Private Linkage" Private
+    debugTest "Internal Linkage" Internal
+    debugTest "External Linkage" External
+    debugTest "LinkOnce Linkage" LinkOnce
+    
+    -- Test calling conventions
+    debugTest "C Calling Convention" C
+    debugTest "Fast Calling Convention" Fast
+    debugTest "Custom Calling Convention" (CustomCC 42)
+    
+    -- Test visibility
+    debugTest "Default Visibility" Default
+    debugTest "Hidden Visibility" Hidden
+    debugTest "Protected Visibility" Protected
+    
+    -- Test names
+    debugTest "Local Name" (Local "myvar")
+    debugTest "Global Name" (Global "globalvar")
+    debugTest "Special Name" (Special "specialvar")
+    debugTest "Metadata Name" (MetadataN "metadata1")
+    
+    -- Test constants
+    debugTest "Integer Constant" (Types.LInt 42)
+    debugTest "Float Constant" (LFloat "3.14159")
+    debugTest "Bool Constant True" (LBool True)
+    debugTest "Bool Constant False" (LBool False)
+    debugTest "Null Constant" LNull
+    debugTest "String Constant" (LString "Hello, World!")
+    debugTest "Undefined Constant" LUndefined
+    debugTest "Poison Constant" LPoison
+    debugTest "Zero Constant" LZero
+    
+    -- Test expressions
+    debugTest "Constant Expression" (LConst (LInt 100))
+    
+    -- Test attributes
+    debugTest "ZeroExt Attribute" ZeroExt
+    debugTest "SignExt Attribute" SignExt
+    debugTest "Align Attribute" (Align 8)
+    debugTest "ByVal Attribute" (ByVal (LType.LInt 32))
+    debugTest "NoAlias Attribute" NoAlias
+    
+    -- Test address spaces
+    debugTest "Named Address Space" (NamedSpace "cuda")
+    debugTest "Unnamed Address Space" (UnnamedSpace 1)
+    
+    -- Test DLL storage
+    debugTest "DLL Export" DLLExport
+    debugTest "DLL Import" DLLImport
+    
+    -- Test thread locality
+    debugTest "Local Dynamic" LocalDynamic
+    debugTest "Initial Exec" InitialExec
+    
+    -- Test preemption
+    debugTest "Preemptible" Preemptible
+    debugTest "Non-Preemptible" NonPreemptible
+    
+    -- Test address info
+    debugTest "Unnamed Global" UnnamedGlobal
+    debugTest "Unnamed Local" UnamedLocal
+    
+    -- Test binary opcodes
+    debugTest "Add Opcode" Add
+    debugTest "Sub Opcode" Sub
+    debugTest "Mul Opcode" Mul
+    debugTest "And Opcode" And
+    debugTest "Or Opcode" Or
+    debugTest "Xor Opcode" Xor
+    
+    -- Test unary opcodes
+    debugTest "FNeg Opcode" FNeg
+    
+    -- Test wrapping
+    debugTest "No Signed Wrap" NoSigned
+    debugTest "No Unsigned Wrap" NoUnsigned
+    debugTest "No Signed/Unsigned Wrap" NoSignedUnsigned
+    
+    putStrLn "=== All Encoding Tests Completed ==="

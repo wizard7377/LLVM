@@ -19,4 +19,6 @@ clean-test:
 	rm -rf build/exec/llvm-test
 	idris2 --clean test.ipkg
 
+docs: install
+	idris2 --mkdoc llvm.ipkg
 .PHONY: build install test clean-test

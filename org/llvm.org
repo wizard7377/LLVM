@@ -3,7 +3,7 @@
 Here is the status of the transcribing of LLVM values into types
 * TODO High Level Structure
 ** TODO [1/2] Module
-** PART Linkage
+** DONE Linkage
 ** PART Calling
 ** PART Visibility
 ** PART Dll storage
@@ -23,7 +23,7 @@ Here is the status of the transcribing of LLVM values into types
 ** TODO Prolouge
 ** TODO Personality
 ** TODO Attribute groups
-** TODO Function attributes
+** PART Function attributes
 ** TODO Call attributes
 ** TODO Global attributes
 ** TODO Operand bundles
@@ -40,7 +40,7 @@ Here is the status of the transcribing of LLVM values into types
 ** TODO Floating point
 ** TODO NaN
 ** TODO Floating point semantics
-** TODO Fast Math
+** PART Fast Math
 ** TODO Use order
 ** TODO Source filename
 * DONE Type Type System
