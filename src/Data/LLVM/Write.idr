@@ -7,6 +7,7 @@ import Data.LLVM.Program
 
 %default covering
 
+export 
 Encode Linkage VString where
     encode Private = "private"
     encode Internal = "internal"
@@ -39,7 +40,7 @@ Encode AddressSpace VString where
 
 export
 Encode CallingConvention VString where 
-    encode C = "cc"
+    encode C = "ccc"
     encode Fast = "fastcc"
     encode Cold = "coldcc"
     encode GHC = "ghccc"
@@ -61,11 +62,14 @@ Encode Visibility VString where
     encode Protected = "protected"
 export
 Encode Name VString where
-    encode (Local name) = "%" <+> cast name
-    encode (Global name) = "@" <+> cast name
-    encode (Special name) = "$" <+> cast name
+    encode (Local name) = "%" <++> cast name
+    encode (Global name) = "@" <++> cast name
+    encode (IntrinsicN name) = "@llvm." <++> cast name
+    encode (Special name) = "$" <++> cast name
     encode (MetadataN name) = "!" <+> cast name
     encode (CustomN name) = cast name
+    encode (AttributeN name) = "#" <++> cast name
+    encode (LabelN name) =  cast name <++> ":"
 export
 Encode LTypeF VString where 
     encode Half = "half"
@@ -78,38 +82,66 @@ Encode LTypeF VString where
 export
 Encode SymbolInfo VString where  
     encode (MkSymbolInfo linkage preemption visibility dllStorage) = 
-        encode linkage <+> " " <+> encode preemption <+> " " <+> encode visibility <+> " " <+> encode dllStorage
+        encode linkage <+> encode preemption <+> encode visibility <+> encode dllStorage
 export
 Encode LType VString where
     encode LPtr = "ptr"
     encode (LPtrAddr space) = "ptr " <+> encode space
     encode LVoid = "void"
-    encode (LFun ret args) = encode ret <+> " ( " <+> encode ret <+> ", " <+> intercalate ", " (map encode args) <+> ")"
-    encode (LFunVarArg ret args varArg) = encode ret <+> " ( " <+> intercalate ", " (map encode args) <+> "," <+> encode varArg <+> " ... )"
+    encode (LFun ret args) = encode ret <+> "(" <+> encode ret <+> "," <+> intercalate "," (map encode args) <+> ")"
+    encode (LFunVarArg ret args varArg) = encode ret <+> "(" <+> intercalate "," (map encode args) <+> "," <+> encode varArg <+> " ... )"
     encode LOpaque = "opaque"
-    encode (LInt n) = "i" <+> vshow n
+    encode (LInt n) = "i" <++> vshow n
     encode (LFloating _) = "float"  -- Placeholder for actual float encoding
     encode (LVector s t) = "vector"  -- Placeholder for actual vector encoding
     encode LLabel = "label"
     encode LToken = "token"
-    encode (LArray n t) = "[" <+> vshow n <+> " x " <+> encode t <+> "]"
-    encode (LStruct ts) = "{" <+> intercalate ", " (map encode ts) <+> "}"
-    encode (LPackedStruct ts) = "<{" <+> intercalate ", " (map encode ts) <+> "}>"
+    encode (LArray n t) = "[" <+> vshow n <+> "x" <+> encode t <+> "]"
+    encode (LStruct ts) = "{" <+> intercalate "," (map encode ts) <+> "}"
+    encode (LPackedStruct ts) = "<{" <+> intercalate "," (map encode ts) <+> "}>"
     encode LMetadata = "metadata"
-    encode (LVectorScale s t) = "< vscale x " <+> vshow s <+> " x " <+> encode t <+> " >"
+    encode (LVectorScale s t) = "< vscale x" <+> vshow s <+> "x" <+> encode t <+> ">"
     encode LX86_AMX = "x86_amx"
+public export
+[ewt] Encode a VString => Encode (WithType a) VString where 
+    encode (MkWithType t v) = encode t <+> encode v
 
+public export
+Encode a VString => Encode (WithType a) VString where 
+    encode (MkWithType t v) = encode t <+> encode v
 export
 Encode AddressInfo VString where
     encode UnnamedGlobal = "unnamed_addr"
-    encode UnamedLocal = "local_unnamed_addr"
+    encode UnnamedLocal = "local_unnamed_addr"
 export
 Encode LTag VString where
     encode (CTag s) = cast s
+
 export
+Encode Metadata VString where
+    encode = const "" -- TODO: 
+
+
+export
+Encode LConst VString where
+    encode (LInt n) = cast $ show n
+    encode (LFloat s) = cast $ s
+    encode (LBool b) = if b then "true" else "false"
+    encode LNull = "null"
+    encode LToken = "none"
+    encode (LString s) = "c\"" <+> cast s <+> "\""
+    encode (LArray cs) = "[" <+> intercalate "," (map encode cs) <+> "]"
+    encode (LVector cs) = "<" <+> intercalate "," (map encode cs) <+> ">"
+    encode (LStruct cs) = "{" <+> intercalate "," (map encode cs) <+> "}"
+    encode LUndefined = "undef"
+    encode LPoison = "poison"
+    encode LZero = "zeroinitializer"
+    encode (LMetadata m) = encode m
+    encode (LPtr name) = encode name
+export 
 Encode GVarDef VString where
     encode (MkGVarDef name symbolInfo threadLocality addressInfo addressSpace externallyInitialized global tpe init tags) =
-        let r : VString = "@" <+> cast name <+> " = " <+> spaced' [
+        let r : VString = "@" <++> cast name <+> "=" <+> spaced' [
             encode symbolInfo,
             encodeIf threadLocality,
             encodeIf addressInfo,
@@ -117,8 +149,8 @@ Encode GVarDef VString where
             if externallyInitialized == Just True then "external" else "",
             if global then "global" else "constant",
             encode tpe,
-            cast $ writeIf (\i => "initializer " <+> i) init,
-            intercalate ", " (map (encode) tags)
+            encode @{just} init,
+            intercalate "," (map (encode) tags)
         ] in r
 
 
@@ -157,31 +189,11 @@ Encode Attribute VString where
     encode Writeable = "writeable"
     encode DeadOnUnwind = "dead_on_unwind"
     encode DeadOnReturn = "dead_on_return"
-    encode (NamedAttribute name) = cast name
+    encode (OtherAttribute name) = cast name
 
-export
-Encode Metadata VString where
-    encode = const "" -- TODO: 
-
-export
-Encode LConst VString where
-    encode (LInt n) = cast $ show n
-    encode (LFloat s) = cast $ s
-    encode (LBool b) = if b then "true" else "false"
-    encode LNull = "null"
-    encode LToken = "none"
-    encode (LString s) = "c\"" <+> cast s <+> "\""
-    encode (LArray cs) = "[" <+> intercalate ", " (map (encode . value) cs) <+> "]"
-    encode (LVector cs) = "<" <+> intercalate ", " (map (encode . value) cs) <+> ">"
-    encode (LStruct cs) = "{" <+> intercalate ", " (map (encode . value) cs) <+> "}"
-    encode LUndefined = "undef"
-    encode LPoison = "poison"
-    encode LZero = "zeroinitializer"
-    encode (LMetadata m) = encode m
-    encode (LPtr name) = encode name
 export
 Encode LExpr VString where
-    encode (LConst c) = encode c
+    encode (LConstE c) = encode c
 export
 Encode CaseBranch VString where
     encode (MkCaseBranch tpe value label) =
@@ -198,12 +210,12 @@ Encode InvokeCall VString where
         spaced [
             "invoke",
             encodeIf cc,
-            intercalate ", " (map encode returnAttrs),
+            intercalate "," (map encode returnAttrs),
             encodeIf addressSpace,
             encode tpe,
             encode fnval,
             "(",
-            intercalate ", " (map encode args),
+            intercalate "," (map encode args),
             -- TODO:
             ")",
             -- TODO:
@@ -252,7 +264,7 @@ Encode BinaryOpcode VString where
     encode Or = "or"
     encode Xor = "xor"
     encode DisjointOr = "or disjoint"
-
+public export
 Encode BrCall VString where 
     
     encode (MkBrCall cc returnAttrs addressSpace tpe fnval args fallthrough indirect) = 
@@ -270,7 +282,7 @@ Encode BrCall VString where
             encode fallthrough,
             encode @{each} indirect
         ]
-
+public export
 Encode CatchSwitch VString where
     encode (MkCatchSwitch name parent handler (Just caller)) =
         spaced [
@@ -290,17 +302,21 @@ Encode CatchSwitch VString where
             "unwind to default"
         ]
 
+
+public export
 Encode FastMathFlag VString where 
     encode FFast = "fast"
     encode NoNaNs = "nnan"
     encode NoInfs = "ninf"
     encode NoSignedZeros = "nsz"
+public export
 Encode TailCall VString where 
     encode Tail = "tail"
     encode MustTail = "musttail"
     encode NoTail = "notail"
+public export
 Encode FnCall VString where
-    encode (MkFnCall tail fastMath cc returnAttrs addressSpace tpe fnval args) =
+    encode (MkFnCall tail fastMath cc returnAttrs addressSpace tpe fnval args attrs) =
         spaced [
             encode tail,
             "call",
@@ -312,25 +328,28 @@ Encode FnCall VString where
             encode fnval,
             "(",
             encode @{each} args,
-            ")"
+            ")",
+            encode @{nosep} attrs
         ]
 
-Encode a VString => Encode (WithType a) VString where 
-    encode (MkWithType t v) = encode t <+> " " <+> encode v
+
+
+
+public export
 Encode Terminator VString where
     encode RetVoid = "ret void"
     encode (Ret ty expr) = "ret " <+> encode ty <+> " " <+> encode expr
     encode (CondBr cond true false) =
-        "br i1 " <+> encode cond <+> ", label" <+> encode true <+> ", " <+> encode false 
+        "br i1 " <+> encode cond <+> ", label" <+> encode true <+> "," <+> encode false 
     encode (JumpBr label) =
         "br label" <+> encode label
     encode (Switch ty expr defaultBranch cases) =
-        "switch " <+> encode ty <+> encode expr <+> ", label" <+> encode defaultBranch <+> intercalate ", " (map encode cases)
+        "switch " <+> encode ty <+> encode expr <+> ", label" <+> encode defaultBranch <+> intercalate "," (map encode cases)
     encode (IndirectBr address labels) = 
         "indirectbr ptr" <+>
         encode address <+> 
         ", [" <+>
-        intercalate ", " (map (prefixed "label " . encode) labels) <+>
+        intercalate "," (map (prefixed "label " . encode) labels) <+>
         "]"
     encode (Invoke invokeCall) =
         encode invokeCall
@@ -348,3 +367,285 @@ Encode Terminator VString where
         "cleanupret from " <+> encode expr <+> "unwind to caller"
     encode (CleanupRet expr label) =
         "cleanupret from " <+> encode expr <+> " unwind label" <+> encode label
+public export
+Encode ConversionOpCode VString where
+    encode (Trunc wrapping) = "trunc" <+> encode wrapping
+    encode ZExt = "zext"
+    encode SExt = "sext"
+    encode (FPTrunc fastMath) = "fptrunc" --TODO:
+    encode (FPExt fastMath) = "fpext" --TODO:
+    encode FPToUi = "fptoui"
+    encode FPToSi = "fptosi"
+    encode UiToFP = "uitofp"
+    encode SiToFP = "sitofp"
+    --TODO: encode IntToPtr = "inttoptr"
+    encode PtrToInt = "ptrtoint"
+    encode BitCast = "bitcast"
+    encode (AddrSpaceCast addressSpace) = "addrspacecast ptr" <+> encode addressSpace
+public export
+Encode VectorOpcode VString where
+    -- TODO: Check this is right
+    encode (ExtractElement ty index) = "extractelement " <+> encode ty <+> "," <+> encode index
+    encode (InsertElement ty value index) = "insertelement " <+> encode ty <+> "," <+> encode value <+> "," <+> encode index
+    encode (ShuffleVector vec1 vec2 mask) = 
+        "shufflevector " <+> encode vec1 <+> "," <+> encode vec2 <+> "," <+> encode mask
+export
+Encode AggregateOpcode VString where
+    encode (ExtractValue expr index) = "extractvalue " <+> encode expr <+> "," <+> vshow index
+    encode (InsertValue expr value index) = "insertvalue " <+> encode expr <+> "," <+> encode value <+> "," <+> vshow index
+
+export 
+Encode MiscOpcode VString where
+    -- TODO: Check this is right
+    encode (Phi tpe pairs) = "phi " <+> encode tpe <+> "[" <+> intercalate "," (map (\(e, l) => encode e <+> ", label" <+> encode l) pairs) <+> "]"
+    encode (Select fastMath cond ifTrue ifFalse) =
+        "select " <+> encode @{nosep} fastMath <+> encode cond <+> "," <+> encode ifTrue <+> "," <+> encode ifFalse
+    encode (Freeze expr) = "freeze " <+> encode expr
+    encode (FnCallOp fnCall) = encode fnCall
+
+emptyNode : VString 
+emptyNode = "!{}"
+nonTempNode : VString
+nonTempNode = "!{ i32 1 }"
+export
+Encode AtomicOrder VString where
+    encode Unordered = "unordered"
+    encode Monotonic = "monotonic"
+    encode Acquire = "acquire"
+    encode Release = "release"
+    encode AcquireRelease = "acq_rel"
+    encode SequentiallyConsistent = "seq_cst"
+
+export 
+Encode MemoryOpcode VString where
+    encode (Alloc tpe numElements alignment addressSpace) =
+        "alloca" <+> encode tpe <+> 
+        writeIf (\n => "," <+> encode @{ewt} n) numElements <+>
+        writeIf (\n => ", align " <+> vshow n) alignment <+>
+        writeIf (\space => ", addrspace(" <+> encode space <+> ")") addressSpace
+    
+    encode (LoadRegular volatile tpe address align nonTemporal invariantLoad invariantGroup nonNull dereferenceable dereferenceableOrNull aligned noUndef) =
+        spaced [
+            "load",
+            if volatile then "volatile" else "",
+            encode tpe <+> ",",
+            encode tpe <+> "*",
+            encode address,
+            writeIf (\n => ", align " <+> vshow n) align,
+            if nonTemporal then ", !nontemporal " <+> nonTempNode else "",
+            if invariantLoad then ", !invariant.load " <+> emptyNode else "",
+            if invariantGroup then ", !invariant.group " <+> emptyNode else "",
+            if nonNull then ", !nonnull " <+> emptyNode else "",
+            writeIf (\m => ", !dereferenceable " <+> encode m) dereferenceable,
+            writeIf (\m => ", !dereferenceable_or_null " <+> encode m) dereferenceableOrNull,
+            writeIf (\n => ", !align " <+> vshow n) aligned,
+            if noUndef then ", !noundef " <+> emptyNode else ""
+        ]
+    
+    encode (LoadAtomic volatile tpe address scope ordering align nontemporal invariantGroup) =
+        spaced [
+            "load atomic",
+            if volatile then "volatile" else "",
+            encode tpe <+> ",",
+            encode tpe <+> "*",
+            encode address,
+            writeIf (\s => "syncscope(\"" <+> cast s <+> "\")") scope,
+            encodeIf ordering,
+            writeIf (\n => ", align " <+> vshow n) align,
+            if nontemporal then ", !nontemporal " <+> nonTempNode else "",
+            if invariantGroup then ", !invariant.group " <+> emptyNode else ""
+        ]
+    
+    encode (StoreRegular volatile tpe address align nonTemporal invariantGroup) =
+        spaced [
+            "store",
+            if volatile then "volatile" else "",
+            encode tpe <+> ",",
+            encode tpe <+> "*",
+            encode address,
+            writeIf (\n => ", align " <+> vshow n) align,
+            if nonTemporal then ", !nontemporal " <+> nonTempNode else "",
+            if invariantGroup then ", !invariant.group " <+> emptyNode else ""
+        ]
+    
+    encode (StoreAtomic volatile tpe address scope ordering align invariantGroup) =
+        spaced [
+            "store atomic",
+            if volatile then "volatile" else "",
+            encode tpe <+> ",",
+            encode tpe <+> "*", 
+            encode address,
+            writeIf (\s => "syncscope(\"" <+> cast s <+> "\")") scope,
+            encodeIf ordering,
+            writeIf (\n => ", align " <+> vshow n) align,
+            if invariantGroup then ", !invariant.group " <+> emptyNode else ""
+        ]
+    
+    encode (Fence scope ordering) =
+        spaced [
+            "fence",
+            writeIf (\s => "syncscope(\"" <+> cast s <+> "\")") scope,
+            encode @{just} ordering
+        ]
+   
+
+export
+Encode LOperation VString where
+    encode (UnaryOp op ty expr) = 
+        encode op <+> encode ty <+> encode expr
+    encode (BinaryOp op ty expr1 expr2) =
+        encode op <+> encode ty <+> encode expr1 <+> "," <+> encode expr2 
+    encode (ConversionOp op expr ty) =
+        encode op <+> encode expr <+> "to" <+> encode ty
+    encode (TerminatorOp term) = encode term
+    encode (VectorOp vOp) = encode vOp 
+    encode (AggregateOp aOp) = encode aOp
+    encode (MiscOp mOp) = encode mOp
+    encode (MemoryOp mOp) = encode mOp
+
+export
+Encode LStatement VString where
+    encode (Targeted reg expr) =
+        encode reg <+> "=" <+> encode expr
+    encode (Discarded expr) =
+        encode expr
+    encode (Labelled name) =
+        encode name <++> ":"
+    
+public export
+Encode FunctionBody VString where
+    encode (MkFunctionBody statements) = "{\n" <++> encode @{tabbed} statements <++> "\n}" -- Placeholder for actual function body encoding
+public export
+Encode FunctionArgSpec VString where
+    encode (MkFunctionArgSpec tpe attrs (Just name)) =
+        encode tpe <+> encode @{nosep} attrs <+> "%" <++> encode name
+    encode (MkFunctionArgSpec tpe attrs Nothing) =
+        encode tpe <+> encode @{nosep} attrs
+
+{-
+
+define [linkage] [PreemptionSpecifier] [visibility] [DLLStorageClass]
+       [cconv] [ret attrs]
+       <ResultType> @<FunctionName> ([argument list])
+       [(unnamed_addr|local_unnamed_addr)] [AddrSpace] [fn Attrs]
+       [section "name"] [partition "name"] [comdat [($name)]] [align N]
+       [gc] [prefix Constant] [prologue Constant] [personality Constant]
+       (!name !N)* { ... }
+
+ -}
+public export
+Encode FunctionDef VString where
+    encode (MkFunctionDef name symbolInfo callingConvention returnAttrs returnType args addressInfo addressSpace fnAttributes section partition comdat alignment gc fprefix prologue personality metadata body tags) =
+        let r : VString = "define" <+> 
+            encode symbolInfo <+> 
+            encodeIf callingConvention <+> 
+            intercalate "," (map encode returnAttrs) <+> 
+            encode returnType <+> 
+            "@" <++>
+            cast name <+> 
+            "(" <+> intercalate "," (map encode args) <+> ")" <+>
+            encodeIf addressInfo <+>
+            encodeIf addressSpace <+>
+            (encodeIf $ show <$> alignment) <+>
+            encodeIf section <+>
+            encodeIf partition <+>
+            encodeIf comdat <+>
+            encodeIf gc <+>
+            encodeIf fprefix <+>
+            encodeIf prologue <+>
+            encodeIf personality <+>
+            encode @{each} metadata <+>
+            intercalate "," (map (encode) tags) <+>
+            encode body
+             in r
+
+{-
+declare [linkage] [visibility] [DLLStorageClass]
+        [cconv] [ret attrs]
+        <ResultType> @<FunctionName> ([argument list])
+        [(unnamed_addr|local_unnamed_addr)] [align N] [gc]
+        [prefix Constant] [prologue Constant]
+ -}
+
+    
+public export
+Encode FunctionDec VString where 
+    encode (MkFunctionDec name symbolInfo callingConvention returnAttrs returnType args addressInfo alignment gc fprefix prologue tags) =
+        let r : VString = "declare" <+> 
+            encode symbolInfo <+> 
+            encodeIf callingConvention <+> 
+            intercalate "," (map encode returnAttrs) <+> 
+            encode returnType <+> 
+            "@" <++>
+            cast name <+> 
+            "(" <+> intercalate "," (map encode args) <+> ")" <+>
+            encodeIf addressInfo <+>
+            (encodeIf $ show <$> alignment) <+>
+            encodeIf gc <+>
+            encodeIf fprefix <+>
+            encodeIf prologue <+>
+            intercalate "," (map (encode) tags) in r
+
+{-
+@<Name> = [Linkage] [PreemptionSpecifier] [Visibility] [DLLStorageClass] [ThreadLocal] [(unnamed_addr|local_unnamed_addr)] alias <AliaseeTy>, <AliaseeTy>* @<Aliasee>
+          [, partition "name"]
+           -}
+
+public export
+Encode Alias VString where 
+    encode (MkAlias name symbolInfo threadLocality addressInfo aliaseeTy aliasee partition tags) =
+        let r : VString = "@" <++> cast name <+> 
+            encode symbolInfo <+> 
+            encodeIf threadLocality <+> 
+            encodeIf addressInfo <+> 
+            "alias" <+> 
+            encode aliaseeTy <+> 
+            encode aliasee <+>
+            encode partition in r
+
+public export 
+Encode IFunc VString where 
+
+    -- TODO:
+    encode (MkIFunc name symbolInfo threadLocality addressInfo addressSpace aliaseeTy aliasee tags) =
+        let r : VString = "@" <++> cast name <+> 
+            encode symbolInfo <+> 
+            encodeIf threadLocality <+> 
+            encodeIf addressInfo <+> 
+            encode addressSpace <+> 
+            "ifunc" <+> 
+            encode aliaseeTy <+> 
+            encode aliasee <+>
+            intercalate "," (map (encode) tags) in r
+
+public export 
+Encode AttributeGroupDef VString where 
+    encode (MkAttributeGroupDef name attrs) =
+        let r : VString = "attributes #" <++> encode name <+> "=" <+> "{" <+> intercalate "," (map encode attrs) <+> "}" in r
+public export 
+Encode LClause VString where 
+    encode (GlobalDefC def) = encode def
+    encode (FunctionDefC def) = encode def
+    encode (FunctionDecC dec) = encode dec
+    encode (AliasC alias) = encode alias
+    encode (IFuncC ifunc) = encode ifunc
+    encode (MetadataC metadata) = encode metadata
+    encode (AttributeGroupC attrs) = encode attrs
+    encode (OtherC other) = cast other -- Placeholder for other clause types
+public export
+Encode LModule VString where
+    encode (MkLModule dataLayout target text tags) =
+        let 
+            layout : VString = 
+                case dataLayout of  
+                    Just dl => "target datalayout = \"" <++> encode dl <++> "\"\n"
+                    Nothing => ""
+            target : VString = 
+                case target of
+                    Just t => "target triple = \"" <++> encode t <++> "\"\n"
+                    Nothing => ""
+            r : VString = 
+            layout <++> target <++>
+            encode @{lined} text
+            in r
+

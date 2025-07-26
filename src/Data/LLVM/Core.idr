@@ -2,19 +2,63 @@ module Data.LLVM.Core
   
 
 public export
-data Linkage = Private | Internal | Available | LinkOnce | Weak | Common | Appending | ExternWeak | LinkOnceODR | WeakODR | External
+data Linkage : Type where
+  Private      : Linkage
+  Internal     : Linkage
+  Available    : Linkage
+  LinkOnce     : Linkage
+  Weak         : Linkage
+  Common       : Linkage
+  Appending    : Linkage
+  ExternWeak   : Linkage
+  LinkOnceODR  : Linkage
+  WeakODR      : Linkage
+  External     : Linkage
+
 public export
-data CallingConvention = C | Fast | Cold | GHC | CC11 | AnyReg | PreserveMost | PreserveAll | PreserveNone | CxxFastTL | Tail | Swift | SwiftTail | CFGuardCheck | CustomCC Int 
+data CallingConvention : Type where
+  C              : CallingConvention
+  Fast           : CallingConvention
+  Cold           : CallingConvention
+  GHC            : CallingConvention
+  CC11           : CallingConvention
+  AnyReg         : CallingConvention
+  PreserveMost   : CallingConvention
+  PreserveAll    : CallingConvention
+  PreserveNone   : CallingConvention
+  CxxFastTL      : CallingConvention
+  Tail           : CallingConvention
+  Swift          : CallingConvention
+  SwiftTail      : CallingConvention
+  CFGuardCheck   : CallingConvention
+  CustomCC       : Int -> CallingConvention
+
 public export
-data Visibility = Default | Hidden | Protected
+data Visibility : Type where
+  Default   : Visibility
+  Hidden    : Visibility
+  Protected : Visibility
+
 public export
-data DLLStorage = DLLExport | DLLImport
+data DLLStorage : Type where
+  DLLExport : DLLStorage
+  DLLImport : DLLStorage
+
 public export
-data ThreadLocality = LocalDynamic | InitialExec | LocalExec 
+data ThreadLocality : Type where
+  LocalDynamic : ThreadLocality
+  InitialExec  : ThreadLocality
+  LocalExec    : ThreadLocality
+
 public export
-data Preemption = Preemptible | NonPreemptible
+data Preemption : Type where
+  Preemptible    : Preemption
+  NonPreemptible : Preemption
+
 public export
-data AddressInfo = UnnamedGlobal | UnamedLocal
+data AddressInfo : Type where
+  UnnamedGlobal : AddressInfo
+  UnnamedLocal  : AddressInfo
 
 -- data layout
 public export
@@ -29,12 +73,25 @@ data Name : Type where
   Special : String -> Name
   ||| !...
   MetadataN : String -> Name
+  ||| #...
+  AttributeN : String -> Name
+  ||| ...: 
+  LabelN : String -> Name
+  ||| "@llvm."...
+  IntrinsicN : String -> Name
   ||| User defined
   CustomN : String -> Name
 
 namespace LType 
   public export 
-  data LTypeF = Half | Bfloat | LFloat | LDouble | FP128 | X86_FP80 | PPC_FP128
+  data LTypeF : Type where
+    Half      : LTypeF
+    Bfloat    : LTypeF
+    LFloat    : LTypeF
+    LDouble   : LTypeF
+    FP128     : LTypeF
+    X86_FP80  : LTypeF
+    PPC_FP128 : LTypeF
   public export
   -- TODO: Target types
   data LType : Type where
@@ -60,22 +117,58 @@ record WithType a where
   constructor MkWithType
   tpe : LType
   value : a
+
+
 public export
-data Attribute = ZeroExt | SignExt | NoExt | ByVal LType | ByRef LType | Preallocated LType | Inalloca LType | SRet LType | Align Nat | NoAlias | NoFree | Nest | Returned | NoNull | Dereferenceable Nat | DereferenceableOrNull Nat | SwiftSelf | SwiftAsync | SwiftError | ImmArg | NoUndef | AlignStack Nat | AllocAlign | AllocPtr | ReadNone | ReadOnly | WriteOnly | Writeable  | DeadOnUnwind | DeadOnReturn | NamedAttribute String
+data Attribute : Type where
+  ZeroExt : Attribute
+  SignExt : Attribute
+  NoExt : Attribute
+  ByVal : LType -> Attribute
+  ByRef : LType -> Attribute
+  Preallocated : LType -> Attribute
+  Inalloca : LType -> Attribute
+  SRet : LType -> Attribute
+  Align : Nat -> Attribute
+  NoAlias : Attribute
+  NoFree : Attribute
+  Nest : Attribute
+  Returned : Attribute
+  NoNull : Attribute
+  Dereferenceable : Nat -> Attribute
+  DereferenceableOrNull : Nat -> Attribute
+  SwiftSelf : Attribute
+  SwiftAsync : Attribute
+  SwiftError : Attribute
+  ImmArg : Attribute
+  NoUndef : Attribute
+  AlignStack : Nat -> Attribute
+  AllocAlign : Attribute
+  AllocPtr : Attribute
+  ReadNone : Attribute
+  ReadOnly : Attribute
+  WriteOnly : Attribute
+  Writeable : Attribute
+  DeadOnUnwind : Attribute
+  DeadOnReturn : Attribute
+  --AllocFamily : String -> Attribute 
+  --AllocKind : String -> Attribute
+  OtherAttribute : String -> Attribute
+  --TODO: Finish
+
+
 public export
 record FunctionArgSpec where 
   constructor MkFunctionArgSpec
-  name : String 
   type : LType
   attrs : List Attribute
+  name : Maybe String 
 public export 
 data Metadata : Type where -- TODO:
   ||| A metadata value
-  MetadataValue : String -> Metadata
+  MetadataNode : String -> Metadata
   ||| A metadata node
-  MetadataNode : List Metadata -> Metadata
-  ||| A metadata attachment
-  MetadataAttachment : String -> Metadata -> Metadata
+  MetadataTuple : List Metadata -> Metadata
 ||| The inline asembly
 public export 
 data Assembly : Type where 
@@ -102,7 +195,7 @@ data LConst : Type where
 namespace LExpr 
   public export
   data LExpr : Type where 
-    LConst : LConst -> LExpr
+    LConstE : LConst -> LExpr
 
 public export
 data LTag : Type where 
@@ -118,9 +211,14 @@ record SymbolInfo where
 
 Label = LExpr
 public export 
-data FastMathFlag = FFast | NoNaNs | NoInfs | NoSignedZeros
+data FastMathFlag : Type where
+  FFast : FastMathFlag
+  NoNaNs : FastMathFlag
+  NoInfs : FastMathFlag
+  NoSignedZeros : FastMathFlag
 
 public export 
 FastMath : Type 
 FastMath = List FastMathFlag
   
+

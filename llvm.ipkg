@@ -16,7 +16,7 @@ authors = "Asher Frost"
 -- depends =
 
 -- modules to install
-modules = Data.LLVM, Data.LLVM.Class, Data.LLVM.Core, Data.LLVM.Write, Data.LLVM.Ops, Data.LLVM.Program
+modules = Data.LLVM, Data.LLVM.Class, Data.LLVM.Core, Data.LLVM.Write, Data.LLVM.Ops, Data.LLVM.Program, Data.LLVM.Interface, Data.LLVM.Builders, Data.LLVM.Casts
 
 -- main file (i.e. file to load at REPL)
 -- main =

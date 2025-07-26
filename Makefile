@@ -1,7 +1,7 @@
 cg ?= chez
 pack ?=
 opts ?= 
-
+testFiles := $(patsubst %.ll,%.ss,$(wildcard generated/*.ll)) 
 build: 
 	idris2 --build llvm.ipkg
 
@@ -16,9 +16,14 @@ test: install
 
 clean-test:
 	@echo "Cleaning test build artifacts..."
-	rm -rf build/exec/llvm-test
+	rm -rf generated 
+	mkdir -p generated
 	idris2 --clean test.ipkg
 
 docs: install
 	idris2 --mkdoc llvm.ipkg
 .PHONY: build install test clean-test
+
+runTests: $(testFiles)
+generated/%.ss: generated/%.ll
+	llvm-as -o $@ $<

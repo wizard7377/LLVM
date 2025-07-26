@@ -1,7 +1,6 @@
 module Test.Groups.Encoding
 
 import Data.LLVM
-import Data.LLVM.Types
 import Data.LLVM.Ops
 import Data.LLVM.Write
 import Data.LLVM.Class
@@ -35,6 +34,7 @@ encodingTests = do
     debugTest "External Linkage" External
     debugTest "LinkOnce Linkage" LinkOnce
     
+
     -- Test calling conventions
     debugTest "C Calling Convention" C
     debugTest "Fast Calling Convention" Fast
@@ -52,7 +52,7 @@ encodingTests = do
     debugTest "Metadata Name" (MetadataN "metadata1")
     
     -- Test constants
-    debugTest "Integer Constant" (Types.LInt 42)
+    debugTest "Integer Constant" (Core.LInt 42)
     debugTest "Float Constant" (LFloat "3.14159")
     debugTest "Bool Constant True" (LBool True)
     debugTest "Bool Constant False" (LBool False)
@@ -63,7 +63,7 @@ encodingTests = do
     debugTest "Zero Constant" LZero
     
     -- Test expressions
-    debugTest "Constant Expression" (LConst (LInt 100))
+    debugTest "Constant Expression" (LConstE (LInt 100))
     
     -- Test attributes
     debugTest "ZeroExt Attribute" ZeroExt
@@ -90,7 +90,7 @@ encodingTests = do
     
     -- Test address info
     debugTest "Unnamed Global" UnnamedGlobal
-    debugTest "Unnamed Local" UnamedLocal
+    debugTest "Unnamed Local" UnnamedLocal
     
     -- Test binary opcodes
     debugTest "Add Opcode" Add

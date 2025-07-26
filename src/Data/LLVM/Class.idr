@@ -6,15 +6,18 @@ interface Monoid b => Encode a b where
 
 public export
 data VString = MkVString String 
-
+--public export 
+--Show VString where
+--    show (MkVString s) = s
 public export
 Cast String VString where
     cast s = MkVString s
 export
-Encode a VString => Show a where 
+[showEncode] Encode a VString => Show a where 
     show s = let 
         (MkVString r) = encode s
         in cast r
+
 
 %globalhint
 public export
@@ -24,6 +27,12 @@ FromString VString where
 public export
 Semigroup VString where
     (<+>) (MkVString a) (MkVString b) = MkVString (a ++ " " ++ b)
+
+public export
+infixl 8 <++> 
+public export
+(<++>) : VString -> VString -> VString
+(MkVString a) <++> (MkVString b) = MkVString (a ++ b)
 public export
 Monoid VString where
     neutral = MkVString ""
@@ -71,13 +80,21 @@ Monoid a => Encode a a where
 public export
 [each] Encode a VString => Encode (List a) VString where 
     encode [] = ""
-    encode xs = intercalate ", " (map encode xs)
+    encode xs = intercalate "," (map encode xs)
 public export
 [nosep] Encode a VString => Encode (List a) VString where 
     encode [] = ""
-    encode xs = intercalate " " (map encode xs)
+    encode xs = intercalate "" (map encode xs)
 
+public export
+[lined] Encode a VString => Encode (List a) VString where 
+    encode [] = ""
+    encode xs = intercalate "\n" (map encode xs)
 
+public export 
+[tabbed] Encode a VString => Encode (List a) VString where 
+    encode [] = ""
+    encode xs = intercalate "\n\t" (map encode xs)
 public export
 [just] Encode a VString => Encode (Maybe a) VString where 
     encode Nothing = ""
@@ -109,3 +126,10 @@ Encode a b => Encode b c => Encode a c where
     encode x = let 
         r0 : b = encode x
         in encode r0
+public export 
+Encode Nat VString where
+    encode n = vshow n
+
+public export 
+Show VString where
+    show (MkVString s) = s

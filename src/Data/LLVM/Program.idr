@@ -3,87 +3,266 @@ module Data.LLVM.Program
 import Data.LLVM.Core
 import Data.LLVM.Ops
 
-
+||| Global variable definition.
+||| Models LLVM IR global variable definitions like:
+||| ```llvm
+||| @myGlobal = private constant i32 42, align 4
+||| @threadVar = thread_local(localdynamic) global i32 0
+||| @externInit = external externally_initialized global i32
+||| ```
 public export
 record GVarDef where
   constructor MkGVarDef
+  ||| Variable name (without @ prefix)
   name : String 
+  ||| Symbol information (linkage, visibility, etc.)
   symbolInfo : SymbolInfo
+  ||| Thread-local storage model (thread_local(...))
   threadLocality : Maybe ThreadLocality
+  ||| Address significance (unnamed_addr, local_unnamed_addr)
   addressInfo : Maybe AddressInfo
+  ||| Address space specification (addrspace(N))
   addressSpace : Maybe AddressSpace
+  ||| Whether the variable is externally initialized
   externallyInitialized : Maybe Bool
+  ||| Whether this is a constant (true) or global variable (false)
   isConst : Bool 
+  ||| The type of the global variable
   gtpe : LType.LType
-  initializer : Maybe String
+  ||| Optional initializer value
+  initializer : Maybe LConst
+  ||| Metadata tags
   tags : List LTag
 
+||| Attribute group definition.
+||| Models LLVM IR attribute group definitions like:
+||| ```llvm
+||| attributes #0 = { nounwind readnone }
+||| attributes #1 = { "no-frame-pointer-elim"="true" }
+||| ```
+public export 
+record AttributeGroupDef where
+  constructor MkAttributeGroupDef
+  ||| Group number (the N in attributes #N)
+  name : Nat 
+  ||| List of attributes in this group
+  attrs : List Attribute
 
+||| Function body containing a list of statements/instructions.
+||| Models the body of an LLVM function between the opening and closing braces.
 public export 
 record FunctionBody where 
   constructor MkFunctionBody
-  
+  ||| List of basic blocks and instructions
+  statements : List LStatement
+||| Function definition with implementation.
+||| Models LLVM IR function definitions like:
+||| ```llvm
+||| define dso_local i32 @main(i32 %argc, i8** %argv) #0 {
+||| entry:
+||||   %retval = alloca i32, align 4
+||||   ret i32 0
+||| }
+||| ```
+||| Or with more attributes:
+||| ```llvm
+||| define private fastcc nounwind i32 @helper(i32 %x) 
+|||        unnamed_addr section ".text" align 16 gc "shadow-stack" {
+||| entry:
+||||   ret i32 %x
+||| }
+||| ```
+{-
+define [linkage] [PreemptionSpecifier] [visibility] [DLLStorageClass]
+       [cconv] [ret attrs]
+       <ResultType> @<FunctionName> ([argument list])
+       [(unnamed_addr|local_unnamed_addr)] [AddrSpace] [fn Attrs]
+       [section "name"] [partition "name"] [comdat [($name)]] [align N]
+       [gc] [prefix Constant] [prologue Constant] [personality Constant]
+       (!name !N)* { ... }
+ -}
 public export
 record FunctionDef where
   constructor MkFunctionDef
+  ||| Function name (without @ prefix)
   name : String 
+  ||| Symbol information (linkage, preemption, visibility, DLL storage)
   symbolInfo : SymbolInfo
+  ||| Calling convention (fastcc, coldcc, etc.)
   callingConvention : Maybe CallingConvention
+  ||| Return value attributes
   returnAttrs : List Attribute
+  ||| Return type
   returnType : LType 
+  ||| Function parameters with their types and attributes
   args : List FunctionArgSpec
+  ||| Address significance (unnamed_addr, local_unnamed_addr)
   addressInfo : Maybe AddressInfo
+  ||| Address space (addrspace(N))
   addressSpace : Maybe AddressSpace
+  ||| Function attributes (nounwind, readnone, etc.)
+  fnAttributes : List Attribute
+  ||| Section name (section "name")
+  section: Maybe String
+  ||| Partition name (partition "name")
+  partition: Maybe String
+  ||| Comdat group (comdat [($name)])
+  comdat: Maybe Name 
+  ||| Function alignment (align N)
+  alignment : Maybe Int
+  ||| Garbage collector name (gc "name")
+  gc : Maybe String
+  ||| Prefix data (prefix Constant)
+  fprefix: Maybe LConst
+  ||| Prologue data (prologue Constant)
+  prologue: Maybe LConst
+  ||| Personality function (personality Constant)
+  personality : Maybe LConst
+  ||| Attached metadata (!name !N)*
+  metadata : List Metadata
+  ||| Function body with basic blocks and instructions
+  body : FunctionBody
+  ||| Additional metadata tags
   tags: List LTag
+||| Function declaration without implementation.
+||| Models LLVM IR function declarations like:
+||| ```llvm
+||| declare i32 @printf(i8*, ...)
+||| declare dso_local void @exit(i32) #1
+||| declare external fastcc i32 @external_func(i32, i32)
+||| ```
 public export
 record FunctionDec where
   constructor MkFunctionDec
+  ||| Function name (without @ prefix)
   name : String 
+  ||| Symbol information (linkage, preemption, visibility, DLL storage)
   symbolInfo : SymbolInfo
+  ||| Calling convention (fastcc, coldcc, etc.)
   callingConvention : Maybe CallingConvention
+  ||| Return value attributes
   returnAttrs : List Attribute
+  ||| Return type
   returnType : LType 
+  ||| Function parameters with their types and attributes
   args : List FunctionArgSpec
+  ||| Address significance (unnamed_addr, local_unnamed_addr)
   addressInfo : Maybe AddressInfo
+  ||| Function alignment (align N)
   alignment : Maybe Int
+  ||| Garbage collector name (gc "name")
   gc : Maybe String 
+  ||| Prefix data (prefix Constant)
   fprefix: Maybe LConst 
+  ||| Prologue data (prologue Constant)
   prologue: Maybe LConst
+  ||| Additional metadata tags
   tags: List LTag
+||| Alias definition.
+||| Models LLVM IR alias definitions like:
+||| ```llvm
+||| @alias = alias i32, i32* @original
+||| @weak_alias = weak alias i8, i8* @target
+||| @thread_alias = thread_local alias i32, i32* @tls_var
+||| ```
 public export  
 record Alias where 
   constructor MkAlias
+  ||| Alias name (without @ prefix)
   name : String 
+  ||| Symbol information (linkage, preemption, visibility, DLL storage)
   symbolInfo : SymbolInfo
+  ||| Thread-local storage model
   threadLocality : Maybe ThreadLocality
+  ||| Address significance (unnamed_addr, local_unnamed_addr)
   addressInfo : Maybe AddressInfo
+  ||| Type of the alias
   aliasTpe : LType
+  ||| Type of the pointer to the aliasee
   ptrType : LType
+  ||| Name of the aliasee (the target being aliased)
   aliasee : String 
+  ||| Additional metadata tags
   tags: List LTag
+
+||| Indirect function (IFunc) definition.
+||| Models LLVM IR IFunc definitions like:
+||| ```llvm
+||| @ifunc = ifunc i32 (i32), i32 (i32)* @resolver
+||| @weak_ifunc = weak ifunc void (), void ()* @my_resolver
+||| ```
 public export
 record IFunc where 
   constructor MkIFunc
+  ||| IFunc name (without @ prefix)
   name : String 
+  ||| Symbol information (linkage, preemption, visibility)
   symbolInfo : SymbolInfo
+  ||| Thread-local storage model
   threadLocality : Maybe ThreadLocality
+  ||| Address significance (unnamed_addr, local_unnamed_addr)
   addressInfo : Maybe AddressInfo
+  ||| Function type
   funTpe : LType
+  ||| Resolver function type
   resTpe : LType
+  ||| Name of the resolver function
   resolver : String 
+  ||| Additional metadata tags
   tags: List LTag
 
+||| Top-level clauses that can appear in an LLVM module.
+||| Each clause represents a different kind of top-level declaration.
+public export 
+data LClause : Type where 
+  ||| Global variable definition (@var = ...)
+  GlobalDefC : GVarDef -> LClause
+  ||| Function definition with body (define ...)
+  FunctionDefC : FunctionDef -> LClause
+  ||| Function declaration without body (declare ...)
+  FunctionDecC : FunctionDec -> LClause
+  ||| Alias definition (@alias = alias ...)
+  AliasC : Alias -> LClause
+  ||| IFunc definition (@ifunc = ifunc ...)
+  IFuncC : IFunc -> LClause
+  ||| Named metadata (!name = !{...})
+  MetadataC : Metadata -> LClause
+  ||| Attribute group definition (attributes #N = {...})
+  AttributeGroupC : AttributeGroupDef -> LClause
+  ||| Other top-level constructs (e.g., inline assembly, target info)
+  OtherC : String -> LClause
+
+||| LLVM Module structure.
+||| Models a complete LLVM IR module like:
+||| ```llvm
+||| target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64..."
+||| target triple = "x86_64-pc-linux-gnu"
+||| 
+||| @global_var = global i32 42
+||| 
+||| define i32 @main() {
+||||   ret i32 0
+||| }
+||| ```
 public export
 record LModule where 
   constructor MkLModule
-  globals : List GVarDef
-  functions : List FunctionDef
-  aliases : List Alias
-  ifuncs : List IFunc 
-  declarations : List FunctionDec
-  metadata : List Metadata
+  ||| Target data layout string (target datalayout = "...")
   dataLayout : Maybe String
+  ||| Target triple string (target triple = "...")
+  target : Maybe String
+  ||| List of top-level declarations and definitions
+  text: List LClause
+  ||| Module-level metadata tags
+  tags: Maybe (List LTag)
 -- TODO: Comdats
 -- TODO: fin param attributes
--- TODO: Bundles
 
+||| LLVM Bytecode container.
+||| Represents a collection of LLVM modules, typically used for
+||| multi-module compilation units or linked programs.
+public export 
+record Bytecode where
+  constructor MkBytecode
+  ||| List of LLVM modules in this bytecode unit
+  modules : List (LModule)
