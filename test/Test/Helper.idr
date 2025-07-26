@@ -4,6 +4,11 @@ import Data.List
 import Data.String
 import Data.LLVM.Class
 import System.File.ReadWrite
+import System.LLVM
+import Data.LLVM.Builders
+import Data.LLVM.Program
+import System.Escape
+import Data.LLVM.Core
 public export
 debugTest : Encode a VString => String -> a -> IO ()
 debugTest name value = do
@@ -23,6 +28,25 @@ debugFileTest file value = do
     let result = show str
     _ <- writeFile ("generated/" ++ (removeSpaces file) ++ ".ll") result
     putStrLn $ "Test output written to " ++ file
+
+public export
+debugCompile : String -> LModule -> IO ()
+debugCompile file value = do 
+    putStrLn $ "Compiling " ++ file ++ "..."
+    let context' = context "./generated/llvm/" {output = "main" ++ file}
+    res <- compile {context = context'} (bytecode {modules = [( file, value)]}) 
+    case res of 
+        Right res' => putStrLn $ "Test output written to " ++ res' ++ "\n\nTEST SUCCEEDED\n\n"
+        Left e => putStrLn $ "TEST " ++ file ++ " FAILED WITH" ++ show e ++ "\n\n"
+    pure ()
+
+public export
+debugRun : String -> LModule -> IO ()
+debugRun file value = do
+    let context' = context "generated/llvm/"
+    res <- exec {context = context'} (bytecode {modules = [( file, value)]})  
+    pure ()
+    --putStrLn $ "Test output written to " ++ res
 public export
 encodeTest : Encode a VString => String -> a -> String -> IO ()
 encodeTest name value expected = do

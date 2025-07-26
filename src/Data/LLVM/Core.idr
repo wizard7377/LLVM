@@ -1,5 +1,50 @@
 module Data.LLVM.Core
   
+unescapeC : Char -> String
+unescapeC ' ' = "_SPACE_"
+unescapeC '\n' = "_NEWLINE_"
+unescapeC '\t' = "_TAB_"
+unescapeC '\r' = "_CR_"
+unescapeC '\f' = "_FF_"
+unescapeC '\v' = "_VT_"
+unescapeC '\\' = "_BACKSLASH_"
+unescapeC '"' = "_QUOTE_"
+unescapeC '\'' = "_SQUOTE_"
+unescapeC '_' = "_UNDERSCORE_"
+-- Punctuation and symbols
+unescapeC '!' = "_EXCL_"
+unescapeC '#' = "_HASH_"
+unescapeC '$' = "_DOLLAR_"
+unescapeC '%' = "_PERCENT_"
+unescapeC '&' = "_AMP_"
+unescapeC '(' = "_LPAREN_"
+unescapeC ')' = "_RPAREN_"
+unescapeC '*' = "_STAR_"
+unescapeC '+' = "_PLUS_"
+unescapeC ',' = "_COMMA_"
+unescapeC '-' = "_MINUS_"
+--unescapeC '.' = "_DOT_"
+unescapeC '/' = "_SLASH_"
+--unescapeC ':' = "_COLON_"
+unescapeC ';' = "_SEMICOLON_"
+unescapeC '<' = "_LT_"
+unescapeC '=' = "_EQ_"
+unescapeC '>' = "_GT_"
+unescapeC '?' = "_QUESTION_"
+unescapeC '@' = "_AT_"
+unescapeC '[' = "_LBRACKET_"
+unescapeC ']' = "_RBRACKET_"
+unescapeC '^' = "_CARET_"
+unescapeC '`' = "_BACKTICK_"
+unescapeC '{' = "_LBRACE_"
+unescapeC '|' = "_PIPE_"
+unescapeC '}' = "_RBRACE_"
+unescapeC '~' = "_TILDE_"
+unescapeC c = pack [c]
+public export 
+unescape : String -> String
+unescape s =  pack $ foldMap (unpack . unescapeC) (unpack s)
+
 
 public export
 data Linkage : Type where

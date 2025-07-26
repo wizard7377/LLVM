@@ -103,7 +103,7 @@ moduleWithOperations = MkLModule {
     target = Nothing,
     text = [
         FunctionDefC $ MkFunctionDef {
-            name = "complex_function",
+            name = "main",
             symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
             callingConvention = Just C,
             returnAttrs = [],
@@ -1143,7 +1143,7 @@ moduleWithIntrinsics = MkLModule {
     target = Nothing,
     text = [
         FunctionDefC $ MkFunctionDef {
-            name = "intrinsic_test",
+            name = "main",
             symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
             callingConvention = Just C,
             returnAttrs = [],
@@ -1733,3 +1733,82 @@ moduleTests = do
     
     -- Stress test module
     debugFileTest "Module Stress Test" moduleStressTest
+
+
+
+
+
+    -- Test simple empty module
+    --debugCompile "EmptyModule" Test.Groups.Module.emptyModule
+
+    -- Test module with global variables
+    debugCompile "Module_with_Global_Variables" moduleWithGlobals
+    
+    -- Test module with simple function
+    debugCompile "Module_with_Simple_Function" moduleWithSimpleFunction
+    
+    -- Test module with function that has operations
+    debugCompile "Module_with_Function_Operations" moduleWithOperations
+    
+    -- Test complete module with multiple components
+    debugCompile "Complete_Module" completeModule
+    
+    -- Test module with thread-local storage
+    debugCompile "Module_with_Thread_Local_Storage" moduleWithTLS
+    
+    -- Test module with various calling conventions
+    debugCompile "Module_with_Calling_Conventions" moduleWithCallingConventions
+    
+    -- Test module with vector operations
+    debugCompile "Module_with_Vector_Operations" moduleWithVectors
+    
+    -- Test module with control flow and phi nodes
+    debugCompile "Module_with_Control_Flow" moduleWithControlFlow
+    
+    -- Test module with switch statements
+    debugCompile "Module_with_Switch_Statements" moduleWithSwitch
+    
+    -- Test module with struct operations
+    debugCompile "Module_with_Struct_Operations" moduleWithStructs
+    
+    -- Test module with aliases and IFuncs
+    debugCompile "Module_with_Aliases_and_IFuncs" moduleWithAliases
+    
+    -- Test module with exception handling
+    debugCompile "Module_with_Exception_Handling" moduleWithExceptions
+    
+    -- Test module with atomic operations
+    debugCompile "Module_with_Atomic_Operations" moduleWithAtomics
+    
+    -- Test module with inline assembly
+    debugCompile "Module_with_Inline_Assembly" moduleWithInlineAssembly
+    
+    -- Test module with debug information
+    debugCompile "Module_with_Debug_Information" moduleWithDebugInfo
+    
+    -- Test module with complex nested structures
+    debugCompile "Module_with_Complex_Nested_Structures" moduleWithComplexTypes
+    
+    -- Test module with function attributes
+    debugCompile "Module_with_Function_Attributes" moduleWithAttributes
+    
+    -- Test module with edge cases
+    debugCompile "Module_with_Edge_Cases" moduleWithEdgeCases
+    
+    -- Test module with memory management
+    debugCompile "Module_with_Memory_Management" moduleWithMemoryManagement
+    
+    -- Test module with intrinsics
+    debugCompile "Module_with_Intrinsics" moduleWithIntrinsics
+    
+    -- Test module with garbage collection
+    debugCompile "Module_with_GC" moduleWithGC
+    
+    -- Test module with constants and constructors
+    debugCompile "Module_with_Constants" moduleWithConstants
+    
+    -- Test module with comdats and linkage
+    debugCompile "Module_with_Comdats" moduleWithComdats
+    
+    -- Stress test module
+    debugCompile "Module_Stress_Test" moduleStressTest
