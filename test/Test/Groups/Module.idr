@@ -631,7 +631,6 @@ moduleWithAliases = MkLModule {
             threadLocality = Nothing,
             addressInfo = Nothing,
             aliasTpe = LFun (LInt 32) [LInt 32],
-            ptrType = LPtr,
             aliasee = "original_function",
             tags = []
         },

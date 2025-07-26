@@ -93,7 +93,7 @@ Encode LType VString where
     encode LOpaque = "opaque"
     encode (LInt n) = "i" <++> vshow n
     encode (LFloating _) = "float"  -- Placeholder for actual float encoding
-    encode (LVector s t) = "vector"  -- Placeholder for actual vector encoding
+    encode (LVector s t) =  "<" <+> vshow s <+> "x" <+> encode t <+> ">"  -- Placeholder for actual vector encoding
     encode LLabel = "label"
     encode LToken = "token"
     encode (LArray n t) = "[" <+> vshow n <+> "x" <+> encode t <+> "]"
@@ -344,7 +344,7 @@ Encode Terminator VString where
     encode (JumpBr label) =
         "br label" <+> encode label
     encode (Switch ty expr defaultBranch cases) =
-        "switch " <+> encode ty <+> encode expr <+> ", label" <+> encode defaultBranch <+> intercalate "," (map encode cases)
+        "switch " <+> encode ty <+> encode expr <+> ", label" <+> encode defaultBranch <+> "[" <+> intercalate "\n" (map encode cases) <+> "]"
     encode (IndirectBr address labels) = 
         "indirectbr ptr" <+>
         encode address <+> 
@@ -593,15 +593,14 @@ Encode FunctionDec VString where
 
 public export
 Encode Alias VString where 
-    encode (MkAlias name symbolInfo threadLocality addressInfo aliaseeTy aliasee partition tags) =
-        let r : VString = "@" <++> cast name <+> 
-            encode symbolInfo <+> 
+    encode (MkAlias name symbolInfo threadLocality addressInfo aliaseeTy aliasee tags) =
+        let r : VString = "@" <++> cast name <+> "=" <+> encode symbolInfo <+> 
             encodeIf threadLocality <+> 
             encodeIf addressInfo <+> 
             "alias" <+> 
             encode aliaseeTy <+> 
-            encode aliasee <+>
-            encode partition in r
+            "," <+> "@" <++> 
+            encode aliasee in r
 
 public export 
 Encode IFunc VString where 

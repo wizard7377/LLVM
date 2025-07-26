@@ -178,8 +178,6 @@ record Alias where
   addressInfo : Maybe AddressInfo
   ||| Type of the alias
   aliasTpe : LType
-  ||| Type of the pointer to the aliasee
-  ptrType : LType
   ||| Name of the aliasee (the target being aliased)
   aliasee : String 
   ||| Additional metadata tags

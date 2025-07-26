@@ -141,10 +141,9 @@ alias name {symbolInfo} {threadLocality} {addressInfo} ty {ty2} target {tags} =
         threadLocality
         addressInfo
         ty 
-        ty2
         target 
         []
-
+        -- TODO: Remaining types
 export
 ||| Create a case branch for switch statements.
 caseBranch : 
