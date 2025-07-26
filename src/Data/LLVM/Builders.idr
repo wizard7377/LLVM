@@ -370,3 +370,9 @@ exampleCall = simpleCall
   (LFun (LInt 32) [LInt 32, LInt 32]) 
   (globalPtr "add") 
   [withType (LInt 32) (constExpr (LInt 5)), withType (LInt 32) (constExpr (LInt 10))]
+
+export 
+bytecode : {default Nothing mainMod : Maybe String} -> {default [] modules : List (String, LModule)} ->
+    Bytecode
+bytecode {mainMod} {modules} = MkBytecode mainMod modules
+

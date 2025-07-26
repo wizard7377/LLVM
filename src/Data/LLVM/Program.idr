@@ -262,5 +262,6 @@ record LModule where
 public export 
 record Bytecode where
   constructor MkBytecode
+  mainMod : Maybe String
   ||| List of LLVM modules in this bytecode unit
-  modules : List (LModule)
+  modules : List (String, LModule)
