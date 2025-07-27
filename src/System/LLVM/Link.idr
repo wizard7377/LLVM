@@ -10,8 +10,8 @@ intercalate sep (x :: xs) = x ++ foldl (\acc => \y => acc ++ sep ++ y) "" xs
 export
 linkLLVM : {auto context : Context} -> List String -> Compile String
 linkLLVM {context} inputs = do
-    putStrLn $ "Linking modules: " ++ (intercalate ", " inputs)
-    let inputs' = map (\i => context.tempDir <+> i <+> ".bc") inputs
+    showMsg $ "Linking modules: " ++ (intercalate ", " inputs)
+    let inputs' = (map (\i => context.tempDir <+> i <+> ".bc") inputs) ++ context.extraBc
     let output' = context.tempDir <+> context.output <+> ".bc"
     let cmd : String = 
         case context.mainModule of

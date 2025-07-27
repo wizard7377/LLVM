@@ -21,6 +21,7 @@ emptyModule = MkLModule Nothing Nothing [] Nothing
 export 
 emptySymbolInfo : SymbolInfo
 emptySymbolInfo = MkSymbolInfo Nothing Nothing Nothing Nothing 
+export
 functionDef :  
     (name : String) ->
     {default emptySymbolInfo symbolInfo : SymbolInfo} ->
@@ -268,18 +269,18 @@ globalPtr name = ptrExpr (Global name)
 
 export
 ||| Create an LLVM module with configurable options.
-module_ : 
+mkModule : 
     {default Nothing dataLayout : Maybe String} ->
     {default Nothing target : Maybe String} ->
     {default [] text : List LClause} ->
     {default Nothing tags : Maybe (List LTag)} ->
     LModule
-module_ {dataLayout} {target} {text} {tags} = MkLModule dataLayout target text tags
+mkModule {dataLayout} {target} {text} {tags} = MkLModule dataLayout target text tags
 
 export
 ||| Create a simple LLVM module with text clauses.
 simpleModule : List LClause -> LModule
-simpleModule clauses = module_ {text = clauses}
+simpleModule clauses = mkModule {text = clauses}
 
 export
 ||| Create a labeled statement.
@@ -345,7 +346,7 @@ simpleCall ty fn args = call (simpleFnCall ty fn args)
 export
 exampleModule : LModule
 exampleModule = 
-  module_ {
+  mkModule {
     dataLayout = Just "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128",
     target = Just "x86_64-unknown-linux-gnu",
     text = [

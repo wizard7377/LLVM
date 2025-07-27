@@ -1,8 +1,14 @@
-#+SEQ_TODO: TODO PART | DONE
+
 * LLVM document
 Here is the status of the transcribing of LLVM values into types
 
 Some important notes
 
-** TODO metadata 
-** 
+** The DSL
+*** TODO Metadata 
+*** TODO ThinLTO
+*** TODO Extensions
+** The interface 
+*** TODO Make the interface not require shell commands 
+*** TODO Optimizer, and commands 
+*** TODO Proper FFI 

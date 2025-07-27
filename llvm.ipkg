@@ -17,8 +17,8 @@ authors = "Asher Frost"
 
 -- modules to install
 modules = 
-    Data.LLVM, Data.LLVM.Class, Data.LLVM.Core, Data.LLVM.Write, Data.LLVM.Ops, Data.LLVM.Program, Data.LLVM.Interface, Data.LLVM.Builders, Data.LLVM.Casts,
-    System.LLVM, System.LLVM.Common, System.LLVM.Build, System.LLVM.Compile, System.LLVM.Link
+    Data.LLVM, Data.LLVM.Class, Data.LLVM.Core, Data.LLVM.Write, Data.LLVM.Ops, Data.LLVM.Program, Data.LLVM.Interface, Data.LLVM.Builders, Data.LLVM.Casts, Data.LLVM.Pass, Data.LLVM.Foreign,
+    System.LLVM, System.LLVM.Common, System.LLVM.Build, System.LLVM.Compile, System.LLVM.Link, System.LLVM.Assembler, System.LLVM.Optimize, System.LLVM.Foreign
 
 -- main file (i.e. file to load at REPL)
 -- main =

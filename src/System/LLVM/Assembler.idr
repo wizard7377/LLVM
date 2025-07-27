@@ -1,4 +1,4 @@
-module System.LLVM.Assemble
+module System.LLVM.Assembler
 
 import System.LLVM.Common
 import Data.LLVM.Program
@@ -10,8 +10,8 @@ import System.File.ReadWrite
 export 
 assembleLLVM : {context : Context} -> LModule -> String -> Compile String
 assembleLLVM {context} mod output = do 
-    liftIO $ putStrLn $ "Assembling LLVM module: " ++ output
-    liftIO $ putStrLn $ "From module" ++ output
+    showMsg $ "Assembling LLVM module: " ++ output
+    showMsg $ "From module" ++ output
     let encoded' : VString = encode mod
     let encoded = show encoded'
     let fileName = context.tempDir <+> output <+> ".ll"
@@ -23,5 +23,10 @@ assembleLLVM {context} mod output = do
 
 
 
-
-
+export 
+assembleForeign : {context : Context} -> String -> String -> Compile String
+assembleForeign {context} mod output = do 
+    let cmd = "llvm-as -o " <+> (context.tempDir <+> output <+> ".bc") <+> " " <+> mod 
+    (out, r) <- runCmd cmd
+    (unless $ r == 0) (throwError $ AssembleError out)
+    pure output

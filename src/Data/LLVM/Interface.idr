@@ -17,17 +17,17 @@ public export
 interface Monoid a => Startable a b => Endable a b => Surrondable a b where
 
 public export
-infixl 9 <+
+infixl 9 <<+
 
 public export 
-infixr 9 +>
+infixr 9 +>>
 
 public export
-(<+) : Startable a b => b -> a -> a
-(<+) = startWith
+(<<+) : Startable a b => b -> a -> a
+(<<+) = startWith
 public export
-(+>) : Endable a b => a -> b -> a
-(+>) = endWith
+(+>>) : Endable a b => a -> b -> a
+(+>>) = endWith
 
 public export 
 [startCast] Startable a b => Cast c b => Startable a c where
@@ -67,3 +67,9 @@ Startable (List a) a where
 export 
 Endable (List a) a where 
     endWith acc s = acc ++ [s]
+
+export 
+Endable FunctionBody LOperation where 
+    endWith acc s = let 
+        statement : LStatement = Discarded s 
+        in endWith acc statement
