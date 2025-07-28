@@ -476,6 +476,19 @@ data MemoryOpcode : Type where
         (ordering : Maybe AtomicOrder) ->
         MemoryOpcode
     -- TODO: Cmpxchg, atomicrmw, etc.
+
+public export
+data CatchClause : Type where
+    ||| Catch clause for landing pad instructions
+    Catching : LType -> LConst -> CatchClause
+    ||| Filter clause for landing pad instructions
+    Filtering : LType -> LConst -> CatchClause
+public export 
+data ExceptOpcode : Type where 
+    LandingPad : LType -> List CatchClause -> ExceptOpcode
+    LandingPadCleanup : LType -> List CatchClause -> ExceptOpcode
+    CatchPad : Name -> LConst -> ExceptOpcode
+    CleanupPad : Name -> LConst -> ExceptOpcode
 ||| LLVM operations categorized by type.
 ||| Represents all possible LLVM IR operations.
 public export
@@ -496,6 +509,8 @@ data LOperation : Type where
     MiscOp : MiscOpcode -> LOperation
     ||| Memory operation
     MemoryOp : MemoryOpcode -> LOperation
+    ||| Exception handling operation 
+    ExceptOp : ExceptOpcode -> LOperation
 
 ||| LLVM statements that can appear in basic blocks.
 ||| Models different forms of LLVM IR statements like:

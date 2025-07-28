@@ -1,3 +1,9 @@
+||| LLVM IR serialization to textual representation.
+|||
+||| This module provides Encode instances for all LLVM IR data types,
+||| allowing them to be converted to their textual LLVM IR representation.
+||| It handles proper formatting, escaping, and syntax generation for
+||| a complete LLVM IR module.
 module Data.LLVM.Write
 
 import Data.LLVM.Core
@@ -117,27 +123,32 @@ export
 Encode LTag VString where
     encode (CTag s) = cast s
 
-export
-Encode Metadata VString where
-    encode = const "" -- TODO: 
+mutual 
+    export
+    Encode Metadata VString where
+        encode (MetadataNamed name) = "!" <++> cast name
+        encode (MetadataString s) = "!\"" <++> cast s <++> "\""
+        encode (MetadataValue v) = encode v
+        encode (MetadataTuple vals) = "!{" <+> encode @{each} vals <+> "}"
+        encode (MetadataCustom s) = cast s
 
 
-export
-Encode LConst VString where
-    encode (LInt n) = cast $ show n
-    encode (LFloat s) = cast $ s
-    encode (LBool b) = if b then "true" else "false"
-    encode LNull = "null"
-    encode LToken = "none"
-    encode (LString s) = "c\"" <+> cast s <+> "\""
-    encode (LArray cs) = "[" <+> intercalate "," (map encode cs) <+> "]"
-    encode (LVector cs) = "<" <+> intercalate "," (map encode cs) <+> ">"
-    encode (LStruct cs) = "{" <+> intercalate "," (map encode cs) <+> "}"
-    encode LUndefined = "undef"
-    encode LPoison = "poison"
-    encode LZero = "zeroinitializer"
-    encode (LMetadata m) = encode m
-    encode (LPtr name) = encode name
+    export
+    Encode LConst VString where
+        encode (LInt n) = cast $ show n
+        encode (LFloat s) = cast $ s
+        encode (LBool b) = if b then "true" else "false"
+        encode LNull = "null"
+        encode LToken = "none"
+        encode (LString s) = "c\"" <+> cast s <+> "\""
+        encode (LArray cs) = "[" <+> intercalate "," (map encode cs) <+> "]"
+        encode (LVector cs) = "<" <+> intercalate "," (map encode cs) <+> ">"
+        encode (LStruct cs) = "{" <+> intercalate "," (map encode cs) <+> "}"
+        encode LUndefined = "undef"
+        encode LPoison = "poison"
+        encode LZero = "zeroinitializer"
+        encode (LMetadata m) = "metadata" <+> encode m
+        encode (LPtr name) = encode name
 export 
 Encode GVarDef VString where
     encode (MkGVarDef name symbolInfo threadLocality addressInfo addressSpace externallyInitialized global tpe init tags) =
@@ -152,6 +163,7 @@ Encode GVarDef VString where
             encode @{just} init,
             intercalate "," (map (encode) tags)
         ] in r
+
 
 
 
@@ -191,9 +203,11 @@ Encode Attribute VString where
     encode DeadOnReturn = "dead_on_return"
     encode (OtherAttribute name) = cast name
 
+
 export
 Encode LExpr VString where
     encode (LConstE c) = encode c
+    encode (LVar name) = encode name
 export
 Encode CaseBranch VString where
     encode (MkCaseBranch tpe value label) =
@@ -488,7 +502,18 @@ Encode MemoryOpcode VString where
             encode @{just} ordering
         ]
    
-
+export 
+Encode CatchClause VString where
+    encode (Catching ty name) =
+        "catch " <+> encode ty <+> encode name
+    encode (Filtering ty matches) =
+        "filter " <+> encode ty <+> encode matches 
+export 
+Encode ExceptOpcode VString where
+    encode (LandingPad ty matches) = "landingpad" <+> encode ty <+> encode @{spacing} matches
+    encode (LandingPadCleanup ty matches) = "landingpad" <+> encode ty <+> "cleanup" <+> encode @{spacing} matches
+    encode (CatchPad ty matches) = "catchpad" <+> encode ty <+> encode matches
+    encode (CleanupPad ty matches) = "cleanuppad" <+> encode ty <+> encode matches
 export
 Encode LOperation VString where
     encode (UnaryOp op ty expr) = 
@@ -502,6 +527,7 @@ Encode LOperation VString where
     encode (AggregateOp aOp) = encode aOp
     encode (MiscOp mOp) = encode mOp
     encode (MemoryOp mOp) = encode mOp
+    encode (ExceptOp mOp) = encode mOp 
 
 export
 Encode LStatement VString where
@@ -628,7 +654,7 @@ Encode LClause VString where
     encode (FunctionDecC dec) = encode dec
     encode (AliasC alias) = encode alias
     encode (IFuncC ifunc) = encode ifunc
-    encode (MetadataC metadata) = encode metadata
+    encode (MetadataC name metadata) = "!" <++> cast name <+> "=" <+> encode metadata
     encode (AttributeGroupC attrs) = encode attrs
     encode (OtherC other) = cast other -- Placeholder for other clause types
 public export

@@ -1,3 +1,12 @@
+||| Type casting utilities for LLVM IR constructs.
+|||
+||| This module provides Cast instances that allow automatic conversion
+||| between LLVM IR data types. These instances enable seamless integration
+||| with Idris's casting system and make the LLVM DSL more ergonomic.
+|||
+||| The primary purpose is to allow various LLVM constructs to be automatically
+||| converted to their appropriate clause types for inclusion in modules,
+||| and to provide convenient conversions between related types.
 module Data.LLVM.Casts 
 
 
@@ -22,9 +31,9 @@ Cast Alias LClause where
 public export
 Cast IFunc LClause where 
     cast d = IFuncC d
-public export
-Cast Metadata LClause where 
-    cast d = MetadataC d
+--public export
+--Cast Metadata LClause where 
+--    cast d = MetadataC d
 public export
 Cast AttributeGroupDef LClause where 
     cast d = AttributeGroupC d

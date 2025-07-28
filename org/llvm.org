@@ -12,3 +12,4 @@ Some important notes
 *** TODO Make the interface not require shell commands 
 *** TODO Optimizer, and commands 
 *** TODO Proper FFI 
+*** TODO Better linking

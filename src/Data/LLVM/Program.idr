@@ -1,3 +1,8 @@
+||| LLVM IR program structure and top-level definitions.
+|||
+||| This module defines the data structures for representing complete LLVM IR programs,
+||| including global variables, function definitions, and module-level constructs.
+||| It provides the building blocks for constructing full LLVM modules.
 module Data.LLVM.Program
 
 import Data.LLVM.Core
@@ -224,7 +229,7 @@ data LClause : Type where
   ||| IFunc definition (@ifunc = ifunc ...)
   IFuncC : IFunc -> LClause
   ||| Named metadata (!name = !{...})
-  MetadataC : Metadata -> LClause
+  MetadataC : String -> Metadata -> LClause
   ||| Attribute group definition (attributes #N = {...})
   AttributeGroupC : AttributeGroupDef -> LClause
   ||| Other top-level constructs (e.g., inline assembly, target info)

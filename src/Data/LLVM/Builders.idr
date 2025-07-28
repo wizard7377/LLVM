@@ -377,3 +377,10 @@ bytecode : {default Nothing mainMod : Maybe String} -> {default [] modules : Lis
     Bytecode
 bytecode {mainMod} {modules} = MkBytecode mainMod modules
 
+export 
+foriegnDec : 
+    (name : String) ->
+    {default [] args : List FunctionArgSpec} ->
+    {default LVoid resType : LType} ->
+    LClause
+foriegnDec name {args} {resType} = FunctionDecC $ functionDec name resType args
