@@ -73,3 +73,7 @@ Endable FunctionBody LOperation where
     endWith acc s = let 
         statement : LStatement = Discarded s 
         in endWith acc statement
+
+public export 
+interface Macro a b where 
+  applyMacro : a -> b -> List LStatement

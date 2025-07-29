@@ -4,3 +4,4 @@ import public Data.LLVM.IR.Core
 import public Data.LLVM.IR.Ops
 import public Data.LLVM.IR.Program
 import public Data.LLVM.IR.Builders
+import public Data.LLVM.IR.Alias

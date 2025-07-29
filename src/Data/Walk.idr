@@ -13,6 +13,9 @@ export
 Walk a b => Walk b c => Walk a c where 
   go = go . (the (a -> b) go)
  
+public export 
+[idWalk] Walk a a where 
+  go = id
 export 
 Functor f => Walk a b => Walk (f a) (f b) where 
   go = map go
