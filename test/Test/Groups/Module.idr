@@ -3,9 +3,7 @@
 module Test.Groups.Module
 
 import Data.LLVM
-import Data.LLVM.Core
-import Data.LLVM.Ops
-import Data.LLVM.Program
+import Data.LLVM.IR
 import Data.LLVM.Write
 import Data.LLVM.Class
 import Test.Helper

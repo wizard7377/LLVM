@@ -31,6 +31,7 @@ clean-test:
 
 docs: install
 	idris2 --mkdoc llvm.ipkg
+	@cp -r build/docs docs
 .PHONY: build install test clean-test clean 
 
 runTests: $(testFiles)

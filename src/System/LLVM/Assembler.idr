@@ -1,9 +1,7 @@
 module System.LLVM.Assembler
 
 import System.LLVM.Common
-import Data.LLVM.Program
-import Data.LLVM.Class
-import Data.LLVM.Write
+import Data.LLVM
 import System
 import Control.App
 import System.File.ReadWrite

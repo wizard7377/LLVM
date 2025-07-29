@@ -4,7 +4,7 @@
 ||| to their textual representations, along with supporting types and utilities
 ||| for string manipulation and formatting.
 module Data.LLVM.Class
-
+import Data.Walk
 ||| Interface for encoding values to a target monoid type.
 |||
 ||| The `Encode` interface allows converting LLVM IR data structures
@@ -31,8 +31,8 @@ data VString = MkVString String
 --    show (MkVString s) = s
 ||| Convert String to VString
 public export
-Cast String VString where
-    cast s = MkVString s
+Walk String VString where
+    go s = MkVString s
 
 ||| Show implementation for encodable types
 |||
@@ -42,7 +42,7 @@ export
 [showEncode] Encode a VString => Show a where 
     show s = let 
         (MkVString r) = encode s
-        in cast r
+        in go r
 
 
 ||| Global hint for string literal conversion
@@ -215,18 +215,18 @@ public export
 
 ||| Convert Show instances to VString
 |||
-||| Convenience function that combines show and cast to create VString values
+||| Convenience function that combines show and go to create VString values
 ||| from any type with a Show instance.
 public export
 vshow : Show a => a -> VString
-vshow x = cast (show x)
+vshow x = go (show x)
 
 ||| String encoding to VString
 |||
-||| Direct encoding of strings to VString via cast.
+||| Direct encoding of strings to VString via go.
 public export 
 Encode String VString where
-    encode s = cast s
+    encode s = go s
 
 ||| Type-specialized encoding function
 |||
@@ -237,10 +237,10 @@ encode' = encode
 
 ||| Convert VString back to String
 public export
-Cast VString String where
-    cast (MkVString s) = s
+Walk VString String where
+    go (MkVString s) = s
 
-||| Convert String to VString (redundant with cast)
+||| Convert String to VString (redundant with go)
 public export
 toVString : String -> VString
 toVString s = MkVString s

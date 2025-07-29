@@ -1,7 +1,7 @@
 module Test.Groups.Encoding
 
 import Data.LLVM
-import Data.LLVM.Ops
+import Data.LLVM.IR
 import Data.LLVM.Write
 import Data.LLVM.Class
 import Test.Helper

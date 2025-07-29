@@ -2,7 +2,7 @@ module System.LLVM.Build
 
 
 import System.LLVM.Common
-import Data.LLVM.Program
+import Data.LLVM
 import System
 import System.LLVM.Compile
 import System.LLVM.Run

@@ -6,7 +6,7 @@
 module System.LLVM.Common 
 import System
 import public Control.Monad.Either as Either 
-import public Data.LLVM.Pass
+import public Data.LLVM
 import Control.Monad.Either 
 ||| Compilation error types for LLVM operations.
 |||

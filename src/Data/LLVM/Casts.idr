@@ -1,6 +1,6 @@
 ||| Type casting utilities for LLVM IR constructs.
 |||
-||| This module provides Cast instances that allow automatic conversion
+||| This module provides Walk instances that allow automatic conversion
 ||| between LLVM IR data types. These instances enable seamless integration
 ||| with Idris's casting system and make the LLVM DSL more ergonomic.
 |||
@@ -11,41 +11,52 @@ module Data.LLVM.Casts
 
 
 import Data.LLVM.Class
-import Data.LLVM.Core
+import Data.LLVM.IR
 import Data.LLVM.Write
-import Data.LLVM.Ops
-import Data.LLVM.Program
-
+import Data.Walk
 public export
-Cast GVarDef LClause where 
-    cast d = GlobalDefC d
+Walk GVarDef LClause where 
+    go d = GlobalDefC d
 public export
-Cast FunctionDef LClause where 
-    cast d = FunctionDefC d
+Walk FunctionDef LClause where 
+    go d = FunctionDefC d
 public export
-Cast FunctionDec LClause where 
-    cast d = FunctionDecC d
+Walk FunctionDec LClause where 
+    go d = FunctionDecC d
 public export
-Cast Alias LClause where 
-    cast d = AliasC d
+Walk Alias LClause where 
+    go d = AliasC d
 public export
-Cast IFunc LClause where 
-    cast d = IFuncC d
+Walk IFunc LClause where 
+    go d = IFuncC d
 --public export
---Cast Metadata LClause where 
---    cast d = MetadataC d
+--Walk Metadata LClause where 
+--    go d = MetadataC d
 public export
-Cast AttributeGroupDef LClause where 
-    cast d = AttributeGroupC d
+Walk AttributeGroupDef LClause where 
+    go d = AttributeGroupC d
 public export
-Cast LType FunctionArgSpec where 
-    cast t = MkFunctionArgSpec t [] Nothing
+Walk LType FunctionArgSpec where 
+    go t = MkFunctionArgSpec t [] Nothing
 public export
-Cast Int LConst where 
-    cast i =  (LInt i)
+Walk Int LConst where 
+    go i =  (LInt i)
 public export
-Cast String LConst where 
-    cast s =  (LString s)
+Walk String LConst where 
+    go s =  (LString s)
 public export
-Cast Bool LConst where 
-    cast b =  (LBool b)
+Walk Bool LConst where 
+    go b =  (LBool b)
+
+public export 
+Walk a b => Walk b c => Walk a c where 
+  go = go . (the (a -> b) go)
+ 
+public export 
+Walk LOperation LStatement where 
+    go op = Discarded op
+
+public export 
+Walk Name LExpr where 
+    go n = LVar n
+
