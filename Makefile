@@ -2,6 +2,7 @@ cg ?= chez
 pack ?=
 opts ?= 
 testFiles := $(patsubst %.ll,%.ss,$(wildcard generated/*.ll)) 
+
 build: 
 	idris2 --build llvm.ipkg
 

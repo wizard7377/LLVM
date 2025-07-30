@@ -5,6 +5,8 @@
 ||| for string manipulation and formatting.
 module Data.LLVM.Class
 import Data.Walk
+
+
 ||| Interface for encoding values to a target monoid type.
 |||
 ||| The `Encode` interface allows converting LLVM IR data structures
