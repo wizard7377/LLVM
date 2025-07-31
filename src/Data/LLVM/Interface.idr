@@ -71,7 +71,7 @@ Endable (List a) a where
 export 
 Endable FunctionBody LOperation where 
     endWith acc s = let 
-        statement : LStatement = Discarded s 
+        statement : LStatement = Operation Trash s 
         in endWith acc statement
 
 public export 

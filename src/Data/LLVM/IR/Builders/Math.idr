@@ -30,7 +30,7 @@ icmp :
     (lhs : LExpr) ->
     (rhs : LExpr) ->
     LOperation
-icmp pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail [] Nothing [] Nothing ty (LConstE (LPtr (IntrinsicN "icmp"))) [MkWithType ty lhs, MkWithType ty rhs] []))
+icmp pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail [] Nothing [] Nothing (LInt 1) (LConstE (LPtr (IntrinsicN "icmp"))) [MkWithType ty lhs, MkWithType ty rhs] []))
 
 export
 ||| Create a floating point comparison operation.
@@ -42,8 +42,8 @@ fcmp :
     (lhs : LExpr) ->
     (rhs : LExpr) ->
     LOperation
-fcmp True {fastMath} pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail fastMath Nothing [] Nothing ty (LConstE (LPtr (IntrinsicN "fcmp.ord"))) [MkWithType ty lhs, MkWithType ty rhs] []))
-fcmp False {fastMath} pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail fastMath Nothing [] Nothing ty (LConstE (LPtr (IntrinsicN "fcmp.unord"))) [MkWithType ty lhs, MkWithType ty rhs] []))
+fcmp True {fastMath} pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail fastMath Nothing [] Nothing (LInt 1) (LConstE (LPtr (IntrinsicN "fcmp.ord"))) [MkWithType ty lhs, MkWithType ty rhs] []))
+fcmp False {fastMath} pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail fastMath Nothing [] Nothing (LInt 1) (LConstE (LPtr (IntrinsicN "fcmp.unord"))) [MkWithType ty lhs, MkWithType ty rhs] []))
 
 export
 ||| Create division operation (unsigned).

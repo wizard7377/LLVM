@@ -238,6 +238,8 @@ data Name : Type where
   IntrinsicN : String -> Name
   ||| User-defined custom name type
   CustomN : String -> Name
+  ||| Trash register, for operations that don't assign
+  Trash : Name
 
 ||| LLVM type system representation.
 |||

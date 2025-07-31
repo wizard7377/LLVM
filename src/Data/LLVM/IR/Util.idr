@@ -15,5 +15,5 @@ implementation LBlock (Maybe Name -> List LStatement) where
 
 export
 implementation LBlock (List LStatement, LOperation) where 
-    resolve (Nothing) (stmt, op) = stmt ++ [Discarded op]
-    resolve (Just n) (stmt, op) = stmt ++ [Targeted n op]
+    resolve (Nothing) (stmt, op) = stmt ++ [Operation Trash op]
+    resolve (Just n) (stmt, op) = stmt ++ [Operation n op]

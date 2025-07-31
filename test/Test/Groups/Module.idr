@@ -6,6 +6,7 @@ import Data.LLVM
 import Data.LLVM.IR
 import Data.LLVM.Write
 import Data.LLVM.Class
+import Data.LLVM.IR.Builders.Math
 import Test.Helper
 
 
@@ -28,12 +29,12 @@ moduleWithGlobals = MkLModule {
         -- Global integer variable
         GlobalDefC $ MkGVarDef {
             name = "global_counter",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
+            symbolInfo = MkSymbolInfo (Just Internal) Nothing (Just Default) Nothing,
             threadLocality = Nothing,
             addressInfo = Nothing,
             addressSpace = Nothing,
             externallyInitialized = Nothing,
-            isConst = False,
+            isConst = True,
             gtpe = LInt 32,
             initializer = Just (LInt 42),
             tags = []
@@ -85,8 +86,8 @@ moduleWithSimpleFunction = MkLModule {
             metadata = [],
             body = MkFunctionBody [
                 Labelled "entry",
-                Targeted (Local "result") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "a"))) (LConstE (LPtr (Local "b")))),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
+                Operation (Local "result") (BinaryOp Add (LInt 32) (LVar (Local "a")) (LVar (Local "b"))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LVar (Local "result"))))
             ],
             tags = []
         }
@@ -125,13 +126,13 @@ moduleWithOperations = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Multiply x and y
-                Targeted (Local "mul_result") (BinaryOp Mul (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LPtr (Local "y")))),
+                Operation (Local "mul_result") (BinaryOp Mul (LInt 32) (LVar (Local "x")) (LVar (Local "y"))),
                 -- Add 10 to the result
-                Targeted (Local "add_result") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "mul_result"))) (LConstE (LInt 10))),
+                Operation (Local "add_result") (BinaryOp Add (LInt 32) (LVar (Local "mul_result")) (LConstE (LInt 10))),
                 -- Shift left by 1
-                Targeted (Local "shift_result") (BinaryOp Shl (LInt 32) (LConstE (LPtr (Local "add_result"))) (LConstE (LInt 1))),
+                Operation (Local "shift_result") (BinaryOp Shl (LInt 32) (LVar (Local "add_result")) (LConstE (LInt 1))),
                 -- Return the final result
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "shift_result")))))
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LVar (Local "shift_result"))))
             ],
             tags = []
         }
@@ -184,15 +185,17 @@ completeModule = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Allocate local variable
-                Targeted (Local "local_var") (MemoryOp (Alloc (LInt 32) Nothing Nothing Nothing)),
+                Operation (Local "local_var") (MemoryOp (Alloc (LInt 32) Nothing Nothing Nothing)),
                 -- Call helper function
-                Targeted (Local "call_result") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing (LFun (LInt 32) [LInt 32, LInt 32]) (LConstE (LPtr (Global "helper_function"))) [MkWithType (LInt 32) (LConstE (LInt 5)), MkWithType (LInt 32) (LConstE (LInt 10))] []))),
+                Operation (Local "call_result") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing (LFun (LInt 32) [LInt 32, LInt 32]) (LConstE (LPtr (Global "helper_function"))) [MkWithType (LInt 32) (LConstE (LInt 5)), MkWithType (LInt 32) (LConstE (LInt 10))] []))),
+                -- Compare i32 result with 0 to produce i1 for conditional branch
+                Operation (Local "cond") (icmp CEq (LInt 32) (LVar (Local "call_result")) (LConstE (LInt 0))),
                 -- Conditional branch based on result
-                Discarded (TerminatorOp (CondBr (LConstE (LPtr (Local "call_result"))) (LConstE (LPtr (Local "success_block"))) (LConstE (LPtr (Local "failure_block"))))),
+                Operation Trash (TerminatorOp (CondBr (LVar (Local "cond")) (LVar (Local "success_block")) (LVar (Local "failure_block")))),
                 Labelled "success_block",
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LInt 0)))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LInt 0)))),
                 Labelled "failure_block",
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LInt 1))))
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LInt 1))))
             ],
             tags = []
         },
@@ -222,13 +225,13 @@ completeModule = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Perform various operations
-                Targeted (Local "sum") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "a"))) (LConstE (LPtr (Local "b")))),
-                Targeted (Local "diff") (BinaryOp Sub (LInt 32) (LConstE (LPtr (Local "a"))) (LConstE (LPtr (Local "b")))),
-                Targeted (Local "product") (BinaryOp Mul (LInt 32) (LConstE (LPtr (Local "sum"))) (LConstE (LPtr (Local "diff")))),
+                Operation (Local "sum") (BinaryOp Add (LInt 32) (LVar (Local "a")) (LVar (Local "b"))),
+                Operation (Local "diff") (BinaryOp Sub (LInt 32) (LVar (Local "a")) (LVar (Local "b"))),
+                Operation (Local "product") (BinaryOp Mul (LInt 32) (LVar (Local "sum")) (LVar (Local "diff"))),
                 -- Use aggregate operation
-                Targeted (Local "array_val") (AggregateOp (ExtractValue (MkWithType (LArray 5 (LInt 32)) (LConstE (LPtr (Global "data_array")))) 0)),
-                Targeted (Local "final_result") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "product"))) (LConstE (LPtr (Local "array_val")))),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "final_result")))))
+                Operation (Local "array_val") (AggregateOp (ExtractValue (MkWithType (LArray 5 (LInt 32)) (LConstE (LPtr (Global "data_array")))) 0)),
+                Operation (Local "final_result") (BinaryOp Add (LInt 32) (LVar (Local "product")) (LVar (Local "array_val"))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LVar (Local "final_result"))))
             ],
             tags = []
         },
@@ -294,6 +297,19 @@ moduleWithCallingConventions = MkLModule {
     dataLayout = Nothing,
     target = Nothing,
     text = [
+        -- Error format string
+        GlobalDefC $ MkGVarDef {
+            name = "error_format",
+            symbolInfo = MkSymbolInfo (Just Private) Nothing (Just Default) Nothing,
+            threadLocality = Nothing,
+            addressInfo = Nothing,
+            addressSpace = Nothing,
+            externallyInitialized = Nothing,
+            isConst = False,
+            gtpe = LArray 15 (LInt 8),
+            initializer = Just (LString "Error: %d\\0a\\00"),
+            tags = []
+        },
         -- Fast calling convention function
         FunctionDefC $ MkFunctionDef {
             name = "fast_function",
@@ -319,8 +335,8 @@ moduleWithCallingConventions = MkLModule {
             metadata = [],
             body = MkFunctionBody [
                 Labelled "entry",
-                Targeted (Local "result") (BinaryOp (FAdd []) (LFloating LFloat) (LConstE (LPtr (Local "x"))) (LConstE (LPtr (Local "y")))),
-                Discarded (TerminatorOp (Ret (LFloating LFloat) (LConstE (LPtr (Local "result")))))
+                Operation (Local "result") (BinaryOp (FAdd []) (LFloating LFloat) (LConstE (LPtr (Local "x"))) (LConstE (LPtr (Local "y")))),
+                Operation Trash (TerminatorOp (Ret (LFloating LFloat) (LConstE (LPtr (Local "result")))))
             ],
             tags = []
         },
@@ -347,11 +363,11 @@ moduleWithCallingConventions = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Call printf to report error
-                Targeted (Local "printf_result") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation (Local "printf_result") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun (LInt 32) [LPtr]) 
                     (LConstE (LPtr (Global "printf"))) 
                     [MkWithType LPtr (LConstE (LPtr (Global "error_format")))] []))),
-                Discarded (TerminatorOp RetVoid)
+                Operation Trash (TerminatorOp RetVoid)
             ],
             tags = []
         }
@@ -390,16 +406,16 @@ moduleWithVectors = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Extract element from first vector
-                Targeted (Local "elem1") (VectorOp (ExtractElement 
+                Operation (Local "elem1") (VectorOp (ExtractElement 
                     (MkWithType (LVector 4 (LInt 32)) (LConstE (LPtr (Local "vec1"))))
                     (MkWithType (LInt 32) (LConstE (LInt 0))))),
                 -- Insert element into second vector
-                Targeted (Local "modified_vec") (VectorOp (InsertElement 
+                Operation (Local "modified_vec") (VectorOp (InsertElement 
                     (MkWithType (LVector 4 (LInt 32)) (LConstE (LPtr (Local "vec2"))))
                     (MkWithType (LInt 32) (LConstE (LPtr (Local "elem1"))))
                     (MkWithType (LInt 32) (LConstE (LInt 1))))),
                 -- Shuffle vectors
-                Targeted (Local "shuffled") (VectorOp (ShuffleVector
+                Operation (Local "shuffled") (VectorOp (ShuffleVector
                     (MkWithType (LVector 4 (LInt 32)) (LConstE (LPtr (Local "vec1"))))
                     (MkWithType (LVector 4 (LInt 32)) (LConstE (LPtr (Local "modified_vec"))))
                     (MkWithType (LVector 4 (LInt 32)) (LConstE (LVector [
@@ -408,7 +424,7 @@ moduleWithVectors = MkLModule {
                         MkWithType (LInt 32) (LInt 2),
                         MkWithType (LInt 32) (LInt 7)
                     ]))))),
-                Discarded (TerminatorOp (Ret (LVector 4 (LInt 32)) (LConstE (LPtr (Local "shuffled")))))
+                Operation Trash (TerminatorOp (Ret (LVector 4 (LInt 32)) (LConstE (LPtr (Local "shuffled")))))
             ],
             tags = []
         }
@@ -443,29 +459,29 @@ moduleWithControlFlow = MkLModule {
             metadata = [],
             body = MkFunctionBody [
                 Labelled "entry",
-                -- Check if n <= 1 (simplified as subtraction)
-                Targeted (Local "cmp") (BinaryOp Sub (LInt 32) (LConstE (LPtr (Local "n"))) (LConstE (LInt 1))),
-                Discarded (TerminatorOp (CondBr (LConstE (LPtr (Local "cmp"))) (LConstE (LPtr (Local "base_case"))) (LConstE (LPtr (Local "recursive_case"))))),
+                -- Check if n <= 1 (use proper comparison)
+                Operation (Local "cmp") (icmp CSLe (LInt 32) (LVar (Local "n")) (LConstE (LInt 1))),
+                Operation Trash (TerminatorOp (CondBr (LVar (Local "cmp")) (LVar (Local "base_case")) (LVar (Local "recursive_case")))),
                 
                 Labelled "base_case",
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "n"))))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LVar (Local "n")))),
                 
                 Labelled "recursive_case",
                 -- Calculate fib(n-1)
-                Targeted (Local "n_minus_1") (BinaryOp Sub (LInt 32) (LConstE (LPtr (Local "n"))) (LConstE (LInt 1))),
-                Targeted (Local "fib_n_minus_1") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation (Local "n_minus_1") (BinaryOp Sub (LInt 32) (LVar (Local "n")) (LConstE (LInt 1))),
+                Operation (Local "fib_n_minus_1") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun (LInt 32) [LInt 32]) 
                     (LConstE (LPtr (Global "fibonacci"))) 
-                    [MkWithType (LInt 32) (LConstE (LPtr (Local "n_minus_1")))] []))),
+                    [MkWithType (LInt 32) (LVar (Local "n_minus_1"))] []))),
                 -- Calculate fib(n-2)
-                Targeted (Local "n_minus_2") (BinaryOp Sub (LInt 32) (LConstE (LPtr (Local "n"))) (LConstE (LInt 2))),
-                Targeted (Local "fib_n_minus_2") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation (Local "n_minus_2") (BinaryOp Sub (LInt 32) (LVar (Local "n")) (LConstE (LInt 2))),
+                Operation (Local "fib_n_minus_2") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun (LInt 32) [LInt 32]) 
                     (LConstE (LPtr (Global "fibonacci"))) 
-                    [MkWithType (LInt 32) (LConstE (LPtr (Local "n_minus_2")))] []))),
+                    [MkWithType (LInt 32) (LVar (Local "n_minus_2"))] []))),
                 -- Add results
-                Targeted (Local "result") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "fib_n_minus_1"))) (LConstE (LPtr (Local "fib_n_minus_2")))),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
+                Operation (Local "result") (BinaryOp Add (LInt 32) (LVar (Local "fib_n_minus_1")) (LVar (Local "fib_n_minus_2"))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LVar (Local "result"))))
             ],
             tags = []
         }
@@ -500,27 +516,27 @@ moduleWithSwitch = MkLModule {
             metadata = [],
             body = MkFunctionBody [
                 Labelled "entry",
-                Discarded (TerminatorOp (Switch (LInt 32) (LConstE (LPtr (Local "opcode"))) (Local "default") [
-                    MkCaseBranch (LInt 32) (LConstE (LInt 1)) (LConstE (LPtr (Local "case_add"))),
-                    MkCaseBranch (LInt 32) (LConstE (LInt 2)) (LConstE (LPtr (Local "case_sub"))),
-                    MkCaseBranch (LInt 32) (LConstE (LInt 3)) (LConstE (LPtr (Local "case_mul"))),
-                    MkCaseBranch (LInt 32) (LConstE (LInt 4)) (LConstE (LPtr (Local "case_div")))
+                Operation Trash (TerminatorOp (Switch (LInt 32) (LVar (Local "opcode")) (Local "default") [
+                    MkCaseBranch (LInt 32) (LConstE (LInt 1)) (LVar (Local "case_add")),
+                    MkCaseBranch (LInt 32) (LConstE (LInt 2)) (LVar (Local "case_sub")),
+                    MkCaseBranch (LInt 32) (LConstE (LInt 3)) (LVar (Local "case_mul")),
+                    MkCaseBranch (LInt 32) (LConstE (LInt 4)) (LVar (Local "case_div"))
                 ])),
                 
                 Labelled "case_add",
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LInt 100)))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LInt 100)))),
                 
                 Labelled "case_sub",
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LInt 200)))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LInt 200)))),
                 
                 Labelled "case_mul",
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LInt 300)))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LInt 300)))),
                 
                 Labelled "case_div",
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LInt 400)))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LInt 400)))),
                 
                 Labelled "default",
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LInt (-1)))))
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LInt (-1)))))
             ],
             tags = []
         }
@@ -569,19 +585,19 @@ moduleWithStructs = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Extract x coordinate
-                Targeted (Local "x") (AggregateOp (ExtractValue 
+                Operation (Local "x") (AggregateOp (ExtractValue 
                     (MkWithType (LStruct [LInt 32, LInt 32]) (LConstE (LPtr (Local "point")))) 0)),
                 -- Extract y coordinate
-                Targeted (Local "y") (AggregateOp (ExtractValue 
+                Operation (Local "y") (AggregateOp (ExtractValue 
                     (MkWithType (LStruct [LInt 32, LInt 32]) (LConstE (LPtr (Local "point")))) 1)),
                 -- Calculate sum
-                Targeted (Local "sum") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LPtr (Local "y")))),
+                Operation (Local "sum") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LPtr (Local "y")))),
                 -- Create new struct with modified values
-                Targeted (Local "new_point") (AggregateOp (InsertValue 
+                Operation (Local "new_point") (AggregateOp (InsertValue 
                     (MkWithType (LStruct [LInt 32, LInt 32]) (LConstE (LPtr (Local "point"))))
                     (MkWithType (LInt 32) (LConstE (LPtr (Local "sum"))))
                     0)),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "sum")))))
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "sum")))))
             ],
             tags = []
         }
@@ -617,8 +633,8 @@ moduleWithAliases = MkLModule {
             metadata = [],
             body = MkFunctionBody [
                 Labelled "entry",
-                Targeted (Local "result") (BinaryOp Mul (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LInt 2))),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
+                Operation (Local "result") (BinaryOp Mul (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LInt 2))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
             ],
             tags = []
         },
@@ -690,7 +706,7 @@ moduleWithExceptions = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Invoke that might throw
-                Targeted (Local "result") (TerminatorOp (Invoke (MkInvokeCall (Just C) [] Nothing 
+                Operation (Local "result") (TerminatorOp (Invoke (MkInvokeCall (Just C) [] Nothing 
                     (LFun (LInt 32) [LInt 32]) 
                     (LConstE (LPtr (Global "might_throw"))) 
                     [LConstE (LPtr (Local "x"))]
@@ -698,12 +714,12 @@ moduleWithExceptions = MkLModule {
                     (LConstE (LPtr (Local "exception")))))),
                 
                 Labelled "normal",
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result"))))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result"))))),
                 
                 Labelled "exception",
                 -- Landing pad for exception handling (simplified for demo)
-                Targeted (Local "landing_pad") (BinaryOp Add (LInt 32) (LConstE (LInt 0)) (LConstE (LInt 0))),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LInt (-1)))))
+                Operation (Local "landing_pad") (BinaryOp Add (LInt 32) (LConstE (LInt 0)) (LConstE (LInt 0))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LInt (-1)))))
             ],
             tags = []
         }
@@ -752,17 +768,17 @@ moduleWithAtomics = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Simple memory operations using MemoryOp variants
-                Targeted (Local "old_value") (MemoryOp (LoadRegular False (LInt 32)
+                Operation (Local "old_value") (MemoryOp (LoadRegular False (LInt 32)
                     (LConstE (LPtr (Global "atomic_counter")))
                     Nothing False False False False Nothing Nothing Nothing False)),
                 -- Store atomic value
-                Discarded (MemoryOp (StoreRegular False
+                Operation Trash (MemoryOp (StoreRegular False
                     (MkWithType (LInt 32) (LConstE (LPtr (Local "value"))))
                     (LConstE (LPtr (Global "atomic_counter")))
                     Nothing False False)),
                 -- Memory fence
-                Discarded (MemoryOp (Fence Nothing (Just SequentiallyConsistent))),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "old_value")))))
+                Operation Trash (MemoryOp (Fence Nothing (Just SequentiallyConsistent))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "old_value")))))
             ],
             tags = []
         }
@@ -801,8 +817,8 @@ moduleWithInlineAssembly = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Inline assembly to add two numbers (simplified for demo)
-                Targeted (Local "result") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "a"))) (LConstE (LPtr (Local "b")))),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
+                Operation (Local "result") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "a"))) (LConstE (LPtr (Local "b")))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
             ],
             tags = []
         }
@@ -837,18 +853,25 @@ moduleWithDebugInfo = MkLModule {
             metadata = [],
             body = MkFunctionBody [
                 Labelled "entry",
-                -- Add debug location
-                Targeted (Local "local_var") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "param"))) (LConstE (LInt 1))),
-                -- Call debug intrinsic
-                Discarded (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                -- Allocate local variable
+                Operation (Local "local_var_ptr") (MemoryOp (Alloc (LInt 32) Nothing Nothing Nothing)),
+                -- Calculate the value
+                Operation (Local "local_var") (BinaryOp Add (LInt 32) (LVar (Local "param")) (LConstE (LInt 1))),
+                -- Store the value
+                Operation Trash (MemoryOp (StoreRegular False 
+                    (MkWithType (LInt 32) (LVar (Local "local_var")))
+                    (LVar (Local "local_var_ptr"))
+                    Nothing False False)),
+                -- Call debug intrinsic with pointer
+                Operation Trash (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LVoid [LPtr, LPtr, LPtr]) 
                     (LConstE (LPtr (Global "llvm.dbg.declare"))) 
                     [
-                        MkWithType LPtr (LConstE (LPtr (Local "local_var"))),
+                        MkWithType LPtr (LVar (Local "local_var_ptr")),
                         MkWithType LPtr (LConstE LNull),
                         MkWithType LPtr (LConstE LNull)
                     ] []))),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "local_var")))))
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LVar (Local "local_var"))))
             ],
             tags = []
         }
@@ -906,7 +929,7 @@ moduleWithComplexTypes = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Get element pointer using a simpler approach
-                Targeted (Local "nested_ptr") (AggregateOp (ExtractValue
+                Operation (Local "nested_ptr") (AggregateOp (ExtractValue
                     (MkWithType (LStruct [
                         LInt 8,  -- flags
                         LPackedStruct [LInt 16, LInt 16],  -- packed coordinates
@@ -918,14 +941,14 @@ moduleWithComplexTypes = MkLModule {
                         ]
                     ]) (LConstE (LPtr (Local "complex_ptr")))) 3)),
                 -- Extract vector from nested struct
-                Targeted (Local "vector_ptr") (AggregateOp (ExtractValue
+                Operation (Local "vector_ptr") (AggregateOp (ExtractValue
                     (MkWithType (LStruct [LPtr, LVector 4 (LInt 32), LFun LVoid [LInt 32]]) 
                      (LConstE (LPtr (Local "nested_ptr")))) 1)),
                 -- Load the vector using simple load
-                Targeted (Local "vector") (MemoryOp (LoadRegular False (LVector 4 (LInt 32))
+                Operation (Local "vector") (MemoryOp (LoadRegular False (LVector 4 (LInt 32))
                     (LConstE (LPtr (Local "vector_ptr")))
                     Nothing False False False False Nothing Nothing Nothing False)),
-                Discarded (TerminatorOp RetVoid)
+                Operation Trash (TerminatorOp RetVoid)
             ],
             tags = []
         }
@@ -965,7 +988,7 @@ moduleWithAttributes = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Memory copy with attributes
-                Discarded (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation Trash (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LVoid [LPtr, LPtr, LInt 32]) 
                     (LConstE (LPtr (Global "llvm.memcpy.p0i8.p0i8.i32"))) 
                     [
@@ -973,7 +996,7 @@ moduleWithAttributes = MkLModule {
                         MkWithType LPtr (LConstE (LPtr (Local "input"))),
                         MkWithType (LInt 32) (LConstE (LPtr (Local "size")))
                     ] []))),
-                Discarded (TerminatorOp (Ret LPtr (LConstE (LPtr (Local "output")))))
+                Operation Trash (TerminatorOp (Ret LPtr (LConstE (LPtr (Local "output")))))
             ],
             tags = []
         }
@@ -1023,22 +1046,22 @@ moduleWithEdgeCases = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Division by potentially zero value
-                Targeted (Local "div_result") (BinaryOp SDiv (LInt 32) (LConstE (LInt 100)) (LConstE (LPtr (Local "input")))),
-                -- Check for overflow (simplified as subtraction)
-                Targeted (Local "overflow_check") (BinaryOp Sub (LInt 32) (LConstE (LPtr (Local "input"))) (LConstE (LInt 0))),
-                Discarded (TerminatorOp (CondBr (LConstE (LPtr (Local "overflow_check"))) (LConstE (LPtr (Local "error"))) (LConstE (LPtr (Local "normal"))))),
+                Operation (Local "div_result") (BinaryOp SDiv (LInt 32) (LConstE (LInt 100)) (LVar (Local "input"))),
+                -- Check for overflow (proper comparison)
+                Operation (Local "overflow_check") (icmp CNe (LInt 32) (LVar (Local "input")) (LConstE (LInt 0))),
+                Operation Trash (TerminatorOp (CondBr (LVar (Local "overflow_check")) (LConstE (LPtr (Local "error"))) (LConstE (LPtr (Local "normal"))))),
                 
                 Labelled "error",
                 -- Unreachable after error
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LInt (-1))))),
-                Discarded (TerminatorOp Unreachable),  -- This should never be reached
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LInt (-1))))),
+                Operation Trash (TerminatorOp Unreachable),  -- This should never be reached
                 
                 Labelled "normal",
                 -- Phi node with single predecessor (edge case)
-                Targeted (Local "phi_result") (MiscOp (Phi (LInt 32) [
+                Operation (Local "phi_result") (MiscOp (Phi (LInt 32) [
                     (LConstE (LPtr (Local "div_result")), LConstE (LPtr (Local "entry")))
                 ])),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "phi_result")))))
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "phi_result")))))
             ],
             tags = []
         }
@@ -1103,30 +1126,30 @@ moduleWithMemoryManagement = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Convert size to 64-bit for malloc
-                Targeted (Local "size64") (ConversionOp ZExt (MkWithType (LInt 32) (LConstE (LPtr (Local "size")))) (LInt 64)),
+                Operation (Local "size64") (ConversionOp ZExt (MkWithType (LInt 32) (LVar (Local "size"))) (LInt 64)),
                 -- Allocate memory
-                Targeted (Local "ptr") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation (Local "ptr") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LPtr [LInt 64]) 
                     (LConstE (LPtr (Global "malloc"))) 
-                    [MkWithType (LInt 64) (LConstE (LPtr (Local "size64")))] []))),
-                -- Check if allocation succeeded (simplified as add)
-                Targeted (Local "is_null") (BinaryOp Add LPtr (LConstE (LPtr (Local "ptr"))) (LConstE LNull)),
-                Discarded (TerminatorOp (CondBr (LConstE (LPtr (Local "is_null"))) (LConstE (LPtr (Local "alloc_failed"))) (LConstE (LPtr (Local "alloc_success"))))),
+                    [MkWithType (LInt 64) (LVar (Local "size64"))] []))),
+                -- Check if allocation succeeded (proper pointer comparison)
+                Operation (Local "is_null") (icmp CEq LPtr (LVar (Local "ptr")) (LConstE LNull)),
+                Operation Trash (TerminatorOp (CondBr (LVar (Local "is_null")) (LConstE (LPtr (Local "alloc_failed"))) (LConstE (LPtr (Local "alloc_success"))))),
                 
                 Labelled "alloc_failed",
-                Discarded (TerminatorOp (Ret LPtr (LConstE LNull))),
+                Operation Trash (TerminatorOp (Ret LPtr (LConstE LNull))),
                 
                 Labelled "alloc_success",
                 -- Initialize allocated memory to zero
-                Discarded (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation Trash (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LVoid [LPtr, LInt 8, LInt 64]) 
                     (LConstE (LPtr (Global "llvm.memset.p0i8.i64"))) 
                     [
-                        MkWithType LPtr (LConstE (LPtr (Local "ptr"))),
+                        MkWithType LPtr (LVar (Local "ptr")),
                         MkWithType (LInt 8) (LConstE (LInt 0)),
-                        MkWithType (LInt 64) (LConstE (LPtr (Local "size64")))
+                        MkWithType (LInt 64) (LVar (Local "size64"))
                     ] []))),
-                Discarded (TerminatorOp (Ret LPtr (LConstE (LPtr (Local "ptr")))))
+                Operation Trash (TerminatorOp (Ret LPtr (LVar (Local "ptr"))))
             ],
             tags = []
         }
@@ -1165,17 +1188,17 @@ moduleWithIntrinsics = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Call sqrt intrinsic
-                Targeted (Local "sqrt_x") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation (Local "sqrt_x") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun (LFloating LDouble) [LFloating LDouble]) 
                     (LConstE (LPtr (Global "llvm.sqrt.f64"))) 
                     [MkWithType (LFloating LDouble) (LConstE (LPtr (Local "x")))] []))),
                 -- Call sin intrinsic
-                Targeted (Local "sin_y") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation (Local "sin_y") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun (LFloating LDouble) [LFloating LDouble]) 
                     (LConstE (LPtr (Global "llvm.sin.f64"))) 
                     [MkWithType (LFloating LDouble) (LConstE (LPtr (Local "y")))] []))),
                 -- Call fma (fused multiply-add) intrinsic
-                Targeted (Local "fma_result") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation (Local "fma_result") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun (LFloating LDouble) [LFloating LDouble, LFloating LDouble, LFloating LDouble]) 
                     (LConstE (LPtr (Global "llvm.fma.f64"))) 
                     [
@@ -1184,16 +1207,16 @@ moduleWithIntrinsics = MkLModule {
                         MkWithType (LFloating LDouble) (LConstE (LFloat "1.0"))
                     ] []))),
                 -- Check for NaN using intrinsic
-                Targeted (Local "is_nan") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation (Local "is_nan") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun (LInt 1) [LFloating LDouble]) 
                     (LConstE (LPtr (Global "llvm.isnan.f64"))) 
                     [MkWithType (LFloating LDouble) (LConstE (LPtr (Local "fma_result")))] []))),
                 -- Select result based on NaN check
-                Targeted (Local "final_result") (MiscOp (Select [] 
+                Operation (Local "final_result") (MiscOp (Select [] 
                     (MkWithType (LInt 1) (LConstE (LPtr (Local "is_nan"))))
                     (MkWithType (LFloating LDouble) (LConstE (LFloat "0.0"))) 
                     (MkWithType (LFloating LDouble) (LConstE (LPtr (Local "fma_result")))))),
-                Discarded (TerminatorOp (Ret (LFloating LDouble) (LConstE (LPtr (Local "final_result")))))
+                Operation Trash (TerminatorOp (Ret (LFloating LDouble) (LConstE (LPtr (Local "final_result")))))
             ],
             tags = []
         }
@@ -1229,7 +1252,7 @@ moduleWithGC = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- GC root declaration
-                Discarded (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation Trash (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LVoid [LPtr, LPtr]) 
                     (LConstE (LPtr (Global "llvm.gcroot"))) 
                     [
@@ -1237,15 +1260,15 @@ moduleWithGC = MkLModule {
                         MkWithType LPtr (LConstE LNull)
                     ] []))),
                 -- Potential GC safepoint
-                Discarded (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation Trash (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LVoid []) 
                     (LConstE (LPtr (Global "llvm.experimental.gc.statepoint.p0f_isVoidf"))) 
                     [] []))),
                 -- Read from GC pointer
-                Targeted (Local "value") (MemoryOp (LoadRegular False LPtr
+                Operation (Local "value") (MemoryOp (LoadRegular False LPtr
                     (LConstE (LPtr (Local "root")))
                     Nothing False False False False Nothing Nothing Nothing False)),
-                Discarded (TerminatorOp (Ret LPtr (LConstE (LPtr (Local "value")))))
+                Operation Trash (TerminatorOp (Ret LPtr (LConstE (LPtr (Local "value")))))
             ],
             tags = []
         }
@@ -1320,11 +1343,11 @@ moduleWithConstants = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Initialize global state
-                Discarded (MemoryOp (StoreRegular False
+                Operation Trash (MemoryOp (StoreRegular False
                     (MkWithType (LInt 32) (LConstE (LInt 42)))
                     (LConstE (LPtr (Global "initialized_value")))
                     Nothing False False)),
-                Discarded (TerminatorOp RetVoid)
+                Operation Trash (TerminatorOp RetVoid)
             ],
             tags = []
         },
@@ -1350,11 +1373,11 @@ moduleWithConstants = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Cleanup global state
-                Discarded (MemoryOp (StoreRegular False
+                Operation Trash (MemoryOp (StoreRegular False
                     (MkWithType (LInt 32) (LConstE (LInt 0)))
                     (LConstE (LPtr (Global "initialized_value")))
                     Nothing False False)),
-                Discarded (TerminatorOp RetVoid)
+                Operation Trash (TerminatorOp RetVoid)
             ],
             tags = []
         },
@@ -1415,10 +1438,10 @@ moduleWithComdats = MkLModule {
             metadata = [],
             body = MkFunctionBody [
                 Labelled "entry",
-                Targeted (Local "value") (MemoryOp (LoadRegular False (LInt 32)
+                Operation (Local "value") (MemoryOp (LoadRegular False (LInt 32)
                     (LConstE (LPtr (Global "weak_global")))
                     Nothing False False False False Nothing Nothing Nothing False)),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "value")))))
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "value")))))
             ],
             tags = []
         },
@@ -1445,12 +1468,12 @@ moduleWithComdats = MkLModule {
             body = MkFunctionBody [
                 Labelled "entry",
                 -- Template-like operation
-                Targeted (Local "result") (BinaryOp Mul (LInt 32) (LConstE (LPtr (Local "param"))) (LConstE (LPtr (Local "param")))),
-                Discarded (MemoryOp (StoreRegular False
+                Operation (Local "result") (BinaryOp Mul (LInt 32) (LConstE (LPtr (Local "param"))) (LConstE (LPtr (Local "param")))),
+                Operation Trash (MemoryOp (StoreRegular False
                     (MkWithType (LInt 32) (LConstE (LPtr (Local "result"))))
                     (LConstE (LPtr (Global "weak_global")))
                     Nothing False False)),
-                Discarded (TerminatorOp RetVoid)
+                Operation Trash (TerminatorOp RetVoid)
             ],
             tags = []
         }
@@ -1486,8 +1509,8 @@ moduleStressTest = MkLModule {
             metadata = [],
             body = MkFunctionBody [
                 Labelled "entry",
-                Targeted (Local "result") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LInt 1))),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
+                Operation (Local "result") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LInt 1))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
             ],
             tags = []
         },
@@ -1512,8 +1535,8 @@ moduleStressTest = MkLModule {
             metadata = [],
             body = MkFunctionBody [
                 Labelled "entry",
-                Targeted (Local "result") (BinaryOp Mul (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LInt 2))),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
+                Operation (Local "result") (BinaryOp Mul (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LInt 2))),
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
             ],
             tags = []
         },
@@ -1539,33 +1562,33 @@ moduleStressTest = MkLModule {
             metadata = [],
             body = MkFunctionBody [
                 Labelled "entry",
-                Targeted (Local "cmp1") (BinaryOp Sub (LInt 32) (LConstE (LPtr (Local "depth"))) (LConstE (LInt 0))),
-                Discarded (TerminatorOp (CondBr (LConstE (LPtr (Local "cmp1"))) (LConstE (LPtr (Local "level1"))) (LConstE (LPtr (Local "base"))))),
+                Operation (Local "cmp1") (icmp CSGt (LInt 32) (LVar (Local "depth")) (LConstE (LInt 0))),
+                Operation Trash (TerminatorOp (CondBr (LVar (Local "cmp1")) (LConstE (LPtr (Local "level1"))) (LConstE (LPtr (Local "base"))))),
                 
                 Labelled "level1",
-                Targeted (Local "cmp2") (BinaryOp Sub (LInt 32) (LConstE (LPtr (Local "depth"))) (LConstE (LInt 1))),
-                Discarded (TerminatorOp (CondBr (LConstE (LPtr (Local "cmp2"))) (LConstE (LPtr (Local "level2"))) (LConstE (LPtr (Local "base"))))),
+                Operation (Local "cmp2") (icmp CSGt (LInt 32) (LVar (Local "depth")) (LConstE (LInt 1))),
+                Operation Trash (TerminatorOp (CondBr (LVar (Local "cmp2")) (LConstE (LPtr (Local "level2"))) (LConstE (LPtr (Local "base"))))),
                 
                 Labelled "level2",
-                Targeted (Local "cmp3") (BinaryOp Sub (LInt 32) (LConstE (LPtr (Local "depth"))) (LConstE (LInt 2))),
-                Discarded (TerminatorOp (CondBr (LConstE (LPtr (Local "cmp3"))) (LConstE (LPtr (Local "level3"))) (LConstE (LPtr (Local "base"))))),
+                Operation (Local "cmp3") (icmp CSGt (LInt 32) (LVar (Local "depth")) (LConstE (LInt 2))),
+                Operation Trash (TerminatorOp (CondBr (LVar (Local "cmp3")) (LConstE (LPtr (Local "level3"))) (LConstE (LPtr (Local "base"))))),
                 
                 Labelled "level3",
-                Targeted (Local "sub") (BinaryOp Sub (LInt 32) (LConstE (LPtr (Local "depth"))) (LConstE (LInt 1))),
-                Targeted (Local "recursive") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                Operation (Local "sub") (BinaryOp Sub (LInt 32) (LVar (Local "depth")) (LConstE (LInt 1))),
+                Operation (Local "recursive") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun (LInt 32) [LInt 32]) 
                     (LConstE (LPtr (Global "deeply_nested"))) 
-                    [MkWithType (LInt 32) (LConstE (LPtr (Local "sub")))] []))),
-                Discarded (TerminatorOp (JumpBr (LConstE (LPtr (Local "base"))))),
+                    [MkWithType (LInt 32) (LVar (Local "sub"))] []))),
+                Operation Trash (TerminatorOp (JumpBr (LConstE (LPtr (Local "base"))))),
                 
                 Labelled "base",
-                Targeted (Local "phi") (MiscOp (Phi (LInt 32) [
+                Operation (Local "phi") (MiscOp (Phi (LInt 32) [
                     (LConstE (LInt 0), LConstE (LPtr (Local "entry"))),
                     (LConstE (LInt 1), LConstE (LPtr (Local "level1"))),
                     (LConstE (LInt 2), LConstE (LPtr (Local "level2"))),
-                    (LConstE (LPtr (Local "recursive")), LConstE (LPtr (Local "level3")))
+                    (LVar (Local "recursive"), LConstE (LPtr (Local "level3")))
                 ])),
-                Discarded (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "phi")))))
+                Operation Trash (TerminatorOp (Ret (LInt 32) (LVar (Local "phi"))))
             ],
             tags = []
         }

@@ -1,5 +1,6 @@
 module Data.Walk 
 
+import Control.Monad.Identity 
 public export 
 interface Walk from to where 
     %globalhint
@@ -23,6 +24,12 @@ Functor f => Walk a b => Walk (f a) (f b) where
 export 
 Applicative f => Walk a (f a) where 
   go = pure
+
+public export 
+Walk a (Identity a) where 
+  go = Id
+Walk (Identity a) a where 
+  go (Id x) = x
 public export 
 infixr 0 $$
 public export 

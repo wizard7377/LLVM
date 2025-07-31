@@ -6,6 +6,7 @@
 module Data.LLVM.Class
 import Data.Walk
 
+import public Control.Monad.Identity
 
 ||| Interface for encoding values to a target monoid type.
 |||
@@ -16,18 +17,20 @@ import Data.Walk
 ||| @ a The source type to encode
 ||| @ b The target monoid type (usually VString)
 public export
-interface Monoid b => Encode a b where
+interface Monad m => Monoid b => Encode (m : Type -> Type) (a : Type) (b : Type) where
     ||| Convert a value to its encoded representation
-    encode : a -> b
+    encode : a -> m b
 
-interface Translate a b where 
-    translate : a -> b
+
 ||| Value string wrapper for LLVM IR string output.
 |||
 ||| A newtype wrapper around String that provides specialized
 ||| monoid operations for building LLVM IR text with proper spacing.
 public export
 data VString = MkVString String 
+
+unVString : VString -> String
+unVString (MkVString s) = s
 --public export 
 --Show VString where
 --    show (MkVString s) = s
@@ -36,15 +39,19 @@ public export
 Walk String VString where
     go s = MkVString s
 
+public export 
+Walk VString String where
+    go (MkVString s) = s
 ||| Show implementation for encodable types
 |||
 ||| Provides a Show instance for any type that can be encoded to VString,
 ||| allowing easy conversion of LLVM IR types to readable strings.
 export
-[showEncode] Encode a VString => Show a where 
+[showEncode] {a : Type} -> Encode Identity a VString => Show a where 
     show s = let 
-        (MkVString r) = encode s
-        in go r
+        r = runIdentity $ encode s
+        in unVString r
+
 
 
 ||| Global hint for string literal conversion
@@ -103,19 +110,20 @@ public export
 writeIf : Monoid b => (a -> b) -> Maybe a -> b
 writeIf _ Nothing = neutral
 writeIf f (Just x) = f x
-
+{- 
 ||| Conditionally encode a Maybe value.
 |||
 ||| Convenience function that applies encoding only if the value is present.
 public export
-encodeIf : Encode a b => Maybe a -> b
-encodeIf = writeIf encode 
+encodeIf : Encode Identity a b => Maybe a -> b
+encodeIf x = writeIf <$> encode x
 
 ||| Conditionally encode a Maybe value to VString.
 |||
 ||| Type-specialized version of encodeIf for VString output.
-encodeIf' : Encode a VString => Maybe a -> VString
-encodeIf' = writeIf encode 
+encodeIf' : Encode Identity a VString => Maybe a -> VString
+encodeIf' x = writeIf <$> encode x
+-}
 ||| Add a prefix to a monoid value.
 |||
 ||| Returns a function that prepends the given prefix to its argument.
@@ -134,13 +142,13 @@ public export
 suffixed : Monoid m => m -> (m -> m)
 suffixed s f = f <+> s
 
-||| Encode Maybe values by encoding Just values and ignoring Nothing.
+||| Encode Identity Maybe values by encoding Just values and ignoring Nothing.
 |||
 ||| This instance allows Maybe types to be encoded directly, where
 ||| Nothing becomes the neutral element and Just x becomes encode x.
 public export
-Encode a b => Encode (Maybe a) b where 
-    encode Nothing = neutral
+{a, b : Type} -> Encode Identity a b => Encode Identity (Maybe a) b where 
+    encode Nothing = pure neutral
     encode (Just x) = encode x
 
 ||| Join a list of encodable values with a separator.
@@ -150,12 +158,12 @@ Encode a b => Encode (Maybe a) b where
 ||| @ sep The separator string to use between elements
 ||| @ vs The list of values to encode and join
 public export
-seperated : Encode a VString => VString -> List a -> VString
-seperated sep vs = intercalate sep (map encode vs)
+seperated : {a : Type} -> Encode Identity a VString => VString -> List a -> Identity VString
+seperated sep vs = pure $ intercalate sep (map (runIdentity . encode) vs)
 ||| Join a list of encodable values with space separation
 public export
-spaced : Encode a VString => List a -> VString
-spaced vs = intercalate " " (map encode vs)
+spaced : {a : Type} -> Encode Identity a VString => List a -> Identity VString
+spaced vs = pure $ intercalate " " (map (runIdentity . encode) vs)
 
 ||| Join a list of VString values with space separation
 public export 
@@ -166,53 +174,53 @@ spaced' vs = intercalate " " vs
 |||
 ||| Any monoid can be encoded as itself, providing a trivial encoding.
 public export
-Monoid a => Encode a a where 
-    encode = id
+{a : Type} -> Monoid a => Encode Identity a a where 
+    encode x = pure x
 
-||| Encode lists with comma separation (named instance)
+||| Encode Identity lists with comma separation (named instance)
 |||
 ||| Provides comma-separated encoding of lists, useful for function arguments
 ||| and other comma-delimited LLVM IR constructs.
 public export
-[each] Encode a VString => Encode (List a) VString where 
-    encode [] = ""
-    encode xs = intercalate ", " (map encode xs)
+[each] {a : Type} -> Encode Identity a VString => Encode Identity (List a) VString where 
+    encode [] = pure ""
+    encode xs = pure $ intercalate ", " (map (runIdentity . encode) xs)
 
-||| Encode lists with no separation (named instance)
+||| Encode Identity lists with no separation (named instance)
 |||
 ||| Concatenates list elements without any separator.
 public export
-[nosep] Encode a VString => Encode (List a) VString where 
-    encode [] = ""
-    encode xs = intercalate "" (map encode xs)
+[nosep] {a : Type} -> Encode Identity a VString => Encode Identity (List a) VString where 
+    encode [] = pure ""
+    encode xs = pure $ intercalate "" (map (runIdentity . encode) xs)
 
 public export
-[spacing] Encode a VString => Encode (List a) VString where 
-    encode [] = ""
-    encode xs = intercalate " " (map encode xs)
-||| Encode lists with newline separation (named instance)
+[spacing] {a : Type} -> Encode Identity a VString => Encode Identity (List a) VString where 
+    encode [] = pure ""
+    encode xs = pure $ intercalate " " (map (runIdentity . encode) xs)
+||| Encode Identity lists with newline separation (named instance)
 |||
 ||| Each list element appears on its own line.
 public export
-[lined] Encode a VString => Encode (List a) VString where 
-    encode [] = ""
-    encode xs = intercalate "\n" (map encode xs)
+[lined] {a : Type} -> Encode Identity a VString => Encode Identity (List a) VString where 
+    encode [] = pure ""
+    encode xs = pure $ intercalate "\n" (map (runIdentity . encode) xs)
 
-||| Encode lists with newline and tab separation (named instance)
+||| Encode Identity lists with newline and tab separation (named instance)
 |||
 ||| Each list element appears on its own line, indented with a tab.
 public export 
-[tabbed] Encode a VString => Encode (List a) VString where 
-    encode [] = ""
-    encode xs = intercalate "\n\t" (map encode xs)
+[tabbed] {a : Type} -> Encode Identity a VString => Encode Identity (List a) VString where 
+    encode [] = pure ""
+    encode xs = pure $ intercalate "\n\t" (map (runIdentity . encode) xs)
 
-||| Encode Maybe values, ignoring Nothing (named instance)
+||| Encode Identity Maybe values, ignoring Nothing (named instance)
 |||
 ||| Alternative Maybe encoding that produces empty string for Nothing
 ||| instead of using the neutral element.
 public export
-[just] Encode a VString => Encode (Maybe a) VString where 
-    encode Nothing = ""
+[just] {a : Type} -> Encode Identity a VString => Encode Identity (Maybe a) VString where 
+    encode Nothing = pure ""
     encode (Just x) = encode x
 
 ||| Convert Show instances to VString
@@ -227,41 +235,31 @@ vshow x = go (show x)
 |||
 ||| Direct encoding of strings to VString via go.
 public export 
-Encode String VString where
-    encode s = go s
+Encode Identity String VString where
+    encode s = pure (go s)
 
 ||| Type-specialized encoding function
 |||
 ||| Convenience function with explicit VString return type.
 public export
-encode' : Encode a VString => a -> VString
+encode' : {a : Type} -> Encode Identity a VString => a -> Identity VString
 encode' = encode
-
+{- 
 ||| Convert VString back to String
 public export
 Walk VString String where
     go (MkVString s) = s
-
+-}
 ||| Convert String to VString (redundant with go)
 public export
 toVString : String -> VString
 toVString s = MkVString s
 
-||| Composition of Encode instances
-|||
-||| Allows chaining of encodings: if a can be encoded to b and b to c,
-||| then a can be encoded directly to c.
-%defaulthint
-public export
-Encode a b => Encode b c => Encode a c where
-    encode x = let 
-        r0 : b = encode x
-        in encode r0
-
-||| Encode natural numbers using vshow
+||| Encode Identity natural numbers using vshow
 public export 
-Encode Nat VString where
-    encode n = vshow n
+Encode Identity Nat VString where
+    encode n = pure (vshow n)
+
 
 ||| Show instance for VString
 |||
