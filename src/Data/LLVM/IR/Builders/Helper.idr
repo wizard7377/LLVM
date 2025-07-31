@@ -41,9 +41,9 @@ switch {cprefix} (MkWithType ty e) branches defaultCase target = let
 
     indexedBranches = indexed branches
     namedBranches = map (\(branch, idx) => (cprefix ++ show idx, branch)) indexedBranches
-    switchInstruction = Targeted target $ mkSwitch ty e (local $ cprefix ++ "DEFAULT") (map (\(labels, (pat, _)) => caseBranch ty pat $ LVar $ local labels) namedBranches)
-    -- Discarded 
-    jmpAfter = Discarded $ TerminatorOp $ JumpBr (LVar $ local $ cprefix ++ "AFTER")
+    switchInstruction = Operation target $ mkSwitch ty e (local $ cprefix ++ "DEFAULT") (map (\(labels, (pat, _)) => caseBranch ty pat $ LVar $ local labels) namedBranches)
+    -- Operation Trash 
+    jmpAfter = Operation Trash $ TerminatorOp $ JumpBr (LVar $ local $ cprefix ++ "AFTER")
     -- Branhces
     branchesWithLabels : List _ = concat $ map (\(labels, (pat, stmts)) => ([Labelled labels] ++ stmts ++ [jmpAfter])) namedBranches
     defaultWithLabel = [Labelled (cprefix ++ "DEFAULT")] ++ defaultCase ++ [jmpAfter]

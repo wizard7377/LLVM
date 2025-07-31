@@ -9,10 +9,16 @@ import Data.LLVM.Builders
 import Data.LLVM.Program
 import System.Escape
 import Data.LLVM.Core
+import Control.Monad.Identity
+import Control.ANSI
+showGreen : String -> String
+showGreen str = show $ colored Green str
+showRed : String -> String
+showRed str = show $ colored Red str
 public export
-debugTest : Encode a VString => String -> a -> IO ()
+debugTest : {a : Type} -> Encode Identity a VString => String -> a -> IO ()
 debugTest name value = do
-    let str : VString = encode value
+    let str : VString = runIdentity (encode value)
     let result = show str
     putStrLn $ "\n\nRunning test:\n=============\n" ++ name
     putStrLn $ "Value:\n=============\n\n" ++ result
@@ -22,9 +28,9 @@ public export
 removeSpaces : String -> String
 removeSpaces = pack . (filter (not . isSpace)) . unpack
 public export
-debugFileTest : Encode a VString => String -> a -> IO ()
+debugFileTest : {a : Type} -> Encode Identity a VString => String -> a -> IO ()
 debugFileTest file value = do
-    let str : VString = encode value
+    let str : VString = runIdentity (encode value)
     let result = show str
     _ <- writeFile ("generated/" ++ (removeSpaces file) ++ ".ll") result
     putStrLn $ "Test output written to " ++ file
@@ -36,8 +42,8 @@ debugCompile file value = do
     let context' = context "./generated/llvm/" {output = "main" ++ file}
     res <- compile {context = context'} (bytecode {modules = [( file, value)]}) 
     case res of 
-        Right res' => putStrLn $ "Test output written to " ++ res' ++ "\n\nTEST SUCCEEDED\n\n"
-        Left e => putStrLn $ "TEST " ++ file ++ " FAILED WITH" ++ show e ++ "\n\n"
+        Right res' => putStrLn $ "Test output written to " ++ res' ++ "\n\n" ++ showGreen "TEST SUCCEEDED" ++ "\n\n"
+        Left e => putStrLn $ (showRed "TEST FAILED") ++ "\nTEST " ++ file ++ " FAILED WITH" ++ show e ++ "\n\n"
     pure ()
 
 public export
@@ -48,9 +54,9 @@ debugRun file value = do
     pure ()
     --putStrLn $ "Test output written to " ++ res
 public export
-encodeTest : Encode a VString => String -> a -> String -> IO ()
+encodeTest : {a : Type} -> Encode Identity a VString => String -> a -> String -> IO ()
 encodeTest name value expected = do
-    let str : VString = encode value
+    let str : VString = runIdentity (encode value)
     let result = show str
     if result == expected 
       then

@@ -139,7 +139,7 @@ export
 ||| @ ty The type of the value being returned
 ||| @ expr The expression representing the value to return
 ret : LType -> LExpr -> LStatement
-ret ty expr = Discarded (TerminatorOp (Ret ty expr))
+ret ty expr = Operation Trash (TerminatorOp (Ret ty expr))
 
 export
 ||| Create a void return statement.
@@ -147,7 +147,7 @@ export
 ||| Creates a return statement for functions with void return type.
 ||| This terminates the function without returning a value.
 retVoid : LStatement
-retVoid = Discarded (TerminatorOp RetVoid)
+retVoid = Operation Trash (TerminatorOp RetVoid)
 
 export
 ||| Create a conditional branch statement.
@@ -160,7 +160,7 @@ export
 ||| @ trueLabel Expression representing the label to jump to if condition is true
 ||| @ falseLabel Expression representing the label to jump to if condition is false
 condBr : LExpr -> LExpr -> LExpr -> LStatement
-condBr cond trueLabel falseLabel = Discarded (TerminatorOp (CondBr cond trueLabel falseLabel))
+condBr cond trueLabel falseLabel = Operation Trash (TerminatorOp (CondBr cond trueLabel falseLabel))
 
 export
 ||| Create an unconditional branch statement.
@@ -170,7 +170,7 @@ export
 |||
 ||| @ target Expression representing the label to jump to
 br : LExpr -> LStatement
-br target = Discarded (TerminatorOp (JumpBr target))
+br target = Operation Trash (TerminatorOp (JumpBr target))
 
 
 export
@@ -186,7 +186,7 @@ indirectBr :
     (address : LExpr) ->
     (possibleDests : List LExpr) ->
     LStatement
-indirectBr address dests = Discarded (TerminatorOp (IndirectBr address dests))
+indirectBr address dests = Operation Trash (TerminatorOp (IndirectBr address dests))
 
 export
 ||| Create an invoke instruction (function call with exception handling).
@@ -199,7 +199,7 @@ export
 invoke :
     (call : InvokeCall) ->
     LStatement
-invoke call = Discarded (TerminatorOp (Invoke call))
+invoke call = Operation Trash (TerminatorOp (Invoke call))
 
 export
 ||| Create an unreachable instruction.
@@ -208,7 +208,7 @@ export
 ||| should never be reached during execution. This is used for optimization
 ||| and to indicate impossible code paths.
 unreachable : LStatement
-unreachable = Discarded (TerminatorOp Unreachable)
+unreachable = Operation Trash (TerminatorOp Unreachable)
 
 
 export
@@ -308,7 +308,7 @@ mkSwitch' :
     (defaultLabel : Name) ->
     (cases : List CaseBranch) ->
     LStatement
-mkSwitch' ty value defaultLabel cases = Discarded (TerminatorOp (Switch ty value defaultLabel cases))
+mkSwitch' ty value defaultLabel cases = Operation Trash (TerminatorOp (Switch ty value defaultLabel cases))
 
 export
 ||| Create a switch statement with default case and branches.
@@ -583,27 +583,27 @@ invokeCall {cc} {returnAttrs} {addressSpace} tpe fnval args normal unwind =
 export
 ||| Create a resume instruction for exception propagation.
 resume : LType -> LExpr -> LStatement
-resume ty value = Discarded (TerminatorOp (Resume ty value))
+resume ty value = Operation Trash (TerminatorOp (Resume ty value))
 
 export
 ||| Create a catch return instruction.
 catchRet : LExpr -> Label -> LStatement
-catchRet value label = Discarded (TerminatorOp (CatchRet value label))
+catchRet value label = Operation Trash (TerminatorOp (CatchRet value label))
 
 export
 ||| Create a cleanup return to caller.
 cleanupRetCaller : LExpr -> LStatement
-cleanupRetCaller value = Discarded (TerminatorOp (CleanupRetCaller value))
+cleanupRetCaller value = Operation Trash (TerminatorOp (CleanupRetCaller value))
 
 export
 ||| Create a cleanup return to specific label.
 cleanupRet : LExpr -> Label -> LStatement  
-cleanupRet value label = Discarded (TerminatorOp (CleanupRet value label))
+cleanupRet value label = Operation Trash (TerminatorOp (CleanupRet value label))
 
 export
 ||| Create a call branch instruction.
 callBR : BrCall -> LStatement
-callBR call = Discarded (TerminatorOp (CallBR call))
+callBR call = Operation Trash (TerminatorOp (CallBR call))
 
 -- 5. Missing exception handling operation builders
 export
@@ -640,7 +640,7 @@ export
 ||| Create a catch switch instruction.
 catchSwitch : Name -> Maybe Label -> List Label -> Maybe Label -> LStatement
 catchSwitch name parent handlers unwind = 
-    Discarded (TerminatorOp (CatchSwitchOp (MkCatchSwitch name parent handlers unwind)))
+    Operation Trash (TerminatorOp (CatchSwitchOp (MkCatchSwitch name parent handlers unwind)))
 
 -- 6. Missing constant builders for new types
 

@@ -54,7 +54,7 @@ Walk a b => Walk b c => Walk a c where
  
 public export 
 Walk LOperation LStatement where 
-    go op = Discarded op
+    go op = Operation Trash op
 
 public export 
 Walk Name LExpr where 

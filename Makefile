@@ -38,3 +38,7 @@ docs: install
 runTests: $(testFiles)
 generated/%.ss: generated/%.ll
 	llvm-as -o $@ $<
+
+repl: install 
+	@echo "Starting Idris2 REPL with LLVM package..."
+	idris2 --repl llvm.ipkg

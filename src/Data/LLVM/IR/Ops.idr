@@ -522,8 +522,7 @@ data LOperation : Type where
 public export
 data LStatement : Type where 
     ||| Operation with named result (%name = operation)
-    Targeted : Name -> LOperation -> LStatement
-    ||| Operation with discarded result
-    Discarded : LOperation -> LStatement
+    Operation : Name -> LOperation -> LStatement
     ||| Basic block label
     Labelled : String -> LStatement
+    

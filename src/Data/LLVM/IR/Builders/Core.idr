@@ -251,13 +251,13 @@ public export
 ||| Convenient operator to create a targeted statement (assignment).
 |||
 ||| Creates a statement that assigns the result of an operation to a
-||| target variable. This is a shorthand for `Targeted target op` that
+||| target variable. This is a shorthand for `Operation target op` that
 ||| makes assignment operations more readable.
 |||
 ||| @ target The target variable name to assign to
 ||| @ op The operation whose result to assign
 ($<) : Name -> LOperation -> LStatement
-($<) target op = Targeted target op
+($<) target op = Operation target op
 
 export
 ||| Create a targeted statement (assignment).
@@ -268,7 +268,7 @@ export
 ||| @ target The target variable name to assign to
 ||| @ op The operation whose result to assign
 assign : Name -> LOperation -> LStatement
-assign target op = Targeted target op
+assign target op = Operation target op
 
 
 
@@ -281,7 +281,7 @@ export
 |||
 ||| @ op The operation to execute and discard
 discard : LOperation -> LStatement
-discard op = Discarded op
+discard op = Operation Trash op
 
 
 export 

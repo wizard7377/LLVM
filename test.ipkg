@@ -13,7 +13,7 @@ authors = "Asher Frost"
 -- langversion
 
 -- packages to add to search path
-depends = llvm 
+depends = llvm, contrib 
 
 -- modules to install
 modules = Test.Helper, Test.Groups, Test.Groups.Encoding
