@@ -5,7 +5,7 @@
 # Idris 1
 *.ibc
 *.o
-
+.vscode/
 build/
 personal/
 generated/

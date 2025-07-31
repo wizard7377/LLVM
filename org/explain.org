@@ -1,0 +1,10 @@
+* Idris LLVM
+Here, we attempt to create a simple LLVM implementation, designed to be used in Idris
+
+** The Design
+The design of this library was to make it as "functional" as possible.
+This included a number of things, including adding structure to fields and requiring certain invariants.
+Further, there is also a "proof" section dedicated to writing safe assembly.
+
+*** Differences from LLVM
+While there are many differences here from LLVM, most of them are an oversight and not my actual intent, however, a few places

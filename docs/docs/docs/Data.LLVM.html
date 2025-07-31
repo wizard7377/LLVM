@@ -1,0 +1,94 @@
+<!DOCTYPE html><html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Data.LLVM</title>
+  <link rel="stylesheet" type="text/css" id="preferredStyle" href="../default.css">
+  <script>
+    /* Updates the stylesheet to use the preferred one.
+       Note that we set the link to root ++ sourceLoc because the config
+       is shared across the whole website, so the root may differ from
+       page to page.
+    */
+    function setStyleSource (sourceLoc) {
+      document.getElementById("preferredStyle").href = "../" + sourceLoc + ".css";
+      document.getElementById("selectPreferredStyle").value = sourceLoc;
+    }
+    /* Initialises the preferred style sheet:
+       1. if there is a stored value then use that
+          otherwise select the default
+       2. set both the css link href & the drop down menu selected option
+    */
+    function initStyleSource () {
+      var preferredStyle = localStorage.getItem("stylefile");
+      if (preferredStyle !== null) {
+        setStyleSource(preferredStyle);
+      } else {
+        setStyleSource("default");
+      };
+    }
+    function saveStyleSource (preferredStyle) {
+      localStorage.stylefile = preferredStyle;
+    }
+    </script>
+</head>
+
+<body class="namespace">
+<header>
+  <strong>Idris2Doc</strong> : Data.LLVM
+  <nav><a href="../index.html">Index</a>
+
+  <select id="selectPreferredStyle">
+    <option value="default">Default</option>
+<option value="alternative">Alternative</option>
+<option value="blackandwhite">Black & White</option>
+
+  </select>
+  </nav>
+
+  <script>
+  /* We start by initialising the style source */
+  initStyleSource();
+
+  /* This listens for changes on the drop down menu and updates the
+     css used for the current page when a selection is made.
+  */
+  document.getElementById("selectPreferredStyle").addEventListener("change", function(){
+    var selected = this.options[this.selectedIndex].value; /* the option chosen */
+    setStyleSource (selected);
+    saveStyleSource (selected);
+  });
+</script>
+
+</header>
+<div class="container"><div id="module-header"><h1>Data.LLVM</h1><pre>LLVM IR representation and manipulation library.
+
+This is the main module for the LLVM IR library, providing a complete
+Idris interface for creating, manipulating, and serializing LLVM IR.
+
+The library includes:
+- Core data types for LLVM IR constructs (LCore)
+- Type classes for encoding IR to text (LClass) 
+- Serialization to LLVM IR text format (LWrite)
+- Instruction and operation types (LOps)
+- Program structure and top-level definitions (LProgram)
+- Builder functions and DSL interfaces (Interface)
+- Type conversions and casting utilities (LCasts)
+- Optimization pass integration (LPass)
+- Foreign function interface utilities (LForeign)
+
+Example usage:
+```idris
+import Data.LLVM
+
+myModule : LModule
+myModule = MkLModule {
+  text = [
+    GlobalDefC $ globalDef &quot;myGlobal&quot; (LInt 32) {init = Just (LInt 42)},
+    FunctionDefC $ functionDef &quot;main&quot; LVoid [] (MkFunctionBody [
+      ret LVoid
+    ])
+  ]
+}
+```
+</pre></div><h2>Reexports</h2><code><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;Data.LLVM.Class&ensp;<span class="keyword">as</span>&ensp;LClass<br><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;Data.LLVM.Write&ensp;<span class="keyword">as</span>&ensp;LWrite<br><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;Data.LLVM.IR&ensp;<span class="keyword">as</span>&ensp;LIR<br><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;Data.LLVM.IR.Builders<br><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;Data.LLVM.IR.Alias<br><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;Data.LLVM.Interface<br><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;Data.LLVM.Casts&ensp;<span class="keyword">as</span>&ensp;LCasts<br><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;Data.LLVM.Pass&ensp;<span class="keyword">as</span>&ensp;LPass<br><span class="keyword">import</span>&ensp;<span class="keyword">public</span>&ensp;Data.LLVM.Foreign&ensp;<span class="keyword">as</span>&ensp;LForeign</code></div><footer>Produced by Idris 2 version 0.7.0-9cb6c3e40</footer></body></html>

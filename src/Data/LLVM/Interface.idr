@@ -1,10 +1,9 @@
 module Data.LLVM.Interface
 import Data.LLVM.Class
 import Data.LLVM.Write
-import Data.LLVM.Core
-import Data.LLVM.Ops
-import Data.LLVM.Program
+import Data.LLVM.IR
 import public Data.LLVM.Builders
+import Data.Walk
 public export
 interface Startable a b where 
     startWith : b -> a -> a 
@@ -29,37 +28,38 @@ public export
 (+>>) : Endable a b => a -> b -> a
 (+>>) = endWith
 
+
 public export 
-[startCast] Startable a b => Cast c b => Startable a c where
+[startCast] Startable a b => Walk c b => Startable a c where
     startWith s acc = let 
-        v : b = cast s
+        v : b = go s
         in startWith v acc 
 
 public export 
-[endCast] Endable a b => Cast c b => Endable a c where
+[endCast] Endable a b => Walk c b => Endable a c where
     endWith acc s = let 
-        v : b = cast s
+        v : b = go s
         in endWith acc v
 export
 Startable FunctionBody LStatement where
     startWith s acc = let 
-        v : LStatement = cast s
+        v : LStatement = go s
         in startWith v acc
 export
 Endable FunctionBody LStatement where
     endWith acc s = let 
-        v : LStatement = cast s
+        v : LStatement = go s
         in endWith acc v
 
 export 
 Startable LModule LClause where
     startWith s acc = let 
-        v : LClause = cast s
+        v : LClause = go s
         in startWith v acc
 export 
 Endable LModule LClause where
     endWith acc s = let 
-        v : LClause = cast s
+        v : LClause = go s
         in endWith acc v
 export 
 Startable (List a) a where 
@@ -73,3 +73,7 @@ Endable FunctionBody LOperation where
     endWith acc s = let 
         statement : LStatement = Discarded s 
         in endWith acc statement
+
+public export 
+interface Macro a b where 
+  applyMacro : a -> b -> List LStatement

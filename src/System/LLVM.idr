@@ -1,3 +1,8 @@
+||| System interface for LLVM compilation and execution.
+|||
+||| This module provides the main system interface for working with LLVM,
+||| including compilation, optimization, linking, and execution of LLVM IR.
+||| It re-exports all the necessary components for a complete LLVM workflow.
 module System.LLVM
 
 import public System.LLVM.Common
