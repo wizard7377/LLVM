@@ -663,6 +663,8 @@ Encode Identity MemoryOpcode VString where
             orderingStr
         ]
    
+
+   
 export 
 Encode Identity CatchClause VString where
     encode (Catching ty name) = do
