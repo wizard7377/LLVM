@@ -35,7 +35,7 @@ record GVarDef where
   ||| The type of the global variable
   gtpe : LType.LType
   ||| Optional initializer value
-  initializer : Maybe LConst
+  initializer : Maybe LExpr
   ||| Metadata tags
   tags : List LTag
 
@@ -56,8 +56,8 @@ record AttributeGroupDef where
 ||| Function body containing a list of statements/instructions.
 ||| Models the body of an LLVM function between the opening and closing braces.
 public export 
-record FunctionBody where 
-  constructor MkFunctionBody
+record Block where 
+  constructor MkBlock
   ||| List of basic blocks and instructions
   statements : List LStatement
 ||| Function definition with implementation.
@@ -118,15 +118,15 @@ record FunctionDef where
   ||| Garbage collector name (gc "name")
   gc : Maybe String
   ||| Prefix data (prefix Constant)
-  fprefix: Maybe LConst
+  fprefix: Maybe LExpr
   ||| Prologue data (prologue Constant)
-  prologue: Maybe LConst
+  prologue: Maybe LExpr
   ||| Personality function (personality Constant)
-  personality : Maybe LConst
+  personality : Maybe LExpr
   ||| Attached metadata (!name !N)*
   metadata : List Metadata
   ||| Function body with basic blocks and instructions
-  body : FunctionBody
+  body : Block
   ||| Additional metadata tags
   tags: List LTag
 ||| Function declaration without implementation.
@@ -158,9 +158,9 @@ record FunctionDec where
   ||| Garbage collector name (gc "name")
   gc : Maybe String 
   ||| Prefix data (prefix Constant)
-  fprefix: Maybe LConst 
+  fprefix: Maybe LExpr 
   ||| Prologue data (prologue Constant)
-  prologue: Maybe LConst
+  prologue: Maybe LExpr
   ||| Additional metadata tags
   tags: List LTag
 ||| Alias definition.

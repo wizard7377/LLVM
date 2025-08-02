@@ -480,15 +480,15 @@ data MemoryOpcode : Type where
 public export
 data CatchClause : Type where
     ||| Catch clause for landing pad instructions
-    Catching : LType -> LConst -> CatchClause
+    Catching : LType -> LExpr -> CatchClause
     ||| Filter clause for landing pad instructions
-    Filtering : LType -> LConst -> CatchClause
+    Filtering : LType -> LExpr -> CatchClause
 public export 
 data ExceptOpcode : Type where 
     LandingPad : LType -> List CatchClause -> ExceptOpcode
     LandingPadCleanup : LType -> List CatchClause -> ExceptOpcode
-    CatchPad : Name -> LConst -> ExceptOpcode
-    CleanupPad : Name -> LConst -> ExceptOpcode
+    CatchPad : Name -> LExpr -> ExceptOpcode
+    CleanupPad : Name -> LExpr -> ExceptOpcode
 ||| LLVM operations categorized by type.
 ||| Represents all possible LLVM IR operations.
 public export

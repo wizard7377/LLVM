@@ -1,6 +1,6 @@
 module System.LLVM.Link
 import System.LLVM.Common
-import Data.LLVM.Program
+import Data.LLVM.IR.Program
 import System
 
 intercalate : String -> List String -> String

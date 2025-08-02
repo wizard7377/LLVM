@@ -431,54 +431,45 @@ mutual
     ||| Named metadata
     MetadataNamed : String -> Metadata
     MetadataString : String -> Metadata
-    MetadataValue : WithType LConst -> Metadata
+    MetadataValue : WithType LExpr -> Metadata
     MetadataCustom : String -> Metadata
   public export
-  data LConst : Type where 
-    ||| Integer constant value
-    LInt : Int -> LConst
-    ||| Floating-point constant (as string to preserve precision)
-    LFloat : String -> LConst
-    ||| Boolean constant (true/false)
-    LBool : Bool -> LConst 
-    ||| Null pointer constant
-    LNull : LConst
-    ||| Token constant for state tracking
-    LToken : LConst 
-    ||| String literal constant
-    LString : String -> LConst
-    ||| Array constant with typed elements
-    LArray : List (WithType LConst) -> LConst
-    ||| Vector constant with typed elements
-    LVector : List (WithType LConst) -> LConst
-    ||| Structure constant with typed fields
-    LStruct : List (WithType LConst) -> LConst
-    ||| Undefined value (undefined behavior if used)
-    LUndefined : LConst
-    ||| Poison value (more undefined than undefined)
-    LPoison : LConst
-    ||| Zero initializer for any type
-    LZero : LConst
-    ||| Metadata constant
-    LMetadata : Metadata -> LConst
-    ||| Pointer to named global/function
-    LPtr : Name -> LConst
-    -- TODO: Basic block, dso-local, pointer auth, constant expression
-    
-||| LLVM expression namespace.
-|||
-||| Contains types for representing LLVM expressions and values.
-||| Currently supports constant expressions with plans for more complex expressions.
-namespace LExpr 
-  ||| LLVM expression representation.
-  |||
-  ||| Represents values that can be used in LLVM IR instructions,
-  ||| including constants and more complex expressions.
-  public export
   data LExpr : Type where 
-    ||| Constant expression wrapping a constant value
-    LConstE : LConst -> LExpr
-    LVar : Name -> LExpr 
+    ||| Integer constant value
+    LInt : Int -> LExpr
+    ||| Floating-point constant (as string to preserve precision)
+    LFloat : String -> LExpr
+    ||| Boolean constant (true/false)
+    LBool : Bool -> LExpr 
+    ||| Null pointer constant
+    LNull : LExpr
+    ||| Token constant for state tracking
+    LToken : LExpr 
+    ||| String literal constant
+    LString : String -> LExpr
+    ||| Array constant with typed elements
+    LArray : List (WithType LExpr) -> LExpr
+    ||| Vector constant with typed elements
+    LVector : List (WithType LExpr) -> LExpr
+    ||| Structure constant with typed fields
+    LStruct : List (WithType LExpr) -> LExpr
+    ||| Undefined value (undefined behavior if used)
+    LUndefined : LExpr
+    ||| Poison value (more undefined than undefined)
+    LPoison : LExpr
+    ||| Zero initializer for any type
+    LZero : LExpr
+    ||| Metadata constant
+    LMetadata : Metadata -> LExpr
+    ||| Pointer to named global/function
+    LPtr : Name -> LExpr
+    -- TODO: Basic block, dso-local, pointer auth, constant expression
+    LVar : Name -> LExpr
+    
+  public export
+  %deprecate
+  LConstE : LExpr -> LExpr
+  LConstE = id
 
 ||| Custom metadata tags for LLVM constructs.
 |||

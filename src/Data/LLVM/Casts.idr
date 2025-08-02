@@ -39,13 +39,13 @@ public export
 Walk LType FunctionArgSpec where 
     go t = MkFunctionArgSpec t [] Nothing
 public export
-Walk Int LConst where 
+Walk Int LExpr where 
     go i =  (LInt i)
 public export
-Walk String LConst where 
+Walk String LExpr where 
     go s =  (LString s)
 public export
-Walk Bool LConst where 
+Walk Bool LExpr where 
     go b =  (LBool b)
 
 public export 
@@ -94,5 +94,5 @@ Walk ExceptOpcode LOperation where
   go = ExceptOp
 
 public export 
-Walk (List LStatement) FunctionBody where 
-  go = MkFunctionBody
+Walk (List LStatement) Block where 
+  go = MkBlock

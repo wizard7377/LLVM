@@ -15,25 +15,25 @@ import Data.LLVM.IR.Util
 export
 ||| Create an empty function body with no statements.
 |||
-||| Returns an empty FunctionBody that can be used as a starting point
+||| Returns an empty Block that can be used as a starting point
 ||| for building function definitions or as a neutral element for combining
 ||| function bodies.
-emptyFunctionBody : FunctionBody
-emptyFunctionBody = MkFunctionBody [] 
+emptyBlock : Block
+emptyBlock = MkBlock [] 
 
-||| Semigroup instance for FunctionBody allowing concatenation of statement lists.
+||| Semigroup instance for Block allowing concatenation of statement lists.
 |||
 ||| Combines two function bodies by concatenating their statement lists,
 ||| enabling composition of function body parts.
-Semigroup FunctionBody where 
-    (<+>) (MkFunctionBody stmts1) (MkFunctionBody stmts2) = MkFunctionBody (stmts1 ++ stmts2)
+Semigroup Block where 
+    (<+>) (MkBlock stmts1) (MkBlock stmts2) = MkBlock (stmts1 ++ stmts2)
 
-||| Monoid instance for FunctionBody with empty function body as neutral element.
+||| Monoid instance for Block with empty function body as neutral element.
 |||
 ||| Provides a neutral empty function body and associative combination operation
 ||| for building complex function bodies from parts.
-Monoid FunctionBody where 
-    neutral = emptyFunctionBody
+Monoid Block where 
+    neutral = emptyBlock
 
 export 
 ||| Create an empty LLVM module with no data layout, target, clauses, or tags.
@@ -72,7 +72,7 @@ export
 ||| In LLVM IR, booleans are represented as i1 (1-bit integers).
 |||
 ||| @ b The boolean value (True or False)
-mkBool : Bool -> LConst
+mkBool : Bool -> LExpr
 mkBool b = LBool b
 
 export
@@ -82,7 +82,7 @@ export
 ||| The string will be null-terminated in the generated LLVM IR.
 |||
 ||| @ s The string value to create as a constant
-mkString : String -> LConst
+mkString : String -> LExpr
 mkString s = LString s
 
 export
@@ -91,7 +91,7 @@ export
 ||| Creates an LLVM null pointer constant, representing a pointer
 ||| with value zero (null). Used for pointer initialization and
 ||| null pointer checks.
-mkNull : LConst
+mkNull : LExpr
 mkNull = LNull
 
 export
@@ -100,7 +100,7 @@ export
 ||| Creates an LLVM undefined value constant, representing an
 ||| unspecified value. Useful for optimization and when the
 ||| specific value doesn't matter.
-mkUndefined : LConst
+mkUndefined : LExpr
 mkUndefined = LUndefined
 
 export
@@ -111,7 +111,7 @@ export
 ||| can parse.
 |||
 ||| @ f The string representation of the floating point value
-mkFloat : String -> LConst
+mkFloat : String -> LExpr
 mkFloat f = LFloat f
 
 export
@@ -121,7 +121,7 @@ export
 ||| All elements must have compatible types for the array type.
 |||
 ||| @ elems List of typed constant elements for the array
-mkArray : List (WithType LConst) -> LConst
+mkArray : List (WithType LExpr) -> LExpr
 mkArray elems = LArray elems
 
 export
@@ -131,7 +131,7 @@ export
 ||| The fields are ordered and their types must match the struct definition.
 |||
 ||| @ fields List of typed constant fields for the struct
-mkStruct : List (WithType LConst) -> LConst
+mkStruct : List (WithType LExpr) -> LExpr
 mkStruct fields = LStruct fields
 
 export
@@ -141,7 +141,7 @@ export
 ||| All elements must have the same type and the count must match the vector type.
 |||
 ||| @ elems List of typed constant elements for the vector
-mkVector : List (WithType LConst) -> LConst
+mkVector : List (WithType LExpr) -> LExpr
 mkVector elems = LVector elems
 
 
@@ -153,7 +153,7 @@ export
 ||| distinguishes between constants and expressions syntactically.
 |||
 ||| @ c The constant to convert to an expression
-constExpr : LConst -> LExpr
+constExpr : LExpr -> LExpr
 constExpr c = LConstE c
 
 
@@ -245,7 +245,7 @@ label : String -> LStatement
 label name = Labelled name
 
 public export 
-infix 0 $<
+infix 0 $<-
 
 public export 
 ||| Convenient operator to create a targeted statement (assignment).
@@ -256,8 +256,8 @@ public export
 |||
 ||| @ target The target variable name to assign to
 ||| @ op The operation whose result to assign
-($<) : Name -> LOperation -> LStatement
-($<) target op = Operation target op
+($<-) : Name -> LOperation -> LStatement
+($<-) target op = Operation target op
 
 export
 ||| Create a targeted statement (assignment).
@@ -307,22 +307,22 @@ symbolInfo {lnk} {prm} {vis} {sto} = MkSymbolInfo lnk prm vis sto
 
 export
 ||| Create a poison constant.
-mkPoison : LConst
+mkPoison : LExpr
 mkPoison = LPoison
 
 export
 ||| Create a zero constant.
-mkZero : LConst
+mkZero : LExpr
 mkZero = LZero
 
 export
 ||| Create a token constant.
-mkToken : LConst
+mkToken : LExpr
 mkToken = LToken
 
 export
 ||| Create a metadata constant.
-mkMetadata : Metadata -> LConst
+mkMetadata : Metadata -> LExpr
 mkMetadata md = LMetadata md
 
 export
@@ -354,7 +354,7 @@ metadataString str = MetadataString str
 
 export
 ||| Create a metadata value.
-metadataValue : WithType LConst -> Metadata
+metadataValue : WithType LExpr -> Metadata
 metadataValue value = MetadataValue value
 
 export

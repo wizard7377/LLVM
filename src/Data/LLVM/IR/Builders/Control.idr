@@ -52,11 +52,11 @@ functionDef :
     {default Nothing comdat : Maybe Name} ->
     {default Nothing alignment : Maybe Int} ->
     {default Nothing gc : Maybe String} ->
-    {default Nothing fprefix : Maybe LConst} ->
-    {default Nothing prologue : Maybe LConst} ->
-    {default Nothing personality : Maybe LConst} ->
+    {default Nothing fprefix : Maybe LExpr} ->
+    {default Nothing prologue : Maybe LExpr} ->
+    {default Nothing personality : Maybe LExpr} ->
     {default [] metadata : List Metadata} ->
-    (body : FunctionBody) ->
+    (body : Block) ->
     {default [] tags : List LTag} ->
     FunctionDef
 functionDef name {symbolInfo} {callingConvention} {returnAttrs} retType args {addressInfo} {addressSpace} {fnAttributes} {section} {partition} {comdat} {alignment} {gc} {fprefix} {prologue} {personality} {metadata} body {tags} =
@@ -112,8 +112,8 @@ functionDec :
     {default Nothing addressInfo : Maybe AddressInfo} ->
     {default Nothing alignment : Maybe Int} ->
     {default Nothing gc : Maybe String} ->
-    {default Nothing fprefix : Maybe LConst} ->
-    {default Nothing prologue : Maybe LConst} ->
+    {default Nothing fprefix : Maybe LExpr} ->
+    {default Nothing prologue : Maybe LExpr} ->
     {default [] tags : List LTag} ->
     FunctionDec
 functionDec name {symbolInfo} {callingConvention} {returnAttrs} retType args {addressInfo} {alignment} {gc} {fprefix} {prologue} {tags} =
@@ -618,22 +618,22 @@ landingPadCleanup ty clauses = ExceptOp (LandingPadCleanup ty clauses)
 
 export
 ||| Create a catch pad instruction.
-catchPad : Name -> LConst -> LOperation
+catchPad : Name -> LExpr -> LOperation
 catchPad name value = ExceptOp (CatchPad name value)
 
 export
 ||| Create a cleanup pad instruction.
-cleanupPad : Name -> LConst -> LOperation
+cleanupPad : Name -> LExpr -> LOperation
 cleanupPad name value = ExceptOp (CleanupPad name value)
 
 export
 ||| Create a catch clause.
-catching : LType -> LConst -> CatchClause
+catching : LType -> LExpr -> CatchClause
 catching ty value = Catching ty value
 
 export
 ||| Create a filter clause.
-filtering : LType -> LConst -> CatchClause
+filtering : LType -> LExpr -> CatchClause
 filtering ty value = Filtering ty value
 
 export

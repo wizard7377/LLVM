@@ -41,12 +41,12 @@ public export
         v : b = go s
         in endWith acc v
 export
-Startable FunctionBody LStatement where
+Startable Block LStatement where
     startWith s acc = let 
         v : LStatement = go s
         in startWith v acc
 export
-Endable FunctionBody LStatement where
+Endable Block LStatement where
     endWith acc s = let 
         v : LStatement = go s
         in endWith acc v
@@ -69,7 +69,7 @@ Endable (List a) a where
     endWith acc s = acc ++ [s]
 
 export 
-Endable FunctionBody LOperation where 
+Endable Block LOperation where 
     endWith acc s = let 
         statement : LStatement = Operation Trash s 
         in endWith acc statement
