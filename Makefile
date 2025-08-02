@@ -3,7 +3,8 @@ pack ?=
 opts ?= 
 testFiles := $(patsubst %.ll,%.ss,$(wildcard generated/*.ll)) 
 
-build: 
+srcFiles := $(wildcard *.idr)
+build: $(srcFiles)
 	idris2 --build llvm.ipkg
 
 install: build
@@ -20,7 +21,9 @@ clean: clean-test
 	rm -rf build
 	mkdir -p build
 	rm -rf generated
+	rm -rf docs  
 	mkdir -p generated
+	mkdir -p docs
 	idris2 --clean test.ipkg
 	idris2 --clean llvm.ipkg
 	pack clean llvm.ipkg
@@ -32,7 +35,7 @@ clean-test:
 
 docs: install
 	idris2 --mkdoc llvm.ipkg
-	@cp -r build/docs docs
+	@cp -r build/docs/. docs
 .PHONY: build install test clean-test clean 
 
 runTests: $(testFiles)

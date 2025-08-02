@@ -22,7 +22,7 @@
 ||| myModule = MkLModule {
 |||   text = [
 |||     GlobalDefC $ globalDef "myGlobal" (LInt 32) {init = Just (LInt 42)},
-|||     FunctionDefC $ functionDef "main" LVoid [] (MkFunctionBody [
+|||     FunctionDefC $ functionDef "main" LVoid [] (MkBlock [
 |||       ret LVoid
 |||     ])
 |||   ]

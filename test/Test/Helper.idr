@@ -6,7 +6,7 @@ import Data.LLVM.Class
 import System.File.ReadWrite
 import System.LLVM
 import Data.LLVM.Builders
-import Data.LLVM.Program
+import Data.LLVM.IR.Program
 import System.Escape
 import Data.LLVM.Core
 import Control.Monad.Identity

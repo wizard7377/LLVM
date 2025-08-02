@@ -1,7 +1,7 @@
 module System.LLVM.Optimize
 
 import System.LLVM.Common
-import Data.LLVM.Program
+import Data.LLVM.IR.Program
 import System
 export
 optimizeLLVM : {auto context : Context} -> String -> Compile String

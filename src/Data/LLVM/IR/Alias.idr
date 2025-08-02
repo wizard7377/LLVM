@@ -7,7 +7,7 @@ import Data.LLVM.IR.Program
 
 export
 ||| Create an integer constant.
-mkInt : Int -> LConst
+mkInt : Int -> LExpr
 mkInt i = LInt i
 
 export

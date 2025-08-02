@@ -84,7 +84,7 @@ moduleWithSimpleFunction = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 Operation (Local "result") (BinaryOp Add (LInt 32) (LVar (Local "a")) (LVar (Local "b"))),
                 Operation Trash (TerminatorOp (Ret (LInt 32) (LVar (Local "result"))))
@@ -123,7 +123,7 @@ moduleWithOperations = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Multiply x and y
                 Operation (Local "mul_result") (BinaryOp Mul (LInt 32) (LVar (Local "x")) (LVar (Local "y"))),
@@ -182,7 +182,7 @@ completeModule = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Allocate local variable
                 Operation (Local "local_var") (MemoryOp (Alloc (LInt 32) Nothing Nothing Nothing)),
@@ -222,7 +222,7 @@ completeModule = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Perform various operations
                 Operation (Local "sum") (BinaryOp Add (LInt 32) (LVar (Local "a")) (LVar (Local "b"))),
@@ -333,7 +333,7 @@ moduleWithCallingConventions = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 Operation (Local "result") (BinaryOp (FAdd []) (LFloating LFloat) (LConstE (LPtr (Local "x"))) (LConstE (LPtr (Local "y")))),
                 Operation Trash (TerminatorOp (Ret (LFloating LFloat) (LConstE (LPtr (Local "result")))))
@@ -360,7 +360,7 @@ moduleWithCallingConventions = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Call printf to report error
                 Operation (Local "printf_result") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
@@ -403,7 +403,7 @@ moduleWithVectors = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Extract element from first vector
                 Operation (Local "elem1") (VectorOp (ExtractElement 
@@ -457,7 +457,7 @@ moduleWithControlFlow = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Check if n <= 1 (use proper comparison)
                 Operation (Local "cmp") (icmp CSLe (LInt 32) (LVar (Local "n")) (LConstE (LInt 1))),
@@ -514,7 +514,7 @@ moduleWithSwitch = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 Operation Trash (TerminatorOp (Switch (LInt 32) (LVar (Local "opcode")) (Local "default") [
                     MkCaseBranch (LInt 32) (LConstE (LInt 1)) (LVar (Local "case_add")),
@@ -582,7 +582,7 @@ moduleWithStructs = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Extract x coordinate
                 Operation (Local "x") (AggregateOp (ExtractValue 
@@ -631,7 +631,7 @@ moduleWithAliases = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 Operation (Local "result") (BinaryOp Mul (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LInt 2))),
                 Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
@@ -703,7 +703,7 @@ moduleWithExceptions = MkLModule {
             prologue = Nothing,
             personality = Just (LPtr (Global "__gxx_personality_v0")),
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Invoke that might throw
                 Operation (Local "result") (TerminatorOp (Invoke (MkInvokeCall (Just C) [] Nothing 
@@ -765,7 +765,7 @@ moduleWithAtomics = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Simple memory operations using MemoryOp variants
                 Operation (Local "old_value") (MemoryOp (LoadRegular False (LInt 32)
@@ -814,7 +814,7 @@ moduleWithInlineAssembly = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Inline assembly to add two numbers (simplified for demo)
                 Operation (Local "result") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "a"))) (LConstE (LPtr (Local "b")))),
@@ -851,7 +851,7 @@ moduleWithDebugInfo = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Allocate local variable
                 Operation (Local "local_var_ptr") (MemoryOp (Alloc (LInt 32) Nothing Nothing Nothing)),
@@ -926,7 +926,7 @@ moduleWithComplexTypes = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Get element pointer using a simpler approach
                 Operation (Local "nested_ptr") (AggregateOp (ExtractValue
@@ -985,7 +985,7 @@ moduleWithAttributes = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Memory copy with attributes
                 Operation Trash (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
@@ -1043,7 +1043,7 @@ moduleWithEdgeCases = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Division by potentially zero value
                 Operation (Local "div_result") (BinaryOp SDiv (LInt 32) (LConstE (LInt 100)) (LVar (Local "input"))),
@@ -1123,7 +1123,7 @@ moduleWithMemoryManagement = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Convert size to 64-bit for malloc
                 Operation (Local "size64") (ConversionOp ZExt (MkWithType (LInt 32) (LVar (Local "size"))) (LInt 64)),
@@ -1185,7 +1185,7 @@ moduleWithIntrinsics = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Call sqrt intrinsic
                 Operation (Local "sqrt_x") (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
@@ -1249,7 +1249,7 @@ moduleWithGC = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- GC root declaration
                 Operation Trash (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
@@ -1340,7 +1340,7 @@ moduleWithConstants = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Initialize global state
                 Operation Trash (MemoryOp (StoreRegular False
@@ -1370,7 +1370,7 @@ moduleWithConstants = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Cleanup global state
                 Operation Trash (MemoryOp (StoreRegular False
@@ -1436,7 +1436,7 @@ moduleWithComdats = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 Operation (Local "value") (MemoryOp (LoadRegular False (LInt 32)
                     (LConstE (LPtr (Global "weak_global")))
@@ -1465,7 +1465,7 @@ moduleWithComdats = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 -- Template-like operation
                 Operation (Local "result") (BinaryOp Mul (LInt 32) (LConstE (LPtr (Local "param"))) (LConstE (LPtr (Local "param")))),
@@ -1507,7 +1507,7 @@ moduleStressTest = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 Operation (Local "result") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LInt 1))),
                 Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
@@ -1533,7 +1533,7 @@ moduleStressTest = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 Operation (Local "result") (BinaryOp Mul (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LInt 2))),
                 Operation Trash (TerminatorOp (Ret (LInt 32) (LConstE (LPtr (Local "result")))))
@@ -1560,7 +1560,7 @@ moduleStressTest = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = MkFunctionBody [
+            body = MkBlock [
                 Labelled "entry",
                 Operation (Local "cmp1") (icmp CSGt (LInt 32) (LVar (Local "depth")) (LConstE (LInt 0))),
                 Operation Trash (TerminatorOp (CondBr (LVar (Local "cmp1")) (LConstE (LPtr (Local "level1"))) (LConstE (LPtr (Local "base"))))),

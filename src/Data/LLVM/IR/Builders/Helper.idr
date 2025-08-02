@@ -70,7 +70,7 @@ exampleModule =
       -- Function definition with custom calling convention
       FunctionDefC $ functionDef "add" {callingConvention = Just C} (LInt 32) 
         [functionArg (LInt 32) {name = Just "a"}, functionArg (LInt 32) {name = Just "b"}]
-        (MkFunctionBody [
+        (MkBlock [
           label "entry",
           assign (local "result") (add (LInt 32) (localPtr "a") (localPtr "b")),
           ret (LInt 32) (localPtr "result")

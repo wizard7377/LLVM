@@ -55,6 +55,7 @@ Encode Identity AddressSpace VString where
     encode (UnnamedSpace n) = pure $ "addrspace(" <+> vshow n <+> ")" 
 
 
+
 export
 Encode Identity CallingConvention VString where 
     encode C = pure "ccc"
@@ -174,7 +175,7 @@ mutual
 
 
     export
-    Encode Identity LConst VString where
+    Encode Identity LExpr VString where
         encode (LInt n) = pure $ go $ show n
         encode (LFloat s) = pure $ go s
         encode (LBool b) = pure $ if b then "true" else "false"
@@ -196,7 +197,8 @@ mutual
         encode (LMetadata m) = do
             mStr <- encode m
             pure $ "metadata" <+> mStr
-        encode (LPtr name) = encode name 
+        encode (LPtr name) = encode name
+        encode (LVar name) = encode name
 export 
 Encode Identity GVarDef VString where
     encode (MkGVarDef name symbolInfo threadLocality addressInfo addressSpace externallyInitialized global tpe init tags) = do
@@ -271,10 +273,7 @@ Encode Identity Attribute VString where
     encode (OtherAttribute name) = pure $ go name 
 
 
-export
-Encode Identity LExpr VString where
-    encode (LConstE c) = encode c
-    encode (LVar name) = encode name 
+
 export
 Encode Identity CaseBranch VString where
     encode (MkCaseBranch tpe value label) = do
@@ -732,8 +731,8 @@ Encode Identity LStatement VString where
         
     
 public export
-Encode Identity FunctionBody VString where
-    encode (MkFunctionBody statements) = do
+Encode Identity Block VString where
+    encode (MkBlock statements) = do
         statementsStr <- encode @{tabbed} statements
         pure $ "{\n" <++> statementsStr <++> "\n}" -- Placeholder for actual function body encoding ) 
 public export
