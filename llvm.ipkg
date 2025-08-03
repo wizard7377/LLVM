@@ -51,7 +51,7 @@ modules =
 
 -- name of executable
 -- executable =
--- opts =
+-- opts = ""
 sourcedir = "src"
 -- builddir =
 -- outputdir =

@@ -4,6 +4,7 @@ opts ?=
 testFiles := $(patsubst %.ll,%.ss,$(wildcard generated/*.ll)) 
 
 srcFiles := $(wildcard *.idr)
+
 build: $(srcFiles)
 	idris2 --build llvm.ipkg
 
