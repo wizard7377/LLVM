@@ -5,21 +5,33 @@
 ||| for string manipulation and formatting.
 module Data.LLVM.Class
 import Data.Walk
-
+import public Data.MonadIO
 import public Control.Monad.Identity
+import Control.Monad.Either
+||| Interface for encoding values to a target monoid type.
+|||
+||| The `Encode` interface allows converting LLVM IR data structures
+||| to their string representations or other monoid types suitable
+||| for serialization or pretty-printing.
+||| @ m The monad to encode within
+||| @ a The source type to encode
+||| @ b The target type 
+public export
+interface Monad m => Encode (m : Type -> Type) (a : Type) (b : Type) where
+    ||| Convert a value to its encoded representation
+    encode : a -> m b
 
 ||| Interface for encoding values to a target monoid type.
 |||
 ||| The `Encode` interface allows converting LLVM IR data structures
 ||| to their string representations or other monoid types suitable
 ||| for serialization or pretty-printing.
-|||
+||| @ m The monad to encode within
 ||| @ a The source type to encode
-||| @ b The target monoid type (usually VString)
+||| @ b The target type 
 public export
-interface Monad m => Monoid b => Encode (m : Type -> Type) (a : Type) (b : Type) where
-    ||| Convert a value to its encoded representation
-    encode : a -> m b
+interface Monad m => EncodeIn (context : Type) (m : Type -> Type) (a : Type) (b : Type) where
+    encodeIn : context -> a -> m b
 
 
 ||| Value string wrapper for LLVM IR string output.
@@ -147,7 +159,7 @@ suffixed s f = f <+> s
 ||| This instance allows Maybe types to be encoded directly, where
 ||| Nothing becomes the neutral element and Just x becomes encode x.
 public export
-{a, b : Type} -> Encode Identity a b => Encode Identity (Maybe a) b where 
+{a, b : Type} -> Monoid b => Encode Identity a b => Encode Identity (Maybe a) b where 
     encode Nothing = pure neutral
     encode (Just x) = encode x
 
@@ -267,3 +279,13 @@ Encode Identity Nat VString where
 public export 
 Show VString where
     show (MkVString s) = s
+
+public export
+interface Show e => MonadIO e m => Encode m a b =>  EncodeIO e m a b where
+    encodeIO : a -> IO (Either e b) 
+
+export 
+{m : Type -> Type} -> {a : Type} -> {b : Type} -> Show e => MonadIO e m => Encode m a b => EncodeIO e m a b where
+    encodeIO x = let
+        res = (encode {m = m} x)
+        in unliftIO res

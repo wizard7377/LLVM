@@ -1,7 +1,7 @@
 module Data.LLVM.IR.Builders.Control 
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
---import Data.LLVM.Write
+--import Data.LLVM.Write.Assembly
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
@@ -56,7 +56,7 @@ functionDef :
     {default Nothing prologue : Maybe LExpr} ->
     {default Nothing personality : Maybe LExpr} ->
     {default [] metadata : List Metadata} ->
-    (body : Block) ->
+    (body : List Block) ->
     {default [] tags : List LTag} ->
     FunctionDef
 functionDef name {symbolInfo} {callingConvention} {returnAttrs} retType args {addressInfo} {addressSpace} {fnAttributes} {section} {partition} {comdat} {alignment} {gc} {fprefix} {prologue} {personality} {metadata} body {tags} =

@@ -3,7 +3,7 @@ module Data.LLVM.IR.Builders.Ops
 
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
---import Data.LLVM.Write
+--import Data.LLVM.Write.Assembly
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias

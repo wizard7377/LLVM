@@ -1,15 +1,54 @@
 module Data.LLVM.CC.Macros
 
-import public Language.Reflection
+import Language.Reflection
 
 %language ElabReflection
 
 
-llvmLib = "LLVM-20"
+
+
+llvmLib = "libLLVM-20"
 lCore : String -> {default "llvm-c/Core.h" header : String} -> String 
 lCore s {header} = "C:" ++ s ++ ", " ++ llvmLib ++ ", " ++ header
 
 
+mkPrim : String -> Decl -> Elab (Name, List Decl)
+mkPrim header (IClaim 
+        (MkFCVal fc 
+        (MkIClaimData count _ ops 
+        (MkTy tc 
+        (MkFCVal nc name) value)))) = 
+            pure $ (name, pure (IClaim 
+            (MkFCVal fc 
+            (MkIClaimData count Export (ops ++ added)
+            (MkTy tc 
+            (MkFCVal nc name) value)))))
+    where 
+        added : List FnOpt 
+        added = [ForeignFn [IPrimVal nc (Str $ lCore (show name) {header = header})]]
+
+mkPrim _ _ = fail ""
+mkLift : String -> Decl -> Elab (List Decl)
+mkLift header (IClaim 
+        (MkFCVal fc 
+        (MkIClaimData count _ ops 
+        (MkTy tc 
+        (MkFCVal nc name) value)))) = 
+            pure $ pure (IClaim 
+            (MkFCVal fc 
+            (MkIClaimData count Export (ops ++ added)
+            (MkTy tc 
+            (MkFCVal nc name) value))))
+    where 
+        added : List FnOpt 
+        added = [ForeignFn [IPrimVal nc (Str $ lCore (show name) {header = header})]]
+
+ 
+mkLift _ _ = fail ""
+
+getArgs : TTImp -> Elab (List (Type, Type)) 
+
+changeArg : (ty0 : Type) -> (ty1 : Type) -> List (Type, Type) -> Elab (ty0 -> ty1)
 public export
 fDecl' : String -> Decl -> Elab (List Decl)
 fDecl' header 

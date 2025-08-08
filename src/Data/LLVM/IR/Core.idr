@@ -275,6 +275,10 @@ namespace LType
   data LType : Type where
     ||| Generic pointer type (opaque pointer)
     LPtr : LType
+    ||| Pointer type to something (depreacted)
+    LPtrTo : LType -> LType
+    ||| Pointer to type in address space (depractated)
+    LPtrToAddr : AddressSpace -> LType -> LType
     ||| Pointer in specific address space
     LPtrAddr : AddressSpace -> LType
     ||| Void type (no value)
@@ -419,53 +423,55 @@ data Assembly : Type where
   ||| Basic inline assembly with assembly string
   BasicAsm : String -> Assembly
 -- TODO: Captures, nofp, inits, range, func atrributes
-mutual 
-  ||| LLVM metadata representation.
-  |||
-  ||| Metadata provides additional information that doesn't affect program
-  ||| semantics but can be used by debuggers, profilers, and other tools.
-  public export 
-  data Metadata : Type where
-    ||| A metadata tuple containing multiple metadata elements
-    MetadataTuple : List Metadata -> Metadata
-    ||| Named metadata
-    MetadataNamed : String -> Metadata
-    MetadataString : String -> Metadata
-    MetadataValue : WithType LExpr -> Metadata
-    MetadataCustom : String -> Metadata
-  public export
-  data LExpr : Type where 
-    ||| Integer constant value
-    LInt : Int -> LExpr
-    ||| Floating-point constant (as string to preserve precision)
-    LFloat : String -> LExpr
-    ||| Boolean constant (true/false)
-    LBool : Bool -> LExpr 
-    ||| Null pointer constant
-    LNull : LExpr
-    ||| Token constant for state tracking
-    LToken : LExpr 
-    ||| String literal constant
-    LString : String -> LExpr
-    ||| Array constant with typed elements
-    LArray : List (WithType LExpr) -> LExpr
-    ||| Vector constant with typed elements
-    LVector : List (WithType LExpr) -> LExpr
-    ||| Structure constant with typed fields
-    LStruct : List (WithType LExpr) -> LExpr
-    ||| Undefined value (undefined behavior if used)
-    LUndefined : LExpr
-    ||| Poison value (more undefined than undefined)
-    LPoison : LExpr
-    ||| Zero initializer for any type
-    LZero : LExpr
-    ||| Metadata constant
-    LMetadata : Metadata -> LExpr
-    ||| Pointer to named global/function
-    LPtr : Name -> LExpr
-    -- TODO: Basic block, dso-local, pointer auth, constant expression
-    LVar : Name -> LExpr
-    
+
+namespace LTerm
+  mutual 
+    ||| LLVM metadata representation.
+    |||
+    ||| Metadata provides additional information that doesn't affect program
+    ||| semantics but can be used by debuggers, profilers, and other tools.
+    public export 
+    data Metadata : Type where
+      ||| A metadata tuple containing multiple metadata elements
+      MetadataTuple : List Metadata -> Metadata
+      ||| Named metadata
+      MetadataNamed : String -> Metadata
+      MetadataString : String -> Metadata
+      MetadataValue : WithType LExpr -> Metadata
+      MetadataCustom : String -> Metadata
+    public export
+    data LExpr : Type where 
+      ||| Integer constant value
+      LInt : Int -> LExpr
+      ||| Floating-point constant (as string to preserve precision)
+      LFloat : String -> LExpr
+      ||| Boolean constant (true/false)
+      LBool : Bool -> LExpr 
+      ||| Null pointer constant
+      LNull : LExpr
+      ||| Token constant for state tracking
+      LToken : LExpr 
+      ||| String literal constant
+      LString : String -> LExpr
+      ||| Array constant with typed elements
+      LArray : List (WithType LExpr) -> LExpr
+      ||| Vector constant with typed elements
+      LVector : List (WithType LExpr) -> LExpr
+      ||| Structure constant with typed fields
+      LStruct : List (WithType LExpr) -> LExpr
+      ||| Undefined value (undefined behavior if used)
+      LUndefined : LExpr
+      ||| Poison value (more undefined than undefined)
+      LPoison : LExpr
+      ||| Zero initializer for any type
+      LZero : LExpr
+      ||| Metadata constant
+      LMetadata : Metadata -> LExpr
+      ||| Pointer to named global/function
+      LPtr : Name -> LExpr
+      -- TODO: Basic block, dso-local, pointer auth, constant expression
+      LVar : Name -> LExpr
+      
   public export
   %deprecate
   LConstE : LExpr -> LExpr

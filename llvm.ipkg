@@ -44,7 +44,12 @@ modules =
     Data.LLVM.IR.Builders.Control,
     Data.LLVM.IR.Builders.Ops,
     Data.LLVM.IR.Builders.Math,
-    Data.LLVM.IR.Builders.Core
+    Data.LLVM.IR.Builders.Core,
+    Data.LLVM.CC,
+    Data.LLVM.CC.Macros,
+    Data.LLVM.CC.Prim,
+    Data.LLVM.CC.Support,
+    Data.MonadIO
 
 -- main file (i.e. file to load at REPL)
 -- main =

@@ -53,13 +53,7 @@ record AttributeGroupDef where
   ||| List of attributes in this group
   attrs : List Attribute
 
-||| Function body containing a list of statements/instructions.
-||| Models the body of an LLVM function between the opening and closing braces.
-public export 
-record Block where 
-  constructor MkBlock
-  ||| List of basic blocks and instructions
-  statements : List LStatement
+
 ||| Function definition with implementation.
 ||| Models LLVM IR function definitions like:
 ||| ```llvm
@@ -126,7 +120,7 @@ record FunctionDef where
   ||| Attached metadata (!name !N)*
   metadata : List Metadata
   ||| Function body with basic blocks and instructions
-  body : Block
+  body : List Block
   ||| Additional metadata tags
   tags: List LTag
 ||| Function declaration without implementation.

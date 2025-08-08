@@ -1,8 +1,8 @@
 module Data.LLVM.Interface
 import Data.LLVM.Class
-import Data.LLVM.Write
+import Data.LLVM.Write.Assembly
 import Data.LLVM.IR
-import public Data.LLVM.Builders
+import public Data.LLVM.IR.Builders
 import Data.Walk
 public export
 interface Startable a b where 
