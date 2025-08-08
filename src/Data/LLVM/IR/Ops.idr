@@ -522,7 +522,16 @@ data LOperation : Type where
 public export
 data LStatement : Type where 
     ||| Operation with named result (%name = operation)
-    Operation : Name -> LOperation -> LStatement
-    ||| Basic block label
-    Labelled : String -> LStatement
+    Operation : Destination -> LOperation -> LStatement
+
+||| Basic block 
+public export 
+record Block where 
+    constructor MkBlock
+    ||| Block name (without label prefix)
+    name : String
+    ||| List of statements in the block
+    statements : List LStatement
+    ||| Terminator instruction that ends the block
+    terminator : Terminator
     

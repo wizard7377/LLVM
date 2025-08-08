@@ -3,7 +3,7 @@ module Data.LLVM.IR.Builders.Math
 
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
---import Data.LLVM.Write
+--import Data.LLVM.Write.Assembly
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
@@ -30,7 +30,8 @@ icmp :
     (lhs : LExpr) ->
     (rhs : LExpr) ->
     LOperation
-icmp pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail [] Nothing [] Nothing (LInt 1) (LConstE (LPtr (IntrinsicN "icmp"))) [MkWithType ty lhs, MkWithType ty rhs] []))
+icmp pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail [] Nothing [] Nothing (LType.LInt 1) (LConstE (LTerm.LPtr (IntrinsicN "icmp"))) [MkWithType ty lhs, MkWithType ty rhs] []))
+
 
 export
 ||| Create a floating point comparison operation.
@@ -42,8 +43,8 @@ fcmp :
     (lhs : LExpr) ->
     (rhs : LExpr) ->
     LOperation
-fcmp True {fastMath} pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail fastMath Nothing [] Nothing (LInt 1) (LConstE (LPtr (IntrinsicN "fcmp.ord"))) [MkWithType ty lhs, MkWithType ty rhs] []))
-fcmp False {fastMath} pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail fastMath Nothing [] Nothing (LInt 1) (LConstE (LPtr (IntrinsicN "fcmp.unord"))) [MkWithType ty lhs, MkWithType ty rhs] []))
+fcmp True {fastMath} pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail fastMath Nothing [] Nothing (LType.LInt 1) (LConstE (LTerm.LPtr (IntrinsicN "fcmp.ord"))) [MkWithType ty lhs, MkWithType ty rhs] []))
+fcmp False {fastMath} pred ty lhs rhs = MiscOp (FnCallOp (MkFnCall NoTail fastMath Nothing [] Nothing (LType.LInt 1) (LConstE (LTerm.LPtr (IntrinsicN "fcmp.unord"))) [MkWithType ty lhs, MkWithType ty rhs] []))
 
 export
 ||| Create division operation (unsigned).

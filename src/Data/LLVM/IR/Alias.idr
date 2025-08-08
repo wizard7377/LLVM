@@ -1,39 +1,39 @@
 module Data.LLVM.IR.Alias
 
 import Data.LLVM.IR.Core       
---import Data.LLVM.Write
+--import Data.LLVM.Write.Assembly
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 
 export
 ||| Create an integer constant.
 mkInt : Int -> LExpr
-mkInt i = LInt i
+mkInt i = LTerm.LInt i
 
 export
 ||| Create an i1 (boolean) type.
 i1 : LType
-i1 = LInt 1
+i1 = LType.LInt 1
 
 export
 ||| Create an i8 type.
 i8 : LType
-i8 = LInt 8
+i8 = LType.LInt 8
 
 export
 ||| Create an i16 type.
 i16 : LType
-i16 = LInt 16
+i16 = LType.LInt 16
 
 export
 ||| Create an i32 type.
 i32 : LType
-i32 = LInt 32
+i32 = LType.LInt 32
 
 export
 ||| Create an i64 type.
 i64 : LType
-i64 = LInt 64
+i64 = LType.LInt 64
 
 export
 ||| Create a void type.
@@ -43,7 +43,7 @@ void = LVoid
 export
 ||| Create a pointer type.
 ptr : LType
-ptr = LPtr
+ptr = LType.LPtr
 
 export
 ||| Create a pointer type in specific address space.
@@ -53,7 +53,7 @@ ptrAddr addrSpace = LPtrAddr addrSpace
 export
 ||| Create a float type.
 float : LType
-float = LFloating LFloat
+float = LFloating LType.LFloat
 
 export
 ||| Create a double type.
@@ -71,12 +71,12 @@ labelType = LLabel
 export
 ||| Create a token type.
 tokenType : LType
-tokenType = LToken
+tokenType = LType.LToken
 
 export
 ||| Create a metadata type.
 metadataType : LType
-metadataType = LMetadata
+metadataType = LType.LMetadata
 
 export
 ||| Create an opaque type.

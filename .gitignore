@@ -1,6 +1,7 @@
 # Idris 2
 *.ttc
 *.ttm
+*.so
 
 # Idris 1
 *.ibc
@@ -10,3 +11,4 @@ build/
 personal/
 generated/
 *~
+repl/

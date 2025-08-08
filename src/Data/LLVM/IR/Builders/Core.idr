@@ -3,7 +3,7 @@ module Data.LLVM.IR.Builders.Core
 
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
---import Data.LLVM.Write
+--import Data.LLVM.Write.Assembly
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
@@ -12,28 +12,6 @@ import Data.Walk
 import Data.LLVM.IR.Util
 
 
-export
-||| Create an empty function body with no statements.
-|||
-||| Returns an empty Block that can be used as a starting point
-||| for building function definitions or as a neutral element for combining
-||| function bodies.
-emptyBlock : Block
-emptyBlock = MkBlock [] 
-
-||| Semigroup instance for Block allowing concatenation of statement lists.
-|||
-||| Combines two function bodies by concatenating their statement lists,
-||| enabling composition of function body parts.
-Semigroup Block where 
-    (<+>) (MkBlock stmts1) (MkBlock stmts2) = MkBlock (stmts1 ++ stmts2)
-
-||| Monoid instance for Block with empty function body as neutral element.
-|||
-||| Provides a neutral empty function body and associative combination operation
-||| for building complex function bodies from parts.
-Monoid Block where 
-    neutral = emptyBlock
 
 export 
 ||| Create an empty LLVM module with no data layout, target, clauses, or tags.
@@ -73,7 +51,7 @@ export
 |||
 ||| @ b The boolean value (True or False)
 mkBool : Bool -> LExpr
-mkBool b = LBool b
+mkBool b = LTerm.LBool b
 
 export
 ||| Create a string constant.
@@ -83,7 +61,7 @@ export
 |||
 ||| @ s The string value to create as a constant
 mkString : String -> LExpr
-mkString s = LString s
+mkString s = LTerm.LString s
 
 export
 ||| Create a null pointer constant.
@@ -92,7 +70,7 @@ export
 ||| with value zero (null). Used for pointer initialization and
 ||| null pointer checks.
 mkNull : LExpr
-mkNull = LNull
+mkNull = LTerm.LNull
 
 export
 ||| Create an undefined constant.
@@ -101,7 +79,7 @@ export
 ||| unspecified value. Useful for optimization and when the
 ||| specific value doesn't matter.
 mkUndefined : LExpr
-mkUndefined = LUndefined
+mkUndefined = LTerm.LUndefined
 
 export
 ||| Create a floating point constant.
@@ -112,7 +90,7 @@ export
 |||
 ||| @ f The string representation of the floating point value
 mkFloat : String -> LExpr
-mkFloat f = LFloat f
+mkFloat f = LTerm.LFloat f
 
 export
 ||| Create an array constant.
@@ -122,7 +100,7 @@ export
 |||
 ||| @ elems List of typed constant elements for the array
 mkArray : List (WithType LExpr) -> LExpr
-mkArray elems = LArray elems
+mkArray elems = LTerm.LArray elems
 
 export
 ||| Create a struct constant.
@@ -132,7 +110,7 @@ export
 |||
 ||| @ fields List of typed constant fields for the struct
 mkStruct : List (WithType LExpr) -> LExpr
-mkStruct fields = LStruct fields
+mkStruct fields = LTerm.LStruct fields
 
 export
 ||| Create a vector constant.
@@ -142,7 +120,7 @@ export
 |||
 ||| @ elems List of typed constant elements for the vector
 mkVector : List (WithType LExpr) -> LExpr
-mkVector elems = LVector elems
+mkVector elems = LTerm.LVector elems
 
 
 export
@@ -166,14 +144,18 @@ export
 |||
 ||| @ name The string name of the local variable
 local : String -> Name
-local name = Local name
+local name = Local $ NamedRegister name
+
+export 
+local' : Register -> Name
+local' reg = Local reg
 
 public export 
 prefix 10 $@
 
 public export 
 ($@) : String -> LExpr
-($@) name = LVar $ Local name
+($@) name = LTerm.LVar $ local name
 
 export
 ||| Create a global variable reference.
@@ -195,7 +177,7 @@ export
 |||
 ||| @ name The name of the entity to create a pointer to
 ptrExpr : Name -> LExpr
-ptrExpr name = LConstE (LPtr name)
+ptrExpr name = LConstE (LTerm.LPtr name)
 
 export
 ||| Create a local variable pointer expression.
@@ -206,7 +188,11 @@ export
 |||
 ||| @ name The string name of the local variable to point to
 localPtr : String -> LExpr
-localPtr name = ptrExpr (Local name)
+localPtr name = ptrExpr (Local $ NamedRegister name)
+
+export 
+localPtr' : Register -> LExpr
+localPtr' reg = ptrExpr (Local reg)
 
 export
 ||| Create a global variable pointer expression.
@@ -241,8 +227,9 @@ export
 ||| points in the code that can be referenced.
 |||
 ||| @ name The string name of the label
-label : String -> LStatement
-label name = Labelled name
+block : {default "entry" name : String} -> {default [] statements : List LStatement} -> Terminator -> Block
+block {name} {statements} term = MkBlock name statements term
+
 
 public export 
 infix 0 $<-
@@ -256,7 +243,7 @@ public export
 |||
 ||| @ target The target variable name to assign to
 ||| @ op The operation whose result to assign
-($<-) : Name -> LOperation -> LStatement
+($<-) : Destination -> LOperation -> LStatement
 ($<-) target op = Operation target op
 
 export
@@ -267,7 +254,7 @@ export
 |||
 ||| @ target The target variable name to assign to
 ||| @ op The operation whose result to assign
-assign : Name -> LOperation -> LStatement
+assign : Destination -> LOperation -> LStatement
 assign target op = Operation target op
 
 
@@ -281,7 +268,7 @@ export
 |||
 ||| @ op The operation to execute and discard
 discard : LOperation -> LStatement
-discard op = Operation Trash op
+discard op = Operation Discard op
 
 
 export 
@@ -308,22 +295,22 @@ symbolInfo {lnk} {prm} {vis} {sto} = MkSymbolInfo lnk prm vis sto
 export
 ||| Create a poison constant.
 mkPoison : LExpr
-mkPoison = LPoison
+mkPoison = LTerm.LPoison
 
 export
 ||| Create a zero constant.
 mkZero : LExpr
-mkZero = LZero
+mkZero = LTerm.LZero
 
 export
 ||| Create a token constant.
 mkToken : LExpr
-mkToken = LToken
+mkToken = LTerm.LToken
 
 export
 ||| Create a metadata constant.
 mkMetadata : Metadata -> LExpr
-mkMetadata md = LMetadata md
+mkMetadata md = LTerm.LMetadata md
 
 export
 ||| Create a metadata tuple.
@@ -334,17 +321,17 @@ metadataTuple elems = MetadataTuple elems
 export
 ||| Create a variable expression from a name.
 varExpr : Name -> LExpr
-varExpr name = LVar name
+varExpr name = LTerm.LVar name
 
 export
 ||| Create a variable expression from a local name.
 localVar : String -> LExpr
-localVar name = LVar (Local name)
+localVar name = LTerm.LVar (Local $ NamedRegister name)
 
 export
 ||| Create a variable expression from a global name.
 globalVar : String -> LExpr
-globalVar name = LVar (Global name)
+globalVar name = LTerm.LVar (Global name)
 
 
 export
@@ -366,7 +353,7 @@ metadataCustom custom = MetadataCustom custom
 export
 ||| Create a vector type.
 vectorType : Int -> LType -> LType
-vectorType count elemTy = LVector count elemTy
+vectorType count elemTy = LType.LVector count elemTy
 
 export
 ||| Create a scalable vector type.
@@ -376,12 +363,12 @@ scalableVectorType count elemTy = LVectorScale count elemTy
 export
 ||| Create an array type.
 arrayType : Int -> LType -> LType
-arrayType count elemTy = LArray count elemTy
+arrayType count elemTy = LType.LArray count elemTy
 
 export
 ||| Create a struct type.
 structType : List LType -> LType
-structType fields = LStruct fields
+structType fields = LType.LStruct fields
 
 export
 ||| Create a packed struct type.
@@ -397,6 +384,7 @@ export
 ||| Create a variadic function type.
 varArgFunctionType : LType -> List LType -> LType -> LType
 varArgFunctionType retTy argTys varTy = LFunVarArg retTy argTys varTy
+
 
 
 export

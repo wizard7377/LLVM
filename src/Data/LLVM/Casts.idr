@@ -12,7 +12,8 @@ module Data.LLVM.Casts
 
 import Data.LLVM.Class
 import Data.LLVM.IR
-import Data.LLVM.Write
+import Data.LLVM.Write.Assembly
+
 import Data.Walk
 public export
 Walk GVarDef LClause where 
@@ -40,13 +41,13 @@ Walk LType FunctionArgSpec where
     go t = MkFunctionArgSpec t [] Nothing
 public export
 Walk Int LExpr where 
-    go i =  (LInt i)
+    go i =  (LTerm.LInt i)
 public export
 Walk String LExpr where 
-    go s =  (LString s)
+    go s =  (LTerm.LString s)
 public export
 Walk Bool LExpr where 
-    go b =  (LBool b)
+    go b =  (LTerm.LBool b)
 
 public export 
 Walk a b => Walk b c => Walk a c where 
@@ -54,11 +55,11 @@ Walk a b => Walk b c => Walk a c where
  
 public export 
 Walk LOperation LStatement where 
-    go op = Operation Trash op
+    go op = Operation Discard op
 
 public export 
 Walk Name LExpr where 
-    go n = LVar n
+    go n = LTerm.LVar n
 
 public export 
 Walk Terminator LOperation where 
@@ -92,7 +93,3 @@ Walk MemoryOpcode LOperation where
 public export 
 Walk ExceptOpcode LOperation where 
   go = ExceptOp
-
-public export 
-Walk (List LStatement) Block where 
-  go = MkBlock

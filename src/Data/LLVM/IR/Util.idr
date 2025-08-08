@@ -7,13 +7,13 @@ import Data.LLVM.Class
 public export 
 interface LBlock a where 
     constructor MkBlock
-    resolve : Maybe Name -> a -> List LStatement 
+    resolve : Destination -> a -> List LStatement 
 
 export
-implementation LBlock (Maybe Name -> List LStatement) where 
+implementation LBlock (Destination -> List LStatement) where 
     resolve n f = f n
 
 export
 implementation LBlock (List LStatement, LOperation) where 
-    resolve (Nothing) (stmt, op) = stmt ++ [Operation Trash op]
-    resolve (Just n) (stmt, op) = stmt ++ [Operation n op]
+
+    resolve ( n) (stmt, op) = stmt ++ [Operation n op]

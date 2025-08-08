@@ -7,10 +7,13 @@ import System.File.ReadWrite
 import System.LLVM
 import Data.LLVM.Builders
 import Data.LLVM.IR.Program
+import Data.LLVM.Write
 import System.Escape
 import Data.LLVM.Core
 import Control.Monad.Identity
+import System.Signal
 import Control.ANSI
+-- import Data.MonadIO
 showGreen : String -> String
 showGreen str = show $ colored Green str
 showRed : String -> String
@@ -62,4 +65,22 @@ encodeTest name value expected = do
       then
           putStrLn $ "Test " ++ name ++ " passed."
       else
-          putStrLn $ "Test " ++ name ++ " failed. Expected: " ++ expected ++ ", got: " ++ result
+          putStrLn $ "Test " ++ name ++ " failed" ++ ", got:" ++ result
+public export
+encodeIOTest : (m : Type -> Type) -> {auto e : Type} -> ({b : Type} -> EncodeIO e m a b => String -> a -> IO ())
+encodeIOTest m {e} name value = do
+    putStrLn $ "Running test: " ++ name
+    
+    res : Either e b <- encodeIO {e = e} {m = m} value
+    x <- handleManyCollectedSignals (limit 16)
+    case res of
+      Right result => putStrLn $ showGreen $ "Test " ++ name ++ " passed."
+      Left e => putStrLn $ showRed $ "Test " ++ name ++ " failed with error: " ++ show e
+
+public export
+encodeFCMTest : {default CPtr b : Type} -> EncodeIO CC.FCError CC.FCM a b => String -> a -> IO ()
+encodeFCMTest {b} name value = encodeIOTest CC.FCM {e = CC.FCError} {b = b} name value
+
+public export
+encodeFCMTest' : EncodeIO CC.FCError CC.FCM LModule CPtr => String -> LModule -> IO ()
+encodeFCMTest' = encodeFCMTest {b = CPtr}

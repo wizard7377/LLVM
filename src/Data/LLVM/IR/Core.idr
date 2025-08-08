@@ -215,6 +215,29 @@ data AddressSpace : Type where
   NamedSpace : String -> AddressSpace
   ||| Numbered address space  
   UnnamedSpace : Int -> AddressSpace
+
+public export 
+data Register : Type where
+  ||| Register with a specific name
+  NamedRegister : String -> Register
+  ||| Register with a numeric ID
+  UnnamedRegister : Int -> Register
+
+export
+Show Register where
+  show (NamedRegister name) = "%" ++ name
+  show (UnnamedRegister id) = "%" ++ show id
+export 
+Eq Register where
+  (==) (NamedRegister n1) (NamedRegister n2) = n1 == n2
+  (==) (UnnamedRegister id1) (UnnamedRegister id2) = id1 == id2
+  (==) _ _ = False
+export 
+Ord Register where  
+  compare (NamedRegister n1) (NamedRegister n2) = compare n1 n2
+  compare (UnnamedRegister id1) (UnnamedRegister id2) = compare id1 id2
+  compare (NamedRegister _) (UnnamedRegister _) = LT
+  compare (UnnamedRegister _) (NamedRegister _) = GT
 ||| LLVM identifier types for different kinds of names.
 |||
 ||| LLVM uses different prefixes to distinguish between different types
@@ -223,7 +246,7 @@ data AddressSpace : Type where
 public export
 data Name : Type where 
   ||| Local variable or register name (prefixed with %)
-  Local : String -> Name
+  Local : Register -> Name
   ||| Global variable or function name (prefixed with @)
   Global : String -> Name
   ||| Special compiler-generated name (prefixed with $)
@@ -238,9 +261,36 @@ data Name : Type where
   IntrinsicN : String -> Name
   ||| User-defined custom name type
   CustomN : String -> Name
-  ||| Trash register, for operations that don't assign
-  Trash : Name
 
+public export 
+data Destination : Type where
+  ||| A destination for a branch instruction (basic block label)
+  Assign : Register -> Destination
+  Discard : Destination
+  
+
+export
+implementation Eq Name where
+  (==) (Local n1) (Local n2) = n1 == n2
+  (==) (Global n1) (Global n2) = n1 == n2
+  (==) (Special n1) (Special n2) = n1 == n2
+  (==) (MetadataN n1) (MetadataN n2) = n1 == n2
+  (==) (AttributeN n1) (AttributeN n2) = n1 == n2
+  (==) (LabelN n1) (LabelN n2) = n1 == n2
+  (==) (IntrinsicN n1) (IntrinsicN n2) = n1 == n2
+  (==) (CustomN n1) (CustomN n2) = n1 == n2
+  (==) _ _ = False
+export
+implementation Ord Name where
+  compare (Local n1) (Local n2) = compare n1 n2
+  compare (Global n1) (Global n2) = compare n1 n2
+  compare (Special n1) (Special n2) = compare n1 n2
+  compare (MetadataN n1) (MetadataN n2) = compare n1 n2
+  compare (AttributeN n1) (AttributeN n2) = compare n1 n2
+  compare (LabelN n1) (LabelN n2) = compare n1 n2
+  compare (IntrinsicN n1) (IntrinsicN n2) = compare n1 n2
+  compare (CustomN n1) (CustomN n2) = compare n1 n2
+  compare _ _ = LT
 ||| LLVM type system representation.
 |||
 ||| This namespace contains types for representing all LLVM IR types,
@@ -275,6 +325,10 @@ namespace LType
   data LType : Type where
     ||| Generic pointer type (opaque pointer)
     LPtr : LType
+    ||| Pointer type to something (depreacted)
+    LPtrTo : LType -> LType
+    ||| Pointer to type in address space (depractated)
+    LPtrToAddr : AddressSpace -> LType -> LType
     ||| Pointer in specific address space
     LPtrAddr : AddressSpace -> LType
     ||| Void type (no value)
@@ -396,6 +450,7 @@ data Attribute : Type where
   --TODO: Finish
 
 
+
 ||| Function argument specification with type and attributes.
 |||
 ||| Represents a single function parameter including its type,
@@ -419,53 +474,55 @@ data Assembly : Type where
   ||| Basic inline assembly with assembly string
   BasicAsm : String -> Assembly
 -- TODO: Captures, nofp, inits, range, func atrributes
-mutual 
-  ||| LLVM metadata representation.
-  |||
-  ||| Metadata provides additional information that doesn't affect program
-  ||| semantics but can be used by debuggers, profilers, and other tools.
-  public export 
-  data Metadata : Type where
-    ||| A metadata tuple containing multiple metadata elements
-    MetadataTuple : List Metadata -> Metadata
-    ||| Named metadata
-    MetadataNamed : String -> Metadata
-    MetadataString : String -> Metadata
-    MetadataValue : WithType LExpr -> Metadata
-    MetadataCustom : String -> Metadata
-  public export
-  data LExpr : Type where 
-    ||| Integer constant value
-    LInt : Int -> LExpr
-    ||| Floating-point constant (as string to preserve precision)
-    LFloat : String -> LExpr
-    ||| Boolean constant (true/false)
-    LBool : Bool -> LExpr 
-    ||| Null pointer constant
-    LNull : LExpr
-    ||| Token constant for state tracking
-    LToken : LExpr 
-    ||| String literal constant
-    LString : String -> LExpr
-    ||| Array constant with typed elements
-    LArray : List (WithType LExpr) -> LExpr
-    ||| Vector constant with typed elements
-    LVector : List (WithType LExpr) -> LExpr
-    ||| Structure constant with typed fields
-    LStruct : List (WithType LExpr) -> LExpr
-    ||| Undefined value (undefined behavior if used)
-    LUndefined : LExpr
-    ||| Poison value (more undefined than undefined)
-    LPoison : LExpr
-    ||| Zero initializer for any type
-    LZero : LExpr
-    ||| Metadata constant
-    LMetadata : Metadata -> LExpr
-    ||| Pointer to named global/function
-    LPtr : Name -> LExpr
-    -- TODO: Basic block, dso-local, pointer auth, constant expression
-    LVar : Name -> LExpr
-    
+
+namespace LTerm
+  mutual 
+    ||| LLVM metadata representation.
+    |||
+    ||| Metadata provides additional information that doesn't affect program
+    ||| semantics but can be used by debuggers, profilers, and other tools.
+    public export 
+    data Metadata : Type where
+      ||| A metadata tuple containing multiple metadata elements
+      MetadataTuple : List Metadata -> Metadata
+      ||| Named metadata
+      MetadataNamed : String -> Metadata
+      MetadataString : String -> Metadata
+      MetadataValue : WithType LExpr -> Metadata
+      MetadataCustom : String -> Metadata
+    public export
+    data LExpr : Type where 
+      ||| Integer constant value
+      LInt : Int -> LExpr
+      ||| Floating-point constant (as string to preserve precision)
+      LFloat : String -> LExpr
+      ||| Boolean constant (true/false)
+      LBool : Bool -> LExpr 
+      ||| Null pointer constant
+      LNull : LExpr
+      ||| Token constant for state tracking
+      LToken : LExpr 
+      ||| String literal constant
+      LString : String -> LExpr
+      ||| Array constant with typed elements
+      LArray : List (WithType LExpr) -> LExpr
+      ||| Vector constant with typed elements
+      LVector : List (WithType LExpr) -> LExpr
+      ||| Structure constant with typed fields
+      LStruct : List (WithType LExpr) -> LExpr
+      ||| Undefined value (undefined behavior if used)
+      LUndefined : LExpr
+      ||| Poison value (more undefined than undefined)
+      LPoison : LExpr
+      ||| Zero initializer for any type
+      LZero : LExpr
+      ||| Metadata constant
+      LMetadata : Metadata -> LExpr
+      ||| Pointer to named global/function
+      LPtr : Name -> LExpr
+      -- TODO: Basic block, dso-local, pointer auth, constant expression
+      LVar : Name -> LExpr
+      
   public export
   %deprecate
   LConstE : LExpr -> LExpr
