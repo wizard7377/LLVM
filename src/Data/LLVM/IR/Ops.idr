@@ -16,7 +16,7 @@ record CaseBranch where
     ||| Type of the case value
     tpe : LType
     ||| Case value to match
-    value : LExpr
+    value : LValue
     ||| Target label for this case
     label : Label
 ||| Invoke instruction call specification.
@@ -37,9 +37,9 @@ record InvokeCall where
     ||| Function type
     tpe : LType 
     ||| Function value or pointer
-    fnval : LExpr
+    fnval : LValue
     ||| Function arguments
-    args : List LExpr
+    args : List LValue
     --fnAttrs : List ?
     --operandBundles : ?
     ||| Normal execution continuation label
@@ -64,9 +64,9 @@ record BrCall where
     ||| Function type
     tpe : LType 
     ||| Function value or pointer
-    fnval : LExpr
+    fnval : LValue
     ||| Function arguments
-    args : List LExpr
+    args : List LValue
     --fnAttrs : List ?
     --operandBundles : ?
     ||| Fallthrough label for normal execution
@@ -128,9 +128,9 @@ record FnCall where
     ||| Function type
     tpe : LType 
     ||| Function value or pointer
-    fnval : LExpr
+    fnval : LValue
     ||| Function arguments with their types
-    args : List (WithType LExpr)
+    args : List (WithType LValue)
     ||| Function attributes
     fnAttrs : List Attribute
     --operandBundles : ?
@@ -148,31 +148,31 @@ data Terminator : Type where
     ||| Return void from function
     RetVoid : Terminator
     ||| Return value from function
-    Ret : LType -> LExpr -> Terminator
+    Ret : LType -> LValue -> Terminator
     ||| Conditional branch (br i1 %cond, label %true, label %false)
-    CondBr : LExpr -> LExpr -> LExpr -> Terminator
+    CondBr : LValue -> LValue -> LValue -> Terminator
     ||| Unconditional branch (br label %target)
-    JumpBr : LExpr -> Terminator
+    JumpBr : LValue -> Terminator
     ||| Switch statement with multiple cases
-    Switch : LType -> LExpr -> Name -> List CaseBranch -> Terminator
+    Switch : LType -> LValue -> Name -> List CaseBranch -> Terminator
     ||| Indirect branch through computed address
-    IndirectBr : LExpr -> List LExpr -> Terminator
+    IndirectBr : LValue -> List LValue -> Terminator
     ||| Invoke instruction (function call with exception handling)
     Invoke : InvokeCall -> Terminator
     ||| Call branch instruction (inline assembly with possible branches)
     CallBR : BrCall -> Terminator
     ||| Resume exception propagation
-    Resume : LType -> LExpr -> Terminator
+    Resume : LType -> LValue -> Terminator
     ||| Unreachable code marker
     Unreachable : Terminator
     ||| Catch switch for exception handling
     CatchSwitchOp : CatchSwitch -> Terminator
     ||| Return from catch handler
-    CatchRet : LExpr -> Label -> Terminator
+    CatchRet : LValue -> Label -> Terminator
     ||| Return from cleanup to caller
-    CleanupRetCaller : LExpr -> Terminator
+    CleanupRetCaller : LValue -> Terminator
     ||| Return from cleanup to specific label
-    CleanupRet : LExpr -> Label -> Terminator
+    CleanupRet : LValue -> Label -> Terminator
 
 ||| Integer comparison predicates for icmp instruction.
 ||| Models LLVM IR icmp comparisons like:
@@ -304,11 +304,11 @@ data BinaryOpcode : Type where
 public export
 data VectorOpcode : Type where
     ||| Insert element into vector at specified index
-    InsertElement : WithType LExpr -> WithType LExpr -> WithType LExpr -> VectorOpcode
+    InsertElement : WithType LValue -> WithType LValue -> WithType LValue -> VectorOpcode
     ||| Shuffle two vectors according to mask
-    ShuffleVector : WithType LExpr -> WithType LExpr -> WithType LExpr -> VectorOpcode
+    ShuffleVector : WithType LValue -> WithType LValue -> WithType LValue -> VectorOpcode
     ||| Extract element from vector at specified index
-    ExtractElement : WithType LExpr -> WithType LExpr -> VectorOpcode
+    ExtractElement : WithType LValue -> WithType LValue -> VectorOpcode
 
 ||| Aggregate operation opcodes for structs and arrays.
 ||| Models LLVM IR aggregate manipulation instructions like:
@@ -319,9 +319,9 @@ data VectorOpcode : Type where
 public export
 data AggregateOpcode : Type where
     ||| Extract value from aggregate at specified index
-    ExtractValue : WithType LExpr -> Nat -> AggregateOpcode
+    ExtractValue : WithType LValue -> Nat -> AggregateOpcode
     ||| Insert value into aggregate at specified index
-    InsertValue : WithType LExpr -> WithType LExpr -> Nat -> AggregateOpcode
+    InsertValue : WithType LValue -> WithType LValue -> Nat -> AggregateOpcode
 ||| Type conversion operation opcodes.
 ||| Models LLVM IR conversion instructions like:
 ||| ```llvm
@@ -389,11 +389,11 @@ data CompareOpcode : Type where
 public export
 data MiscOpcode : Type where 
     ||| PHI node for SSA form
-    Phi : LType -> List (LExpr, Label) -> MiscOpcode
+    Phi : LType -> List (LValue, Label) -> MiscOpcode
     ||| Conditional select instruction
-    Select : FastMath -> WithType LExpr -> WithType LExpr -> WithType LExpr -> MiscOpcode
+    Select : FastMath -> WithType LValue -> WithType LValue -> WithType LValue -> MiscOpcode
     ||| Freeze instruction (converts poison to undef)
-    Freeze : WithType LExpr -> MiscOpcode
+    Freeze : WithType LValue -> MiscOpcode
     ||| Function call operation
     FnCallOp : FnCall -> MiscOpcode
     -- TODO: VaArg : 
@@ -432,7 +432,7 @@ data MemoryOpcode : Type where
     LoadRegular : 
         (volatile : Bool) ->
         (tpe : LType) ->
-        (address : LExpr) -> 
+        (address : LValue) -> 
         (align : Maybe Nat) ->
         (nonTemporal : Bool) -> 
         (invariantLoad : Bool) ->
@@ -446,7 +446,7 @@ data MemoryOpcode : Type where
     LoadAtomic : 
         (volatile : Bool) ->
         (tpe : LType) ->
-        (address : LExpr) -> 
+        (address : LValue) -> 
         (scope : Maybe String) -> 
         (ordering : Maybe AtomicOrder) ->
         (align : Maybe Nat) ->
@@ -456,16 +456,16 @@ data MemoryOpcode : Type where
 
     StoreRegular : 
         (volatile : Bool) ->
-        (tpe : WithType LExpr) ->
-        (address : LExpr) -> 
+        (tpe : WithType LValue) ->
+        (address : LValue) -> 
         (align : Maybe Nat) ->
         (nonTemporal : Bool) -> 
         (invariantGroup : Bool) ->
         MemoryOpcode
     StoreAtomic : 
         (volatile : Bool) ->
-        (tpe : WithType LExpr) ->
-        (address : LExpr) -> 
+        (tpe : WithType LValue) ->
+        (address : LValue) -> 
         (scope : Maybe String) -> 
         (ordering : Maybe AtomicOrder) ->
         (align : Maybe Nat) ->
@@ -480,37 +480,38 @@ data MemoryOpcode : Type where
 public export
 data CatchClause : Type where
     ||| Catch clause for landing pad instructions
-    Catching : LType -> LExpr -> CatchClause
+    Catching : LType -> LValue -> CatchClause
     ||| Filter clause for landing pad instructions
-    Filtering : LType -> LExpr -> CatchClause
+    Filtering : LType -> LValue -> CatchClause
 public export 
 data ExceptOpcode : Type where 
     LandingPad : LType -> List CatchClause -> ExceptOpcode
     LandingPadCleanup : LType -> List CatchClause -> ExceptOpcode
-    CatchPad : Name -> LExpr -> ExceptOpcode
-    CleanupPad : Name -> LExpr -> ExceptOpcode
+    CatchPad : Name -> LValue -> ExceptOpcode
+    CleanupPad : Name -> LValue -> ExceptOpcode
 ||| LLVM operations categorized by type.
 ||| Represents all possible LLVM IR operations.
 public export
-data LOperation : Type where 
+data LInstruction : Type where 
     ||| Terminator instruction (ends basic blocks)
-    TerminatorOp : Terminator -> LOperation
+    TerminatorOp : Terminator -> LInstruction
     ||| Unary operation
-    UnaryOp : UnaryOpcode -> LType -> LExpr -> LOperation
+    UnaryOp : UnaryOpcode -> LType -> LValue -> LInstruction
     ||| Binary operation
-    BinaryOp : BinaryOpcode -> LType -> LExpr -> LExpr -> LOperation
+    BinaryOp : BinaryOpcode -> LType -> LValue -> LValue -> LInstruction
     ||| Vector operation
-    VectorOp : VectorOpcode -> LOperation
+    VectorOp : VectorOpcode -> LInstruction
     ||| Aggregate operation
-    AggregateOp : AggregateOpcode -> LOperation
+    AggregateOp : AggregateOpcode -> LInstruction
     ||| Type conversion operation
-    ConversionOp : ConversionOpCode -> WithType LExpr -> LType -> LOperation
+    ConversionOp : ConversionOpCode -> WithType LValue -> LType -> LInstruction
     ||| Miscellaneous operation
-    MiscOp : MiscOpcode -> LOperation
+    MiscOp : MiscOpcode -> LInstruction
     ||| Memory operation
-    MemoryOp : MemoryOpcode -> LOperation
+    MemoryOp : MemoryOpcode -> LInstruction
     ||| Exception handling operation 
-    ExceptOp : ExceptOpcode -> LOperation
+    ExceptOp : ExceptOpcode -> LInstruction
+    CompareOp : CompareOpcode -> LType -> LValue -> LValue -> LInstruction
 
 ||| LLVM statements that can appear in basic blocks.
 ||| Models different forms of LLVM IR statements like:
@@ -520,15 +521,20 @@ data LOperation : Type where
 ||| entry:                          ; basic block label
 ||| ```
 public export
-data LStatement : Type where 
-    ||| Operation with named result (%name = operation)
-    Operation : Destination -> LOperation -> LStatement
+record LStatement where
+    constructor MkLStatement
+    ||| The name of the result variable (if any)
+    target : Maybe Name
+    ||| The instruction being executed
+    instruction : LInstruction
+    ||| The metadata associated with the statement (if any)
+    metadata : List Metadata
 
 ||| Basic block 
 public export 
-record Block where 
-    constructor MkBlock
-    ||| Block name (without label prefix)
+record BasicBlock where 
+    constructor MkBasicBlock
+    ||| BasicBlock name (without label prefix)
     name : String
     ||| List of statements in the block
     statements : List LStatement

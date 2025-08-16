@@ -12,3 +12,5 @@ personal/
 generated/
 *~
 repl/
+
+.ast-grep/**

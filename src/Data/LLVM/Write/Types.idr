@@ -20,9 +20,15 @@ data FCError : Type where
   NoBuilders : FCError
   NoFunctions : FCError 
   EmptyFunction : String -> FCError
+  NoScope : String -> FCError
   NoGeneric : FCError
 
-  
+public export 
+data Usages : Type where
+  UseFunction : Usages 
+  UseScope : Name -> Usages
+  UseModule : Usages 
+  UseBuilder : Usages 
 public export 
 record WithScope {default String name : Type} {default AnyPtr ref : Type} (me : Type) where 
   constructor MkWithScope
@@ -32,17 +38,24 @@ record WithScope {default String name : Type} {default AnyPtr ref : Type} (me : 
 export 
 {a : Type} -> Cast (WithScope {ref = a} b) b where
   cast (MkWithScope _ v) = v
+
+mutual 
+  public export 
+  record FCState where
+    constructor MkFCState
+    cMod : Maybe LLVMModule
+    cCon : LLVMContext
+    cFun : List (List (Maybe String), LLVMValue)  
+    cBuilders : List LLVMBuilder  
+    scope : SortedMap Name (List (FCM CPtr)) 
+    level : Int
+  public export 
+  data FCM : {auto 0 takes : List Usages} -> {auto 0 gives : List Usages} -> {auto 0 sees : List Usages} -> Type -> Type where 
+    MkFCM : EitherT FCError (RWST Int () FCState IO) a -> FCM a
+
 public export 
-record FCState where
-  constructor MkFCState
-  cMod : Maybe LLVMModule
-  cCon : LLVMContext
-  cFun : List (WithScope {ref = Int} LLVMValue)  
-  cBuilders : List (WithScope {name = Register} LLVMBuilder)
-  level : Int
-public export 
-FCM : Type -> Type 
-FCM = EitherT FCError (RWST Int () FCState IO)
+unFCM : FCM a -> EitherT FCError (RWST Int () FCState IO) a
+unFCM (MkFCM m) = m
 
 public export
 noScope :  {me : Type} -> {0 ref : Type} -> {name : Type} -> Ord name => me -> WithScope {name = name} {ref = ref} me

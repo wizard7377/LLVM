@@ -12,7 +12,8 @@ import System
 import Data.String
 import Data.LLVM.Write.Foreign.Monad
 import Data.LLVM.Write.Foreign.Values
-%default covering 
+--%default covering 
+%default partial
 maybeListToMap : Ord a => {default 0 index : Int} -> List (Maybe a) -> SortedMap a Int
 maybeListToMap {index} ((Just x) :: xs) = mergeWith (\x, y => y) (insert x index empty) (maybeListToMap {index = index + 1} xs)
 maybeListToMap {index} (Nothing :: xs) = maybeListToMap {index = index + 1} xs
@@ -70,7 +71,13 @@ public export
 {a : Type} -> Encode FCM a CPtr => Encode FCM (WithType a) CPtr where 
     encode = ?h12
 
-mutual 
+withIndex : List a -> List (Int, a)
+withIndex xs = go 0 xs
+  where
+    go : Int -> List a -> List (Int, a)
+    go _ [] = []
+    go n (x :: xs) = (n, x) :: go (n + 1) xs
+mutual
     export
     Encode FCM Metadata CPtr where
         encode (MetadataTuple elems) = do
@@ -79,6 +86,7 @@ mutual
             liftFCM $ LLVMMDNodeInContext !inCon (castPtr elemList) (cast $ length elems)
         encode (MetadataNamed name) = do
             liftFCM $ LLVMMDStringInContext !inCon name (cast $ length name)
+        encode (MetadataNode name) = ?mnh
         encode (MetadataString str) = do
             liftFCM $ LLVMMDStringInContext !inCon str (cast $ length str)
         encode (MetadataValue (MkWithType ty expr)) = do
@@ -89,21 +97,18 @@ mutual
             liftFCM $ LLVMMDStringInContext !inCon custom (cast $ length custom)
     
     export
-    Encode FCM (WithType LExpr) CPtr where
+    Encode FCM (WithType LValue) CPtr where
       encode (MkWithType ty v) = step "Make with type" $ do 
         ty' <- encode' ty
         case v of 
-          LVar name => do 
+          LVar name => step ("get name value: " ++ show name) $ do 
             case name of 
-              Local (NamedRegister n) => ?ewte9
-              Local (UnnamedRegister n) => ?ewte10
-              Global n => liftFCM $ LLVMGetNamedGlobal !inCon n
-              Special n => liftFCM $ LLVMGetNamedGlobal !inCon n
-              MetadataN n => ?ewte4
-              LabelN n => ?ewte6
-              IntrinsicN n => ?ewte7
-              CustomN n => ?ewte8
-              AttributeN n => ?ewte5
+              Temporary n => ?ewte10
+              Local n => getScope name
+              Global n => ?ewte11 
+              Parameter n => getScope name
+              Unnamed n => ?ewte13
+              
           LBool b => do 
             if b then liftFCM $ LLVMConstInt ty' 1 0 else liftFCM $ LLVMConstInt ty' 0 0
           LInt i => liftFCM $ LLVMConstInt ty' (cast i) 0
@@ -141,11 +146,18 @@ Encode FCM Wrapping CEnum where
 	encode NoSignedUnsigned = fcmPure $ (the CEnum (cast 3))
 
 export
-Encode FCM (UnaryOpcode, LType, LExpr) CPtr where
+Encode FCM (UnaryOpcode, LType, LValue) CPtr where
 	encode = ?h22
 
+export 
+Encode FCM (CompareOpcode, LType, LValue, LValue) CPtr where 
+  encode (op, ty, e0, e1) = step ("Compare opcode") $ do
+    e0' <- encode' $ MkWithType ty e0
+    e1' <- encode' $ MkWithType ty e1
+    case op of 
+      _ => ?coph
 export
-Encode FCM (BinaryOpcode, LType, LExpr, LExpr) CPtr where
+Encode FCM (BinaryOpcode, LType, LValue, LValue) CPtr where
 	encode (op, ty, e0, e1) = step ("Binary opcode") $ do 
     e0' <- encode' $ MkWithType ty e0
     e1' <- encode' $ MkWithType ty e1
@@ -153,7 +165,7 @@ Encode FCM (BinaryOpcode, LType, LExpr, LExpr) CPtr where
     case op of 
       Add => do
         builder <- popBuilder
-        res <- liftFCM $ LLVMBuildAdd builder.value e0' e1' "add"
+        res <- liftFCM $ LLVMBuildAdd builder e0' e1' "add"
         pushBuilder builder
         pure res
       _ => ?h23
@@ -186,7 +198,7 @@ public export
 Encode FCM Terminator CPtr where
 	encode = ?h29
 public export
-Encode FCM (ConversionOpCode, WithType LExpr, LType) CPtr where
+Encode FCM (ConversionOpCode, WithType LValue, LType) CPtr where
 	encode = ?h30
 
 public export
@@ -226,7 +238,7 @@ Encode FCM ExceptOpcode CPtr where
 	encode = ?h37
 
 export
-Encode FCM LOperation CPtr where
+Encode FCM LInstruction CPtr where
 	encode op = step "operation" $ case op of
     TerminatorOp t => encode' t
     UnaryOp u t e => encode' (u, t, e)
@@ -237,46 +249,58 @@ Encode FCM LOperation CPtr where
     MiscOp m => encode' m
     MemoryOp m => encode' m
     ExceptOp e => encode' e
+    CompareOp o ty e0 e1 => encode' (o, ty, e0, e1)
     
 
 export
 Encode FCM LStatement CPtr where
-    encode (Operation (Assign name) op) = step "statement" $ do 
+    -- TODO:
+    encode (MkLStatement (Just name) op _) = step "statement" $ do 
             res <- encode' op
             cBuild <- popBuilder 
-            let cBuild' = { scope $= (insert name res) } cBuild 
-            pushBuilder cBuild'
+            pushBuilder cBuild
             --TODO
             pure res
             
-    encode (Operation Discard op) = step "statement" $ do
+    encode (MkLStatement Nothing op _) = step "statement" $ do
             res <- encode' op
             pure res
 
 
 public export
-Encode FCM Block CPtr where
-    encode (MkBlock name statements term) = step ("Block: " ++ name) $ do 
+Encode FCM BasicBlock CPtr where
+    encode (MkBasicBlock name statements term) = step ("BasicBlock: " ++ name) $ do 
         f <- popFun
         putMsg 15 ("aapending block to function")
-        block <- fcm $ LLVMAppendBasicBlockInContext !inCon f.value name
+        block <- fcm $ LLVMAppendBasicBlockInContext !inCon (snd f) name
         builder <- fcm $ LLVMCreateBuilderInContext !inCon
-        let builder' : WithScope {name = Register} ? = noScope builder
         _ <- fcm $ LLVMPositionBuilderAtEnd builder block
         putMsg 15 ("encoding block statements")
-        (r, builder2) <- usingBuilder builder' (traverse encode' statements) 
+        (r, builder2) <- usingBuilder builder (traverse encode' statements) 
         (r2, builder3) <- usingBuilder builder2 (encode' term)
         pushFun f
         pure block
 
 public export
-Encode FCM FunctionArgSpec (Maybe String, LLVMType) where
-	encode (MkFunctionArgSpec ty attr name) = step ("arg spec") $ do 
+[ArgsOf] Encode FCM Argument LLVMValue where
+	encode (MkArgument ty attr name) = step ("arg spec") $ do 
             ty' <- encode' ty
-            pure (name, ty')
+            -- TODO: attr' <- encode att
+            (ns, fv) <- popFun
+            v <- case name of 
+              Just n => do 
+                let v' = fcm $ LLVMGetLastParam fv
+                pushScope' (Parameter n) v' 
+                v'
+              Nothing => fcm $ LLVMGetLastParam fv
+            pushFun (ns, fv) 
+            pure v
             -- TODO
-
-
+public export 
+[ArgInType] Encode FCM Argument (Maybe String, LLVMType) where
+  encode (MkArgument ty attr name) = step ("arg spec") $ do 
+            ty' <- encode' ty 
+            pure (name, ty')
 {-
 
 define [linkage] [PreemptionSpecifier] [visibility] [DLLStorageClass]
@@ -289,8 +313,11 @@ define [linkage] [PreemptionSpecifier] [visibility] [DLLStorageClass]
 
  -}
 
+numberEach : {default 0 ind : Nat} -> List a -> List (Nat, a)
+numberEach {ind} [] = []
+numberEach {ind} (x :: xs) = (ind, x) :: numberEach {ind = ind + 1} xs
 public export
-Encode FCM FunctionDef (WithScope {ref = Int} LLVMValue) where
+Encode FCM FunctionDef LLVMValue where
     encode (MkFunctionDef name _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ [] _) = throwError (EmptyFunction name)
     encode (
       MkFunctionDef 
@@ -301,15 +328,17 @@ Encode FCM FunctionDef (WithScope {ref = Int} LLVMValue) where
         gc fprefix prologue 
         personality metadata body tags) = step ("Function def: " ++ name) $ do 
             returnType' : CPtr <- encode' returnType
-            args' : List (Maybe String, CPtr) <- traverse encode args
+            args' : List (Maybe String, CPtr) <- traverse (encode @{ArgInType}) args
             args'' <- liftFCM $ toCList $ snd <$> args' 
             let argNames = fst <$> args'
             let argCount = length args 
+            
             fty <- liftFCM $ LLVMFunctionType returnType' (prim__castPtr args'') (cast argCount) 0
             fv <- liftFCM $ LLVMAddFunction !inMod name fty
+            (_, (argNames1, fv1)) <- usingFun (argNames, fv) $ for_ args (encode @{ArgsOf}) 
             -- START HERE
             -- pushFun (MkWithScope (argNames fv)
-            (body', fv') <- usingFun (MkWithScope (maybeListToMap argNames) fv) $ traverse encode' body
+            (body, (argNames',fv')) <- usingFun (argNames1, fv1) (traverse encode' body)
             -- TODO: Personality
             -- TODO: Rest
             pure fv'
@@ -322,9 +351,9 @@ declare [linkage] [visibility] [DLLStorageClass]
         [prefix Constant] [prologue Constant]
  -}
 public export
-Encode FCM FunctionDec (WithScope {ref = Int} LLVMValue) where
+Encode FCM FunctionDec LLVMValue where
     encode (MkFunctionDec name symbolInfo callingConvention returnAttrs returnType args addressInfo alignment gc prefixdata prolouge tags) = step ("Function decl " ++ name) $ do
-      args' : List (Maybe String, CPtr) <- traverse encode args
+      args' : List (Maybe String, LLVMType) <- traverse (encode @{ArgInType}) args
       let argTys : List CPtr = snd <$> args' 
       let argNames : List (Maybe String) = fst <$> args'
       returnType' <- encode' returnType
@@ -332,7 +361,7 @@ Encode FCM FunctionDec (WithScope {ref = Int} LLVMValue) where
       ty' <- liftFCM $ LLVMFunctionType returnType' (prim__castPtr argList) (cast $ length args) 0
       seed <- liftFCM $ LLVMAddFunction !inMod name ty'
       -- TODO:
-      pure (MkWithScope (maybeListToMap argNames) seed)
+      pure seed
         
 
 
@@ -356,11 +385,11 @@ public export
 Encode FCM LClause CPtr where 
     encode (GlobalDefC gdef) = encode' gdef
     encode (FunctionDefC fdef) = do 
-      v : WithScope {ref = Int} LLVMValue <- (encode fdef)
-      pure v.value
+      v : LLVMValue <- (encode fdef)
+      pure v
     encode (FunctionDecC dec) = do 
-      dec' : WithScope {ref = Int} LLVMValue <- encode dec
-      pure $ dec'.value
+      dec' : LLVMValue <- encode dec
+      pure $ dec'
     encode (AliasC al) = encode' al
     encode (IFuncC f) = encode' f
     encode (MetadataC n m) = ?encmd

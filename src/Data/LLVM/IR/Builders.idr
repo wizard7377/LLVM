@@ -24,3 +24,4 @@ import public Data.LLVM.IR.Builders.Ops
 import public Data.LLVM.IR.Builders.Math
 import public Data.LLVM.IR.Builders.Control
 import public Data.LLVM.IR.Builders.Helper
+import public Data.LLVM.IR.Builders.Sugar 

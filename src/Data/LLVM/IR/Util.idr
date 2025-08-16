@@ -4,16 +4,20 @@ import Data.LLVM.IR.Core
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 import Data.LLVM.Class
+
+{- 
 public export 
-interface LBlock a where 
-    constructor MkBlock
+interface LBasicBlock a where 
+    constructor MkBasicBlock
     resolve : Destination -> a -> List LStatement 
 
 export
-implementation LBlock (Destination -> List LStatement) where 
+implementation LBasicBlock (Destination -> List LStatement) where 
     resolve n f = f n
 
 export
-implementation LBlock (List LStatement, LOperation) where 
+implementation LBasicBlock (List LStatement, LInstruction) where 
 
-    resolve ( n) (stmt, op) = stmt ++ [Operation n op]
+    resolve ( n) (stmt, op) = stmt ++ [MkLStatement n op]
+
+-}

@@ -12,6 +12,87 @@ import System
 import Data.String
 %default covering 
 
+
+public export 
+Functor FCM where
+  map f (MkFCM m) = MkFCM (map f m)
+
+public export 
+Applicative FCM where
+  pure = MkFCM . pure
+  (<*>) (MkFCM f) (MkFCM x) = MkFCM (f <*> x)
+
+public export
+Monad FCM where 
+  m >>= f = MkFCM ((unFCM m) >>= (unFCM . f))
+
+public export
+HasIO FCM where 
+  liftIO = MkFCM . liftIO
+
+public export 
+MonadError FCError FCM where 
+  throwError e = MkFCM $ throwError e
+  catchError m h = MkFCM $ catchError (unFCM m) (unFCM . h)
+
+public export 
+MonadState FCState FCM where 
+  get = MkFCM $ get
+  put x = MkFCM $ put x
+
+public export 
+MonadReader Int FCM where 
+  ask = MkFCM $ ask
+  local f (MkFCM m) = MkFCM $ local f m
+export
+scoped : FCM a -> FCM a
+scoped f = do
+  st <- get
+  f' <- f 
+  put st
+  pure f'
+export
+initFCState : IO FCState 
+initFCState = do
+  context <- fromPrim LLVMContextCreate
+  pure $ MkFCState Nothing (context) [] [] empty 1
+
+private 
+defaultLevel : Int 
+defaultLevel = 1
+export 
+runFCM : {default (-1) level : Int} -> FCM a -> IO (Either FCError a)
+runFCM {level} (MkFCM m) = do 
+  env <- getEnv "IDRIS_LLVM_VERBOSITY"
+  let e = parseInteger {a = Int} =<< env
+  st <- initFCState
+  let l' : Maybe Int = if level < 0 then Nothing else Just level
+  let verb : Int = 
+    case l' of 
+        Just lv => lv
+        Nothing => case e of 
+          Just ev => ev
+          Nothing => defaultLevel
+    
+  let r0 = runEitherT m
+  let r1 = evalRWST verb st r0
+  fst <$> r1
+ 
+export
+liftFCM : {0 a : Type} -> PrimIO a -> FCM a
+liftFCM x = MkFCM $ liftIO $ fromPrim x
+export  
+fcm : {0 a : Type} -> PrimIO a -> FCM a
+fcm = liftFCM
+
+ 
+export
+inCon : FCM LLVMModule 
+inCon = do 
+  st <- get
+  pure st.cCon
+-- TODO: 
+-- Perhaps add a way to encode at type level requirements of these
 export
 castPtr : CPtr -> Ptr t
 castPtr p = prim__castPtr p
@@ -102,57 +183,7 @@ usingBuilder f m = do
   r <- m
   f' <- popBuilder
   pure (r, f')
-export
-initFCState : IO FCState 
-initFCState = do
-  context <- fromPrim LLVMContextCreate
-  pure $ MkFCState Nothing (context) [] [] 1
 
-private 
-defaultLevel : Int 
-defaultLevel = 1
-export 
-runFCM : {default (-1) level : Int} -> FCM a -> IO (Either FCError a)
-runFCM {level} m = do 
-  env <- getEnv "IDRIS_LLVM_VERBOSITY"
-  let e = parseInteger {a = Int} =<< env
-  st <- initFCState
-  let l' : Maybe Int = if level < 0 then Nothing else Just level
-  let verb : Int = 
-    case l' of 
-        Just lv => lv
-        Nothing => case e of 
-          Just ev => ev
-          Nothing => defaultLevel
-    
-  let r0 = runEitherT m
-  let r1 = evalRWST verb st r0
-  fst <$> r1
-  
-export
-inCon : FCM LLVMModule 
-inCon = do 
-  st <- get
-  pure st.cCon
-export
-liftFCM : {0 a : Type} -> PrimIO a -> FCM a
-liftFCM x = liftIO $ fromPrim x
-export  
-fcm : {0 a : Type} -> PrimIO a -> FCM a
-fcm = liftFCM
-
-export
-scoped : FCM a -> FCM a
-scoped f = do
-  st <- get
-  f' <- f 
-  put st
-  pure f'
-public export
-[fcmIO] HasIO FCM where 
-  liftIO = liftIO
-public export
-[fcmMonad] Monad FCM
 public export 
 encode' : {a : Type} -> Encode FCM a CPtr => (_ : a) -> FCM CPtr 
 encode' x = encode {m = FCM} {b = CPtr} x
@@ -171,6 +202,7 @@ Show FCError where
   show NoBuilders = "No builders available"
   show NoFunctions = "No functions available"
   show (EmptyFunction f) = "Empty function: " ++ f
+  show (NoScope s) = "No scope for: " ++ s
   show _ = "Other error"
 export 
 MonadIO FCError FCM where
@@ -179,3 +211,52 @@ MonadIO FCError FCM where
     case res of 
       Right x => pure (Right x)
       Left e => pure (Left e)
+
+export 
+pushScope' : Name -> FCM CPtr -> FCM ()
+pushScope' name ref = do
+  st <- get
+  let newScope = SortedMap.insertWith (\x, y => (x ++ y)) name [ref] st.scope
+  modify $ the changeState { scope := newScope }
+  pure ()
+export 
+pushScope : Name -> CPtr -> FCM ()
+pushScope name ref = pushScope' name (pure ref)
+
+export
+getScope : Name -> FCM CPtr
+getScope k = do
+  st <- get
+  x <- case (lookup k st.scope) of
+    Just (v :: _) => v
+    Just [] => throwError (NoScope $ show k)
+    Nothing => throwError (NoScope $ show k)
+  pure x
+
+export
+popScope : Name -> FCM CPtr 
+popScope k = do
+  st <- get
+  (x, xs) <- case (lookup k st.scope) of
+    Just (v :: vs) => do 
+      v' <- v 
+      pure (v', vs)
+    Just [] => throwError (NoScope $ show k)
+    Nothing => throwError (NoScope $ show k)
+  modify $  the (changeState) $ { scope $= (updateExisting (const xs) k) }
+  pure x
+
+export
+inScope : Name -> CPtr -> FCM a -> FCM a
+inScope name ref m = do 
+  pushScope name ref 
+  result <- m 
+  _ <- popScope name 
+  pure result
+
+withScope : Name -> (CPtr -> FCM (a, CPtr)) -> FCM a
+withScope name f = do 
+  ref <- popScope name 
+  (r, s) <- f ref 
+  pushScope name s
+  pure r

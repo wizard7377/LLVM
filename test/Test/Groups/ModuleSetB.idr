@@ -26,9 +26,9 @@ moduleWithAttributes = MkLModule {
             returnAttrs = [NoAlias],  -- Return attributes
             returnType = LPtr,
             args = [
-                MkFunctionArgSpec LPtr [NoAlias] (Just "input"),   -- No alias
-                MkFunctionArgSpec (LInt 32) [ZeroExt] (Just "size"),               -- Zero extend
-                MkFunctionArgSpec LPtr [NoAlias] (Just "output")                -- No alias
+                MkArgument LPtr [NoAlias] (Just "input"),   -- No alias
+                MkArgument (LInt 32) [ZeroExt] (Just "size"),               -- Zero extend
+                MkArgument LPtr [NoAlias] (Just "output")                -- No alias
             ],
             addressInfo = Nothing,
             addressSpace = Nothing,
@@ -42,17 +42,17 @@ moduleWithAttributes = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
+            body = [MkBasicBlock "entry" [
                 -- Memory copy with attributes
-                Operation Discard (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                MkLStatement Nothing (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LVoid [LPtr, LPtr, LInt 32]) 
                     ( (LPtr (Global "llvm.memcpy.p0i8.p0i8.i32"))) 
                     [
-                        MkWithType LPtr ( (LPtr (Local (NamedRegister "output")))),
-                        MkWithType LPtr ( (LPtr (Local (NamedRegister "input")))),
-                        MkWithType (LInt 32) ( (LPtr (Local (NamedRegister "size"))))
+                        MkWithType LPtr ( (LPtr (Local (id "output")))),
+                        MkWithType LPtr ( (LPtr (Local (id "input")))),
+                        MkWithType (LInt 32) ( (LPtr (Local (id "size"))))
                     ] []))),
-                Operation Discard (TerminatorOp (Ret LPtr ( (LPtr (Local (NamedRegister "output"))))))
+                MkLStatement Nothing (TerminatorOp (Ret LPtr ( (LPtr (Local (id "output"))))))
             ] RetVoid],
             tags = []
         }
@@ -86,7 +86,7 @@ moduleWithEdgeCases = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LInt 32,
-            args = [MkFunctionArgSpec (LInt 32) [] (Just "input")],
+            args = [MkArgument (LInt 32) [] (Just "input")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -99,27 +99,27 @@ moduleWithEdgeCases = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
+            body = [MkBasicBlock "entry" [
                 -- Division by potentially zero value
-                Operation (Assign (NamedRegister "div_result")) (BinaryOp SDiv (LInt 32) ( (LInt 100)) (LVar (Local (NamedRegister "input")))),
+                MkLStatement (Assign (id "div_result")) (BinaryOp SDiv (LInt 32) ( (LInt 100)) (LVar (Local (id "input")))),
                 -- Check for overflow (proper comparison)
-                Operation (Assign (NamedRegister "overflow_check")) (icmp CNe (LInt 32) (LVar (Local (NamedRegister "input"))) ( (LInt 0))),
-                Operation Discard (TerminatorOp (CondBr (LVar (Local (NamedRegister "overflow_check"))) ( (LPtr (Local (NamedRegister "error")))) ( (LPtr (Local (NamedRegister "normal"))))))
-                ] (CondBr (LVar (Local (NamedRegister "overflow_check"))) ( (LPtr (Local (NamedRegister "error")))) ( (LPtr (Local (NamedRegister "normal"))))),
+                MkLStatement (Assign (id "overflow_check")) (icmp CNe (LInt 32) (LVar (Local (id "input"))) ( (LInt 0))),
+                MkLStatement Nothing (TerminatorOp (CondBr (LVar (Local (id "overflow_check"))) ( (LPtr (Local (id "error")))) ( (LPtr (Local (id "normal"))))))
+                ] (CondBr (LVar (Local (id "overflow_check"))) ( (LPtr (Local (id "error")))) ( (LPtr (Local (id "normal"))))),
                     
-                MkBlock "error" [
+                MkBasicBlock "error" [
                     -- Unreachable after error
-                    Operation Discard (TerminatorOp (Ret (LInt 32) ( (LInt (-1))))),
-                    Operation Discard (TerminatorOp Unreachable)  -- This should never be reached
+                    MkLStatement Nothing (TerminatorOp (Ret (LInt 32) ( (LInt (-1))))),
+                    MkLStatement Nothing (TerminatorOp Unreachable)  -- This should never be reached
                 ] (Ret (LInt 32) ( (LInt (-1)))),
                     
-                MkBlock "normal" [
+                MkBasicBlock "normal" [
                     -- Phi node with single predecessor (edge case)
-                    Operation (Assign (NamedRegister "phi_result")) (MiscOp (Phi (LInt 32) [
-                        ( (LPtr (Local (NamedRegister "div_result"))),  (LPtr (Local (NamedRegister "entry"))))
+                    MkLStatement (Assign (id "phi_result")) (MiscOp (Phi (LInt 32) [
+                        ( (LPtr (Local (id "div_result"))),  (LPtr (Local (id "entry"))))
                     ])),
-                    Operation Discard (TerminatorOp (Ret (LInt 32) ( (LPtr (Local (NamedRegister "phi_result"))))))
-                ] (Ret (LInt 32) ( (LPtr (Local (NamedRegister "phi_result")))))
+                    MkLStatement Nothing (TerminatorOp (Ret (LInt 32) ( (LPtr (Local (id "phi_result"))))))
+                ] (Ret (LInt 32) ( (LPtr (Local (id "phi_result")))))
             ],
             tags = []
         }
@@ -140,7 +140,7 @@ moduleWithMemoryManagement = MkLModule {
             callingConvention = Just C,
             returnAttrs = [NoAlias],
             returnType = LPtr,
-            args = [MkFunctionArgSpec (LInt 64) [] Nothing],
+            args = [MkArgument (LInt 64) [] Nothing],
             addressInfo = Nothing,
             alignment = Nothing,
             gc = Nothing,
@@ -154,7 +154,7 @@ moduleWithMemoryManagement = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LVoid,
-            args = [MkFunctionArgSpec LPtr [] Nothing],
+            args = [MkArgument LPtr [] Nothing],
             addressInfo = Nothing,
             alignment = Nothing,
             gc = Nothing,
@@ -168,7 +168,7 @@ moduleWithMemoryManagement = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LPtr,
-            args = [MkFunctionArgSpec (LInt 32) [] (Just "size")],
+            args = [MkArgument (LInt 32) [] (Just "size")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -181,35 +181,35 @@ moduleWithMemoryManagement = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
+            body = [MkBasicBlock "entry" [
                 -- Convert size to 64-bit for malloc
-                Operation (Assign (NamedRegister "size64")) (ConversionOp ZExt (MkWithType (LInt 32) (LVar (Local (NamedRegister "size")))) (LInt 64)),
+                MkLStatement (Assign (id "size64")) (ConversionOp ZExt (MkWithType (LInt 32) (LVar (Local (id "size")))) (LInt 64)),
                 -- Allocate memory
-                Operation (Assign (NamedRegister "ptr")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                MkLStatement (Assign (id "ptr")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LPtr [LInt 64]) 
                     ( (LPtr (Global "malloc"))) 
-                    [MkWithType (LInt 64) (LVar (Local (NamedRegister "size64")))] []))),
+                    [MkWithType (LInt 64) (LVar (Local (id "size64")))] []))),
                 -- Check if allocation succeeded (proper pointer comparison)
-                Operation (Assign (NamedRegister "is_null")) (icmp CEq LPtr (LVar (Local (NamedRegister "ptr"))) ( LNull)),
-                Operation Discard (TerminatorOp (CondBr (LVar (Local (NamedRegister "is_null"))) ( (LPtr (Local (NamedRegister "alloc_failed")))) ( (LPtr (Local (NamedRegister "alloc_success"))))))
-                ] (CondBr (LVar (Local (NamedRegister "is_null"))) ( (LPtr (Local (NamedRegister "alloc_failed")))) ( (LPtr (Local (NamedRegister "alloc_success")))))),
+                MkLStatement (Assign (id "is_null")) (icmp CEq LPtr (LVar (Local (id "ptr"))) ( LNull)),
+                MkLStatement Nothing (TerminatorOp (CondBr (LVar (Local (id "is_null"))) ( (LPtr (Local (id "alloc_failed")))) ( (LPtr (Local (id "alloc_success"))))))
+                ] (CondBr (LVar (Local (id "is_null"))) ( (LPtr (Local (id "alloc_failed")))) ( (LPtr (Local (id "alloc_success")))))),
                 
-                MkBlock "alloc_failed" [
-                    Operation Discard (TerminatorOp (Ret LPtr ( LNull)))
+                MkBasicBlock "alloc_failed" [
+                    MkLStatement Nothing (TerminatorOp (Ret LPtr ( LNull)))
                 ] (Ret LPtr ( LNull)),
                     
-                MkBlock "alloc_success" [
+                MkBasicBlock "alloc_success" [
                     -- Initialize allocated memory to zero
-                    Operation Discard (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                    MkLStatement Nothing (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun LVoid [LPtr, LInt 8, LInt 64]) 
                         ( (LPtr (Global "llvm.memset.p0i8.i64"))) 
                         [
-                            MkWithType LPtr (LVar (Local (NamedRegister "ptr"))),
+                            MkWithType LPtr (LVar (Local (id "ptr"))),
                             MkWithType (LInt 8) ( (LInt 0)),
-                            MkWithType (LInt 64) (LVar (Local (NamedRegister "size64")))
+                            MkWithType (LInt 64) (LVar (Local (id "size64")))
                         ] []))),
-                Operation Discard (TerminatorOp (Ret LPtr (LVar (Local (NamedRegister "ptr")))))
-            ] (Ret LPtr (LVar (Local (NamedRegister "ptr"))))],
+                MkLStatement Nothing (TerminatorOp (Ret LPtr (LVar (Local (id "ptr")))))
+            ] (Ret LPtr (LVar (Local (id "ptr"))))],
             tags = []
         }
     ],
@@ -230,8 +230,8 @@ moduleWithIntrinsics = MkLModule {
             returnAttrs = [],
             returnType = LFloating LDouble,
             args = [
-                MkFunctionArgSpec (LFloating LDouble) [] (Just "x"),
-                MkFunctionArgSpec (LFloating LDouble) [] (Just "y")
+                MkArgument (LFloating LDouble) [] (Just "x"),
+                MkArgument (LFloating LDouble) [] (Just "y")
             ],
             addressInfo = Nothing,
             addressSpace = Nothing,
@@ -245,38 +245,38 @@ moduleWithIntrinsics = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
+            body = [MkBasicBlock "entry" [
                     -- Call sqrt intrinsic
-                    Operation (Assign (NamedRegister "sqrt_x")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                    MkLStatement (Assign (id "sqrt_x")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (LFloating LDouble) [LFloating LDouble]) 
                         ( (LPtr (Global "llvm.sqrt.f64"))) 
-                        [MkWithType (LFloating LDouble) ( (LPtr (Local (NamedRegister "x"))))] []))),
+                        [MkWithType (LFloating LDouble) ( (LPtr (Local (id "x"))))] []))),
                     -- Call sin intrinsic
-                    Operation (Assign (NamedRegister "sin_y")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                    MkLStatement (Assign (id "sin_y")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (LFloating LDouble) [LFloating LDouble]) 
                         ( (LPtr (Global "llvm.sin.f64"))) 
-                        [MkWithType (LFloating LDouble) ( (LPtr (Local (NamedRegister "y"))))] []))),
+                        [MkWithType (LFloating LDouble) ( (LPtr (Local (id "y"))))] []))),
                     -- Call fma (fused multiply-add) intrinsic
-                    Operation (Assign (NamedRegister "fma_result")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                    MkLStatement (Assign (id "fma_result")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (LFloating LDouble) [LFloating LDouble, LFloating LDouble, LFloating LDouble]) 
                         ( (LPtr (Global "llvm.fma.f64"))) 
                         [
-                            MkWithType (LFloating LDouble) ( (LPtr (Local (NamedRegister "sqrt_x")))),
-                            MkWithType (LFloating LDouble) ( (LPtr (Local (NamedRegister "sin_y")))),
+                            MkWithType (LFloating LDouble) ( (LPtr (Local (id "sqrt_x")))),
+                            MkWithType (LFloating LDouble) ( (LPtr (Local (id "sin_y")))),
                             MkWithType (LFloating LDouble) ( (LFloat "1.0"))
                         ] []))),
                     -- Check for NaN using intrinsic
-                    Operation (Assign (NamedRegister "is_nan")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                    MkLStatement (Assign (id "is_nan")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (LInt 1) [LFloating LDouble]) 
                         ( (LPtr (Global "llvm.isnan.f64"))) 
-                        [MkWithType (LFloating LDouble) ( (LPtr (Local (NamedRegister "fma_result"))))] []))),
+                        [MkWithType (LFloating LDouble) ( (LPtr (Local (id "fma_result"))))] []))),
                     -- Select result based on NaN check
-                    Operation (Assign (NamedRegister "final_result")) (MiscOp (Select [] 
-                        (MkWithType (LInt 1) ( (LPtr (Local (NamedRegister "is_nan")))))
+                    MkLStatement (Assign (id "final_result")) (MiscOp (Select [] 
+                        (MkWithType (LInt 1) ( (LPtr (Local (id "is_nan")))))
                         (MkWithType (LFloating LDouble) ( (LFloat "0.0"))) 
-                        (MkWithType (LFloating LDouble) ( (LPtr (Local (NamedRegister "fma_result"))))))),
-                    Operation Discard (TerminatorOp (Ret (LFloating LDouble) ( (LPtr (Local (NamedRegister "final_result"))))))
-                ] (Ret (LFloating LDouble) ( (LPtr (Local (NamedRegister "final_result")))))
+                        (MkWithType (LFloating LDouble) ( (LPtr (Local (id "fma_result"))))))),
+                    MkLStatement Nothing (TerminatorOp (Ret (LFloating LDouble) ( (LPtr (Local (id "final_result"))))))
+                ] (Ret (LFloating LDouble) ( (LPtr (Local (id "final_result")))))
             ],
             tags = []
         }
@@ -296,7 +296,7 @@ moduleWithGC = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LPtr,
-            args = [MkFunctionArgSpec LPtr [] (Just "root")],
+            args = [MkArgument LPtr [] (Just "root")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -309,27 +309,27 @@ moduleWithGC = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
+            body = [MkBasicBlock "entry" [
                 -- GC root declaration
-                Operation Discard (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                MkLStatement Nothing (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LVoid [LPtr, LPtr]) 
                     ( (LPtr (Global "llvm.gcroot"))) 
                     [
-                        MkWithType LPtr ( (LPtr (Local (NamedRegister "root")))),
+                        MkWithType LPtr ( (LPtr (Local (id "root")))),
                         MkWithType LPtr ( LNull)
                     ] []))),
                 -- Potential GC safepoint
-                Operation Discard (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                MkLStatement Nothing (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LVoid []) 
                     ( (LPtr (Global "llvm.experimental.gc.statepoint.p0f_isVoidf"))) 
                     [] []))),
                 -- Read from GC pointer
-                Operation (Assign (NamedRegister "value")) (MemoryOp (LoadRegular False LPtr
-                    ( (LPtr (Local (NamedRegister "root"))))
+                MkLStatement (Assign (id "value")) (MemoryOp (LoadRegular False LPtr
+                    ( (LPtr (Local (id "root"))))
                     Nothing False False False False Nothing Nothing Nothing False)),
-                Operation Discard (TerminatorOp (Ret LPtr ( (LPtr (Local (NamedRegister "value"))))))
+                MkLStatement Nothing (TerminatorOp (Ret LPtr ( (LPtr (Local (id "value"))))))
                 ] 
-                (Ret LPtr ( (LPtr (Local (NamedRegister "value")))))],
+                (Ret LPtr ( (LPtr (Local (id "value")))))],
             tags = []
         }
     ],
@@ -400,9 +400,9 @@ moduleWithConstants = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
+            body = [MkBasicBlock "entry" [
                 -- Initialize global state
-                Operation Discard (MemoryOp (StoreRegular False
+                MkLStatement Nothing (MemoryOp (StoreRegular False
                     (MkWithType (LInt 32) ( (LInt 42)))
                     ( (LPtr (Global "initialized_value")))
                     Nothing False False))
@@ -428,13 +428,13 @@ moduleWithConstants = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
+            body = [MkBasicBlock "entry" [
                 -- Cleanup global state
-                Operation Discard (MemoryOp (StoreRegular False
+                MkLStatement Nothing (MemoryOp (StoreRegular False
                     (MkWithType (LInt 32) ( (LInt 0)))
                     ( (LPtr (Global "initialized_value")))
                     Nothing False False)),
-                Operation Discard (TerminatorOp RetVoid)
+                MkLStatement Nothing (TerminatorOp RetVoid)
             ] RetVoid],
             tags = []
         },
@@ -494,11 +494,11 @@ moduleWithComdats = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
-                Operation (Assign (NamedRegister "value")) (MemoryOp (LoadRegular False (LInt 32)
+            body = [MkBasicBlock "entry" [
+                MkLStatement (Assign (id "value")) (MemoryOp (LoadRegular False (LInt 32)
                     ( (LPtr (Global "weak_global")))
                     Nothing False False False False Nothing Nothing Nothing False))
-            ] (Ret (LInt 32) (LVar (Local (NamedRegister "value"))))],
+            ] (Ret (LInt 32) (LVar (Local (id "value"))))],
             tags = []
         },
         -- Available externally function (template instantiation)
@@ -508,7 +508,7 @@ moduleWithComdats = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LVoid,
-            args = [MkFunctionArgSpec (LInt 32) [] (Just "param")],
+            args = [MkArgument (LInt 32) [] (Just "param")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -521,11 +521,11 @@ moduleWithComdats = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
+            body = [MkBasicBlock "entry" [
                 -- Template-like operation
-                Operation (Assign (NamedRegister "result")) (BinaryOp Mul (LInt 32) (LVar (Local (NamedRegister "param"))) (LVar (Local (NamedRegister "param")))),
-                Operation Discard (MemoryOp (StoreRegular False
-                    (MkWithType (LInt 32) (LVar (Local (NamedRegister "result"))))
+                MkLStatement (Assign (id "result")) (BinaryOp Mul (LInt 32) (LVar (Local (id "param"))) (LVar (Local (id "param")))),
+                MkLStatement Nothing (MemoryOp (StoreRegular False
+                    (MkWithType (LInt 32) (LVar (Local (id "result"))))
                     ( (LPtr (Global "weak_global")))
                     Nothing False False))
             ] RetVoid),
@@ -557,7 +557,7 @@ moduleStressTest = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LInt 32,
-            args = [MkFunctionArgSpec (LInt 32) [] (Just "x")],
+            args = [MkArgument (LInt 32) [] (Just "x")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -570,9 +570,9 @@ moduleStressTest = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
-                Operation (Assign (NamedRegister "result")) (BinaryOp Add (LInt 32) (LVar (Local (NamedRegister "x"))) ( (LInt 1)))
-            ] (Ret (LInt 32) (LVar (Local (NamedRegister "result"))))],
+            body = [MkBasicBlock "entry" [
+                MkLStatement (Assign (id "result")) (BinaryOp Add (LInt 32) (LVar (Local (id "x"))) ( (LInt 1)))
+            ] (Ret (LInt 32) (LVar (Local (id "result"))))],
             tags = []
         },
         FunctionDefC $ MkFunctionDef {
@@ -581,7 +581,7 @@ moduleStressTest = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LInt 32,
-            args = [MkFunctionArgSpec (LInt 32) [] (Just "x")],
+            args = [MkArgument (LInt 32) [] (Just "x")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -594,10 +594,10 @@ moduleStressTest = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
-                Operation (Assign (NamedRegister "result")) (BinaryOp Mul (LInt 32) ( (LPtr (Local (NamedRegister "x")))) ( (LInt 2))),
-                Operation Discard (TerminatorOp (Ret (LInt 32) ( (LPtr (Local (NamedRegister "result"))))))
-            ] (Ret (LInt 32) ( (LPtr (Local (NamedRegister "result")))))],
+            body = [MkBasicBlock "entry" [
+                MkLStatement (Assign (id "result")) (BinaryOp Mul (LInt 32) ( (LPtr (Local (id "x")))) ( (LInt 2))),
+                MkLStatement Nothing (TerminatorOp (Ret (LInt 32) ( (LPtr (Local (id "result"))))))
+            ] (Ret (LInt 32) ( (LPtr (Local (id "result")))))],
             tags = []
         },
         -- Function with deeply nested control flow
@@ -607,7 +607,7 @@ moduleStressTest = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LInt 32,
-            args = [MkFunctionArgSpec (LInt 32) [] (Just "depth")],
+            args = [MkArgument (LInt 32) [] (Just "depth")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -620,34 +620,34 @@ moduleStressTest = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBlock "entry" [
-                Operation (Assign (NamedRegister "cmp1")) (icmp CSGt (LInt 32) (LVar (Local (NamedRegister "depth"))) ( (LInt 0)))
-            ] (CondBr (LVar (Local (NamedRegister "cmp1"))) (LVar (Local (NamedRegister "level1"))) (LVar (Local (NamedRegister "base")))),
+            body = [MkBasicBlock "entry" [
+                MkLStatement (Assign (id "cmp1")) (icmp CSGt (LInt 32) (LVar (Local (id "depth"))) ( (LInt 0)))
+            ] (CondBr (LVar (Local (id "cmp1"))) (LVar (Local (id "level1"))) (LVar (Local (id "base")))),
                 
-            MkBlock "level1" [
-                Operation (Assign (NamedRegister "cmp2")) (icmp CSGt (LInt 32) (LVar (Local (NamedRegister "depth"))) ( (LInt 1)))
-            ] (CondBr (LVar (Local (NamedRegister "cmp2"))) (LVar (Local (NamedRegister "level2"))) (LVar (Local (NamedRegister "base")))),
+            MkBasicBlock "level1" [
+                MkLStatement (Assign (id "cmp2")) (icmp CSGt (LInt 32) (LVar (Local (id "depth"))) ( (LInt 1)))
+            ] (CondBr (LVar (Local (id "cmp2"))) (LVar (Local (id "level2"))) (LVar (Local (id "base")))),
                 
-            MkBlock "level2" [
-                Operation (Assign (NamedRegister "cmp3")) (icmp CSGt (LInt 32) (LVar (Local (NamedRegister "depth"))) ( (LInt 2)))
-            ] (CondBr (LVar (Local (NamedRegister "cmp3"))) (LVar (Local (NamedRegister "level3"))) (LVar (Local (NamedRegister "base")))),
+            MkBasicBlock "level2" [
+                MkLStatement (Assign (id "cmp3")) (icmp CSGt (LInt 32) (LVar (Local (id "depth"))) ( (LInt 2)))
+            ] (CondBr (LVar (Local (id "cmp3"))) (LVar (Local (id "level3"))) (LVar (Local (id "base")))),
                 
-            MkBlock "level3" [
-                Operation (Assign (NamedRegister "sub")) (BinaryOp Sub (LInt 32) (LVar (Local (NamedRegister "depth"))) ( (LInt 1))),
-                Operation (Assign (NamedRegister "recursive")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+            MkBasicBlock "level3" [
+                MkLStatement (Assign (id "sub")) (BinaryOp Sub (LInt 32) (LVar (Local (id "depth"))) ( (LInt 1))),
+                MkLStatement (Assign (id "recursive")) (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun (LInt 32) [LInt 32]) 
                     ( (LPtr (Global "deeply_nested"))) 
-                    [MkWithType (LInt 32) (LVar (Local (NamedRegister "sub")))] [])))
-            ] (JumpBr (LVar (Local (NamedRegister "base")))),
+                    [MkWithType (LInt 32) (LVar (Local (id "sub")))] [])))
+            ] (JumpBr (LVar (Local (id "base")))),
                 
-            MkBlock "base" [
-                Operation (Assign (NamedRegister "phi")) (MiscOp (Phi (LInt 32) [
-                    ( (LInt 0), LVar (Local (NamedRegister "entry"))),
-                    ( (LInt 1), LVar (Local (NamedRegister "level1"))),
-                    ( (LInt 2), LVar (Local (NamedRegister "level2"))),
-                    (LVar (Local (NamedRegister "recursive")), LVar (Local (NamedRegister "level3")))
+            MkBasicBlock "base" [
+                MkLStatement (Assign (id "phi")) (MiscOp (Phi (LInt 32) [
+                    ( (LInt 0), LVar (Local (id "entry"))),
+                    ( (LInt 1), LVar (Local (id "level1"))),
+                    ( (LInt 2), LVar (Local (id "level2"))),
+                    (LVar (Local (id "recursive")), LVar (Local (id "level3")))
                 ]))
-            ] (Ret (LInt 32) (LVar (Local (NamedRegister "phi"))))],
+            ] (Ret (LInt 32) (LVar (Local (id "phi"))))],
             tags = []
         }
     ],

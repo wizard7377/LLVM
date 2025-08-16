@@ -5,6 +5,7 @@
 ||| It also provides utility functions for name escaping and type manipulation.
 module Data.LLVM.IR.Core
 
+
 ||| Escape special characters in identifiers to make them safe for LLVM IR.
 |||
 ||| Converts non-alphanumeric characters to underscore-delimited names to ensure
@@ -245,52 +246,53 @@ Ord Register where
 ||| namespace within LLVM.
 public export
 data Name : Type where 
-  ||| Local variable or register name (prefixed with %)
-  Local : Register -> Name
-  ||| Global variable or function name (prefixed with @)
+  Temporary : Nat -> Name
+  Local : String -> Name 
+  Parameter : String -> Name
+  ||| Unnamed parameter 
+  Unnamed : Nat -> Name
   Global : String -> Name
-  ||| Special compiler-generated name (prefixed with $)
-  Special : String -> Name
-  ||| Metadata node name (prefixed with !)
-  MetadataN : String -> Name
-  ||| Attribute group name (prefixed with #)
-  AttributeN : String -> Name
-  ||| Basic block label name (suffixed with :)
-  LabelN : String -> Name
-  ||| LLVM intrinsic function name (starts with "@llvm.")
-  IntrinsicN : String -> Name
-  ||| User-defined custom name type
-  CustomN : String -> Name
-
+-- TODO: Allow for non-string idx
 public export 
 data Destination : Type where
   ||| A destination for a branch instruction (basic block label)
   Assign : Register -> Destination
-  Discard : Destination
+  Nothing : Destination
   
 
 export
 implementation Eq Name where
   (==) (Local n1) (Local n2) = n1 == n2
   (==) (Global n1) (Global n2) = n1 == n2
-  (==) (Special n1) (Special n2) = n1 == n2
-  (==) (MetadataN n1) (MetadataN n2) = n1 == n2
-  (==) (AttributeN n1) (AttributeN n2) = n1 == n2
-  (==) (LabelN n1) (LabelN n2) = n1 == n2
-  (==) (IntrinsicN n1) (IntrinsicN n2) = n1 == n2
-  (==) (CustomN n1) (CustomN n2) = n1 == n2
+  (==) (Temporary id1) (Temporary id2) = id1 == id2
+  (==) (Parameter p1) (Parameter p2) = p1 == p2
+  (==) (Unnamed id1) (Unnamed id2) = id1 == id2
   (==) _ _ = False
 export
 implementation Ord Name where
-  compare (Local n1) (Local n2) = compare n1 n2
-  compare (Global n1) (Global n2) = compare n1 n2
-  compare (Special n1) (Special n2) = compare n1 n2
-  compare (MetadataN n1) (MetadataN n2) = compare n1 n2
-  compare (AttributeN n1) (AttributeN n2) = compare n1 n2
-  compare (LabelN n1) (LabelN n2) = compare n1 n2
-  compare (IntrinsicN n1) (IntrinsicN n2) = compare n1 n2
-  compare (CustomN n1) (CustomN n2) = compare n1 n2
-  compare _ _ = LT
+  compare (Local x) (Local y) = compare x y
+  compare (Global x) (Global y) = compare x y
+  compare (Temporary x) (Temporary y) = compare x y
+  compare (Parameter x) (Parameter y) = compare x y
+  compare (Unnamed x) (Unnamed y) = compare x y
+  compare (Local _) _ = GT 
+  compare _ (Local _) = LT 
+  compare (Global _) _ = GT 
+  compare _ (Global _) = LT
+  compare (Temporary _) _ = GT
+  compare _ (Temporary _) = LT
+  compare (Parameter _) _ = GT
+  compare _ (Parameter _) = LT
+  compare (Unnamed _) _ = GT
+  compare _ (Unnamed _) = LT
+
+export 
+implementation Show Name where
+  show (Local n) = "local " ++ unescape n
+  show (Global n) = "global " ++ unescape n
+  show (Temporary id) = "temp " ++ show id
+  show (Parameter n) = "arg " ++ unescape n
+  show (Unnamed id) = "arg at " ++ show id
 ||| LLVM type system representation.
 |||
 ||| This namespace contains types for representing all LLVM IR types,
@@ -325,6 +327,8 @@ namespace LType
   data LType : Type where
     ||| Generic pointer type (opaque pointer)
     LPtr : LType
+    ||| Named type
+    LNamed : String -> LType 
     ||| Pointer type to something (depreacted)
     LPtrTo : LType -> LType
     ||| Pointer to type in address space (depractated)
@@ -456,8 +460,8 @@ data Attribute : Type where
 ||| Represents a single function parameter including its type,
 ||| any associated attributes, and optional name.
 public export
-record FunctionArgSpec where 
-  constructor MkFunctionArgSpec
+record Argument where 
+  constructor MkArgument
   ||| The type of this parameter
   type : LType
   ||| Attributes applied to this parameter
@@ -487,47 +491,53 @@ namespace LTerm
       MetadataTuple : List Metadata -> Metadata
       ||| Named metadata
       MetadataNamed : String -> Metadata
+      MetadataNode : Nat -> Metadata
       MetadataString : String -> Metadata
-      MetadataValue : WithType LExpr -> Metadata
+      MetadataValue : WithType LValue -> Metadata
       MetadataCustom : String -> Metadata
+      MetadataSpecial : String -> List (String, String) -> Metadata
     public export
-    data LExpr : Type where 
+    data LValue : Type where 
       ||| Integer constant value
-      LInt : Int -> LExpr
+      LInt : Int -> LValue
       ||| Floating-point constant (as string to preserve precision)
-      LFloat : String -> LExpr
+      LFloat : String -> LValue
       ||| Boolean constant (true/false)
-      LBool : Bool -> LExpr 
+      LBool : Bool -> LValue 
       ||| Null pointer constant
-      LNull : LExpr
+      LNull : LValue
       ||| Token constant for state tracking
-      LToken : LExpr 
+      LToken : LValue 
       ||| String literal constant
-      LString : String -> LExpr
+      LString : String -> LValue
       ||| Array constant with typed elements
-      LArray : List (WithType LExpr) -> LExpr
+      LArray : List (WithType LValue) -> LValue
       ||| Vector constant with typed elements
-      LVector : List (WithType LExpr) -> LExpr
+      LVector : List (WithType LValue) -> LValue
       ||| Structure constant with typed fields
-      LStruct : List (WithType LExpr) -> LExpr
+      LStruct : List (WithType LValue) -> LValue
       ||| Undefined value (undefined behavior if used)
-      LUndefined : LExpr
+      LUndefined : LValue
       ||| Poison value (more undefined than undefined)
-      LPoison : LExpr
+      LPoison : LValue
       ||| Zero initializer for any type
-      LZero : LExpr
+      LZero : LValue
       ||| Metadata constant
-      LMetadata : Metadata -> LExpr
+      LMetadata : Metadata -> LValue
       ||| Pointer to named global/function
-      LPtr : Name -> LExpr
+      LPtr : Name -> LValue
       -- TODO: Basic block, dso-local, pointer auth, constant expression
-      LVar : Name -> LExpr
+      LVar : Name -> LValue
       
   public export
   %deprecate
-  LConstE : LExpr -> LExpr
+  LConstE : LValue -> LValue
   LConstE = id
 
+public export 
+record Annotation where 
+  constructor MkAnnotation 
+  metadata : List Metadata
 ||| Custom metadata tags for LLVM constructs.
 |||
 ||| Tags provide a way to attach custom metadata to various LLVM IR elements
@@ -558,7 +568,7 @@ record SymbolInfo where
 ||| different types of basic block identifiers.
 public export
 Label : Type
-Label = LExpr
+Label = LValue
 
 ||| Fast math optimization flags for floating-point operations.
 |||

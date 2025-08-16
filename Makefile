@@ -1,11 +1,19 @@
+
 cg ?= chez
+ifeq ($(cg), chez) 
+	CG_D ?= --inc
+else 
+	CG_D ?= --cg 
+endif
 PACK ?= pack
 testFiles := $(patsubst %.ll,%.ss,$(wildcard generated/*.ll)) 
 loud ?= 1
 srcFiles := $(wildcard *.idr)
-OPTS += --cg $(cg)
+OPTS += $(CG_D) $(cg)
 DBG ?=
 VERB ?=
+TS ?= tree-sitter 
+ASTGREP ?= ast-grep
 export IDRIS_LLVM_VERBOSITY := $(VERB)
 ifeq ($(loud), 0)
   OPTS += --quiet
@@ -64,3 +72,7 @@ generated/%.ss: generated/%.ll
 repl: install 
 	@echo "Starting $(IDRIS) REPL with LLVM package..."
 	$(REPL) $(IDRIS) $(OPTS) --repl llvm.ipkg
+
+
+
+

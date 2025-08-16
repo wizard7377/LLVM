@@ -14,7 +14,18 @@ import Data.LLVM.IR.Builders.Ops
 import Data.LLVM.IR.Builders.Math
 import Data.LLVM.IR.Builders.Control
 
-
+public export 
+lowerTypeReflect : (a : Type) -> LType 
+lowerTypeReflect a = case a of 
+  Int => i32 
+  Double => double 
+  String => ptr
+  Bool => i1
+  Int8 => i8 
+  Int16 => i16
+  Int32 => i32 
+  Int64 => i64
+  _ => ?ltr -- FIXME: Find a better way to support this
 ||| Helper function to add indices to a list.
 |||
 ||| Creates a list of pairs where each element is paired with its
@@ -32,7 +43,7 @@ export
 |||
 ||| This example creates a function call to an "add" function with two integer
 ||| arguments, showcasing how to use the function call builders with typed arguments.
-exampleCall : LOperation
+exampleCall : LInstruction
 exampleCall = simpleCall 
   (LFun (LType.LInt 32) [LType.LInt 32, LType.LInt 32]) 
   (globalPtr "add") 
@@ -63,7 +74,7 @@ export
 ||| @ resType The return type of the function (defaults to void)
 foriegnDec : 
     (name : String) ->
-    {default [] args : List FunctionArgSpec} ->
+    {default [] args : List Argument} ->
     {default LVoid resType : LType} ->
     LClause
 foriegnDec name {args} {resType} = FunctionDecC $ functionDec name resType args

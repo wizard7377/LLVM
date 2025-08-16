@@ -41,12 +41,12 @@ public export
         v : b = go s
         in endWith acc v
 export
-Startable Block LStatement where
+Startable BasicBlock LStatement where
     startWith s acc = let 
         v : LStatement = go s
         in startWith v acc
 export
-Endable Block LStatement where
+Endable BasicBlock LStatement where
     endWith acc s = let 
         v : LStatement = go s
         in endWith acc v
@@ -69,9 +69,9 @@ Endable (List a) a where
     endWith acc s = acc ++ [s]
 
 export 
-Endable Block LOperation where 
+Endable BasicBlock LInstruction where 
     endWith acc s = let 
-        statement : LStatement = Operation Discard s 
+        statement : LStatement = MkLStatement Nothing s []
         in endWith acc statement
 
 public export 

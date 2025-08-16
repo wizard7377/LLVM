@@ -1,0 +1,8 @@
+ruleDirs:
+- /home/shortf/linPro/LLVM/.ast-grep/rules
+
+
+custom-languages:
+  idris:
+    libraryPath: idris.so
+    extensions: [idr]

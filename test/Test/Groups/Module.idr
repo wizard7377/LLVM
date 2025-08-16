@@ -28,7 +28,7 @@ moduleTests = do
     debugTest "Module with Simple Function" moduleWithSimpleFunction
     
     -- Test module with function that has operations
-    debugTest "Module with Function Operations" moduleWithOperations
+    debugTest "Module with Function MkLStatements" moduleWithMkLStatements
     
     -- Test complete module with multiple components
     debugTest "Complete Module" completeModule
@@ -40,7 +40,7 @@ moduleTests = do
     debugTest "Module with Calling Conventions" moduleWithCallingConventions
     
     -- Test module with vector operations
-    debugTest "Module with Vector Operations" moduleWithVectors
+    debugTest "Module with Vector MkLStatements" moduleWithVectors
     
     -- Test module with control flow and phi nodes
     debugTest "Module with Control Flow" moduleWithControlFlow
@@ -49,7 +49,7 @@ moduleTests = do
     debugTest "Module with Switch Statements" moduleWithSwitch
     
     -- Test module with struct operations
-    --debugTest "Module with Struct Operations" moduleWithStructs
+    --debugTest "Module with Struct MkLStatements" moduleWithStructs
     
     -- Test module with aliases and IFuncs
     debugTest "Module with Aliases and IFuncs" moduleWithAliases
@@ -58,7 +58,7 @@ moduleTests = do
     debugTest "Module with Exception Handling" moduleWithExceptions
     
     -- Test module with atomic operations
-    debugTest "Module with Atomic Operations" moduleWithAtomics
+    debugTest "Module with Atomic MkLStatements" moduleWithAtomics
     
     -- Test module with inline assembly
     debugTest "Module with Inline Assembly" moduleWithInlineAssembly
@@ -107,7 +107,7 @@ moduleTests = do
     debugFileTest "Module with Simple Function" moduleWithSimpleFunction
     
     -- Test module with function that has operations
-    debugFileTest "Module with Function Operations" moduleWithOperations
+    debugFileTest "Module with Function MkLStatements" moduleWithMkLStatements
     
     -- Test complete module with multiple components
     debugFileTest "Complete Module" completeModule
@@ -119,7 +119,7 @@ moduleTests = do
     debugFileTest "Module with Calling Conventions" moduleWithCallingConventions
     
     -- Test module with vector operations
-    debugFileTest "Module with Vector Operations" moduleWithVectors
+    debugFileTest "Module with Vector MkLStatements" moduleWithVectors
     
     -- Test module with control flow and phi nodes
     debugFileTest "Module with Control Flow" moduleWithControlFlow
@@ -128,7 +128,7 @@ moduleTests = do
     debugFileTest "Module with Switch Statements" moduleWithSwitch
     
     -- Test module with struct operations
-    --debugFileTest "Module with Struct Operations" moduleWithStructs
+    --debugFileTest "Module with Struct MkLStatements" moduleWithStructs
     
     -- Test module with aliases and IFuncs
     debugFileTest "Module with Aliases and IFuncs" moduleWithAliases
@@ -137,7 +137,7 @@ moduleTests = do
     debugFileTest "Module with Exception Handling" moduleWithExceptions
     
     -- Test module with atomic operations
-    debugFileTest "Module with Atomic Operations" moduleWithAtomics
+    debugFileTest "Module with Atomic MkLStatements" moduleWithAtomics
     
     -- Test module with inline assembly
     debugFileTest "Module with Inline Assembly" moduleWithInlineAssembly
@@ -186,7 +186,7 @@ moduleTests = do
     debugCompile "Module_with_Simple_Function" moduleWithSimpleFunction
     
     -- Test module with function that has operations
-    debugCompile "Module_with_Function_Operations" moduleWithOperations
+    debugCompile "Module_with_Function_MkLStatements" moduleWithMkLStatements
     
     -- Test complete module with multiple components
     debugCompile "Complete_Module" completeModule
@@ -198,7 +198,7 @@ moduleTests = do
     debugCompile "Module_with_Calling_Conventions" moduleWithCallingConventions
     
     -- Test module with vector operations
-    debugCompile "Module_with_Vector_Operations" moduleWithVectors
+    debugCompile "Module_with_Vector_MkLStatements" moduleWithVectors
     
     -- Test module with control flow and phi nodes
     debugCompile "Module_with_Control_Flow" moduleWithControlFlow
@@ -207,7 +207,7 @@ moduleTests = do
     debugCompile "Module_with_Switch_Statements" moduleWithSwitch
     
     -- Test module with struct operations
-    -- debugCompile "Module_with_Struct_Operations" moduleWithStructs
+    -- debugCompile "Module_with_Struct_MkLStatements" moduleWithStructs
     
     -- Test module with aliases and IFuncs
     debugCompile "Module_with_Aliases_and_IFuncs" moduleWithAliases
@@ -216,7 +216,7 @@ moduleTests = do
     debugCompile "Module_with_Exception_Handling" moduleWithExceptions
     
     -- Test module with atomic operations
-    debugCompile "Module_with_Atomic_Operations" moduleWithAtomics
+    debugCompile "Module_with_Atomic_MkLStatements" moduleWithAtomics
     
     -- Test module with inline assembly
     debugCompile "Module_with_Inline_Assembly" moduleWithInlineAssembly
@@ -268,7 +268,7 @@ moduleTests = do
     encodeFCMTest' "Module_with_Simple_Function" moduleWithSimpleFunction
     
     -- Test module with function that has operations
-    encodeFCMTest' "Module_with_Function_Operations" moduleWithOperations
+    encodeFCMTest' "Module_with_Function_MkLStatements" moduleWithMkLStatements
     
     -- Test complete module with multiple components
     encodeFCMTest' "Complete_Module" completeModule
@@ -280,7 +280,7 @@ moduleTests = do
     encodeFCMTest' "Module_with_Calling_Conventions" moduleWithCallingConventions
     
     -- Test module with vector operations
-    encodeFCMTest' "Module_with_Vector_Operations" moduleWithVectors
+    encodeFCMTest' "Module_with_Vector_MkLStatements" moduleWithVectors
     
     -- Test module with control flow and phi nodes
     encodeFCMTest' "Module_with_Control_Flow" moduleWithControlFlow
@@ -289,7 +289,7 @@ moduleTests = do
     encodeFCMTest' "Module_with_Switch_Statements" moduleWithSwitch
     
     -- Test module with struct operations
-    -- encodeFCMTest' "Module_with_Struct_Operations" moduleWithStructs
+    -- encodeFCMTest' "Module_with_Struct_MkLStatements" moduleWithStructs
     
     -- Test module with aliases and IFuncs
     encodeFCMTest' "Module_with_Aliases_and_IFuncs" moduleWithAliases
@@ -298,7 +298,7 @@ moduleTests = do
     encodeFCMTest' "Module_with_Exception_Handling" moduleWithExceptions
     
     -- Test module with atomic operations
-    encodeFCMTest' "Module_with_Atomic_Operations" moduleWithAtomics
+    encodeFCMTest' "Module_with_Atomic_MkLStatements" moduleWithAtomics
     
     -- Test module with inline assembly
     encodeFCMTest' "Module_with_Inline_Assembly" moduleWithInlineAssembly

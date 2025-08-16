@@ -1,0 +1,12 @@
+* Differences from the LLVM C/C++ API and/or LLVM IR 
+
+While this library is in large part based on the LLVM C/C++ API and LLVM IR, there are some differences that are worth noting.
+
+** Instruction destination 
+
+In this library, all statements must be have a target (this may be a trash register).
+
+** Generalized values 
+
+This library has a more flexible values than the LLVM C++ API. 
+Rather than a global variable class /global variable/ concept, it instead just uses names to model it

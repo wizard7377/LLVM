@@ -11,7 +11,7 @@ import Data.LLVM.Class
 import Data.Walk
 import public Data.LLVM.Write.Types
 --%default covering
-%default partial --TODO: FIXME:
+--%default partial --TODO: FIXME:
 export 
 Encode ATM Linkage VString where
     encode Private = pure "private"
@@ -67,21 +67,13 @@ Encode ATM Visibility VString where
     encode Default = pure "default"
     encode Hidden = pure "hidden"
     encode Protected = pure "protected"
-export 
-Encode ATM Register VString where
-    encode (NamedRegister name) = pure $ "%" <++> go name
-    encode (UnnamedRegister n) = pure $ "%" <++> vshow n
-
 export
 Encode ATM Name VString where
-    encode (Local name) = encode name
+    encode (Temporary name) = pure $ "%" <++> (go $ show name)
+    encode (Unnamed name) = pure $ "%" <++> (go $ show name)
+    encode (Local name) = pure $ "%" <++> go name
+    encode (Parameter name) = pure $ "%" <++> go name
     encode (Global name) = pure $ "@" <++> go name
-    encode (IntrinsicN name) = pure $ "@llvm." <++> go name
-    encode (Special name) = pure $ "$" <++> go name
-    encode (MetadataN name) = pure $ "!" <++> go name
-    encode (CustomN name) = pure $ go name
-    encode (AttributeN name) = pure $ "#" <++> go name
-    encode (LabelN name) = pure $ go name <++> ":" 
 
 export
 Encode ATM LTypeF VString where 
@@ -99,6 +91,7 @@ Encode ATM SymbolInfo VString where
 export
 Encode ATM LType VString where
     encode LType.LPtr = pure "ptr"
+    encode (LNamed n) = pure $ "%" <++> go n
     encode (LPtrTo _) = pure "ptr"
     encode (LPtrToAddr space _) = do
         sp <- encode space
@@ -168,11 +161,12 @@ mutual
         encode (MetadataTuple vals) = do
             valsStr <- encode @{each} vals
             pure $ "!{" <+> valsStr <+> "}"
-        encode (MetadataCustom s) = pure $ go s 
-
+        encode (MetadataCustom s) = pure $ go s
+        encode (MetadataNode n) = pure $ "!" <++> (go $ show n)
+        encode (MetadataSpecial h t) = ?enmda
 
     export
-    Encode ATM LExpr VString where
+    Encode ATM LValue VString where
         encode (LTerm.LInt n) = pure $ go $ show n
         encode (LTerm.LFloat s) = pure $ go s
         encode (LTerm.LBool b) = pure $ if b then "true" else "false"
@@ -689,13 +683,40 @@ Encode ATM ExceptOpcode VString where
         tyStr <- encode ty
         matchesStr <- encode matches
         pure $ "cleanuppad" <+> tyStr <+> matchesStr 
+
+export 
+Encode ATM Comparison VString where 
+    encode CEq = pure "eq"
+    encode CNe = pure "ne"
+    encode CULt = pure "ult"
+    encode CUGt = pure "ugt"
+    encode CULe = pure "ule"
+    encode CUGe = pure "uge"
+    encode CSLt = pure "slt"
+    encode CSGt = pure "sgt"
+    encode CSLe = pure "sle"
+    encode CSGe = pure "sge"
+export 
+Encode ATM CompareOpcode VString where
+    encode (ICmp wrap) = do
+        wrapStr <- encode wrap
+        pure $ "icmp" <+> wrapStr
+
+    encode _ = ?covs
+
 export
-Encode ATM LOperation VString where
+Encode ATM LInstruction VString where
     encode (UnaryOp op ty expr) = do
         opStr <- encode op
         tyStr <- encode ty
         exprStr <- encode expr
         pure $ opStr <+> tyStr <+> exprStr
+    encode (CompareOp op ty expr1 expr2) = do
+        opStr <- encode op
+        tyStr <- encode ty
+        expr1Str <- encode expr1
+        expr2Str <- encode expr2
+        pure $ opStr <+> tyStr <+> expr1Str <+> "," <+> expr2Str
     encode (BinaryOp op ty expr1 expr2) = do
         opStr <- encode op
         tyStr <- encode ty
@@ -717,32 +738,36 @@ Encode ATM LOperation VString where
 
 export
 Encode ATM LStatement VString where
-    encode (Operation Discard expr) = encode expr
-    encode (Operation (Assign reg) expr) = do
+    -- TODO: Metadata
+    encode (MkLStatement Nothing expr _) = encode expr
+    encode (MkLStatement (Just reg) expr _) = do
         regStr <- encode reg
         exprStr <- encode expr
         pure $ regStr <+> "=" <+> exprStr
         
     
 public export
-Encode ATM Block VString where
-    encode (MkBlock name statements term) = do
+Encode ATM BasicBlock VString where
+    encode (MkBasicBlock name statements term) = do
         nameStr <- (<++> ":") <$> encode name
         statementsStr <- encode @{tabbed} statements
         termStr : VString <- encode term
         pure $ nameStr <+> statementsStr <+> termStr
 public export
-Encode ATM FunctionArgSpec VString where
-    encode (MkFunctionArgSpec tpe attrs (Just name)) = do
+Encode ATM Argument VString where
+    encode (MkArgument tpe attrs (Just name)) = do
         tpeStr <- encode tpe
         attrsStr <- encode @{nosep} attrs
         nameStr <- encode name
         pure $ tpeStr <+> attrsStr <+> "%" <++> nameStr
-    encode (MkFunctionArgSpec tpe attrs Nothing) = do
+    encode (MkArgument tpe attrs Nothing) = do
         tpeStr <- encode tpe
         attrsStr <- encode @{nosep} attrs
         pure $ tpeStr <+> attrsStr
 
+export 
+Encode ATM Annotation VString where 
+    encode (MkAnnotation metadata) = encode @{nosep} metadata
 {-
 
 define [linkage] [PreemptionSpecifier] [visibility] [DLLStorageClass]
@@ -754,6 +779,16 @@ define [linkage] [PreemptionSpecifier] [visibility] [DLLStorageClass]
        (!name !N)* { ... }
 
  -}
+
+public export 
+Encode ATM TypeDef VString where 
+    encode (MkTypeDef n ty tags) = do
+        nameStr <- encode n
+        tyStr <- encode ty
+        tagsStr <- encode tags
+        pure $ "%" <++> nameStr <+> "=" <+> "type" <+> tyStr <+> tagsStr
+
+
 public export
 Encode ATM FunctionDef VString where
     encode (MkFunctionDef name symbolInfo callingConvention returnAttrs returnType args addressInfo addressSpace fnAttributes section partition comdat alignment gc fprefix prologue personality metadata body tags) = do
@@ -896,6 +931,7 @@ Encode ATM LClause VString where
         metadataStr <- encode metadata
         pure $ "!" <++> go name <+> "=" <+> metadataStr
     encode (AttributeGroupC attrs) = encode attrs
+    encode (TypeDefC def) = encode def
     encode (OtherC other) = pure $ go other -- Placeholder for other clause types ) 
 public export
 Encode ATM LModule VString where

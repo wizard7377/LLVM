@@ -47,7 +47,7 @@ encodingTests = do
     encodeFCMTest {b = CEnum} "Protected Visibility" Protected
     
     -- Test names
-    -- encodeFCMTest "Local Name" (Local (NamedRegister "myvar"))
+    -- encodeFCMTest "Local Name" (Local (id "myvar"))
     -- encodeFCMTest "Global Name" (Global "globalvar")
     -- encodeFCMTest "Special Name" (Special "specialvar")
     -- encodeFCMTest "Metadata Name" (MetadataN "metadata1")

@@ -35,7 +35,7 @@ record GVarDef where
   ||| The type of the global variable
   gtpe : LType.LType
   ||| Optional initializer value
-  initializer : Maybe LExpr
+  initializer : Maybe LValue
   ||| Metadata tags
   tags : List LTag
 
@@ -94,7 +94,7 @@ record FunctionDef where
   ||| Return type
   returnType : LType 
   ||| Function parameters with their types and attributes
-  args : List FunctionArgSpec
+  args : List Argument
   ||| Address significance (unnamed_addr, local_unnamed_addr)
   addressInfo : Maybe AddressInfo
   ||| Address space (addrspace(N))
@@ -112,15 +112,15 @@ record FunctionDef where
   ||| Garbage collector name (gc "name")
   gc : Maybe String
   ||| Prefix data (prefix Constant)
-  fprefix: Maybe LExpr
+  fprefix: Maybe LValue
   ||| Prologue data (prologue Constant)
-  prologue: Maybe LExpr
+  prologue: Maybe LValue
   ||| Personality function (personality Constant)
-  personality : Maybe LExpr
+  personality : Maybe LValue
   ||| Attached metadata (!name !N)*
   metadata : List Metadata
   ||| Function body with basic blocks and instructions
-  body : List Block
+  body : List BasicBlock
   ||| Additional metadata tags
   tags: List LTag
 ||| Function declaration without implementation.
@@ -144,7 +144,7 @@ record FunctionDec where
   ||| Return type
   returnType : LType 
   ||| Function parameters with their types and attributes
-  args : List FunctionArgSpec
+  args : List Argument
   ||| Address significance (unnamed_addr, local_unnamed_addr)
   addressInfo : Maybe AddressInfo
   ||| Function alignment (align N)
@@ -152,9 +152,9 @@ record FunctionDec where
   ||| Garbage collector name (gc "name")
   gc : Maybe String 
   ||| Prefix data (prefix Constant)
-  fprefix: Maybe LExpr 
+  fprefix: Maybe LValue 
   ||| Prologue data (prologue Constant)
-  prologue: Maybe LExpr
+  prologue: Maybe LValue
   ||| Additional metadata tags
   tags: List LTag
 ||| Alias definition.
@@ -208,6 +208,12 @@ record IFunc where
   ||| Additional metadata tags
   tags: List LTag
 
+public export 
+record TypeDef where 
+  constructor MkTypeDef
+  name : String 
+  ty : LType 
+  ann : Annotation
 ||| Top-level clauses that can appear in an LLVM module.
 ||| Each clause represents a different kind of top-level declaration.
 public export 
@@ -226,6 +232,7 @@ data LClause : Type where
   MetadataC : String -> Metadata -> LClause
   ||| Attribute group definition (attributes #N = {...})
   AttributeGroupC : AttributeGroupDef -> LClause
+  TypeDefC : TypeDef -> LClause
   ||| Other top-level constructs (e.g., inline assembly, target info)
   OtherC : String -> LClause
 

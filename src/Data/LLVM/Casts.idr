@@ -37,16 +37,16 @@ public export
 Walk AttributeGroupDef LClause where 
     go d = AttributeGroupC d
 public export
-Walk LType FunctionArgSpec where 
-    go t = MkFunctionArgSpec t [] Nothing
+Walk LType Argument where 
+    go t = MkArgument t [] Nothing
 public export
-Walk Int LExpr where 
+Walk Int LValue where 
     go i =  (LTerm.LInt i)
 public export
-Walk String LExpr where 
+Walk String LValue where 
     go s =  (LTerm.LString s)
 public export
-Walk Bool LExpr where 
+Walk Bool LValue where 
     go b =  (LTerm.LBool b)
 
 public export 
@@ -54,42 +54,42 @@ Walk a b => Walk b c => Walk a c where
   go = go . (the (a -> b) go)
  
 public export 
-Walk LOperation LStatement where 
-    go op = Operation Discard op
+Walk LInstruction LStatement where 
+    go op = MkLStatement Nothing op []
 
 public export 
-Walk Name LExpr where 
+Walk Name LValue where 
     go n = LTerm.LVar n
 
 public export 
-Walk Terminator LOperation where 
+Walk Terminator LInstruction where 
   go = TerminatorOp
 public export 
-Walk (UnaryOpcode, LType, LExpr) LOperation where
+Walk (UnaryOpcode, LType, LValue) LInstruction where
   go (a, b, c) = UnaryOp a b c 
  
 public export 
-Walk (BinaryOpcode, LType, LExpr, LExpr) LOperation where
+Walk (BinaryOpcode, LType, LValue, LValue) LInstruction where
   go (a, b, c, d) = BinaryOp a b c d
  
 public export 
-Walk VectorOpcode LOperation where 
+Walk VectorOpcode LInstruction where 
   go = VectorOp
 public export 
-Walk AggregateOpcode LOperation where 
+Walk AggregateOpcode LInstruction where 
   go = AggregateOp
   
 public export 
-Walk (ConversionOpCode, LType, LExpr, LType) LOperation where 
+Walk (ConversionOpCode, LType, LValue, LType) LInstruction where 
   go (a, b, c, d) = ConversionOp a (withType b c) d
   
 public export 
-Walk MiscOpcode LOperation where 
+Walk MiscOpcode LInstruction where 
   go = MiscOp
   
 public export 
-Walk MemoryOpcode LOperation where 
+Walk MemoryOpcode LInstruction where 
   go = MemoryOp 
 public export 
-Walk ExceptOpcode LOperation where 
+Walk ExceptOpcode LInstruction where 
   go = ExceptOp

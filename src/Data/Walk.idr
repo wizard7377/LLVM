@@ -37,7 +37,7 @@ public export
 f $$ x = f (go x)
 
 public export 
-infixl 10 @@
+infixl 10 ?@
 public export 
-(@@) : Walk t a => (f : a -> b) -> (x : t) -> b
-f @@ x = f (go x)
+(?@) : Walk t a => (f : a -> b) -> (x : t) -> b
+f ?@ x = f (go x)
