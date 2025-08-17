@@ -94,6 +94,10 @@ LLVMModuleFlag = CPtr
 public export
 LLVMContextYieldType : Type 
 LLVMContextYieldType = CPtr -> CPtr -> PM ()
+
+public export 
+LLVMBlock : Type 
+LLVMBlock = CPtr
 -- TODO: Contexts?
 namespace CPrim 
   -- Contexts 

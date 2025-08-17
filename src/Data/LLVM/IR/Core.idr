@@ -303,68 +303,74 @@ namespace LType
   ||| These correspond to different floating-point representations
   ||| with varying precision and range characteristics.
   public export 
-  data LTypeF : Type where
+  data LFloatFormat : Type where
     ||| IEEE 754 half precision (16-bit)
-    Half      : LTypeF
+    Half      : LFloatFormat
     ||| Brain floating point (16-bit)
-    Bfloat    : LTypeF
+    Bfloat    : LFloatFormat
     ||| IEEE 754 single precision (32-bit)
-    LFloat    : LTypeF
+    LFloat    : LFloatFormat
     ||| IEEE 754 double precision (64-bit)
-    LDouble   : LTypeF
+    LDouble   : LFloatFormat
     ||| IEEE 754 quadruple precision (128-bit)
-    FP128     : LTypeF
+    FP128     : LFloatFormat
     ||| x86 extended precision (80-bit)
-    X86_FP80  : LTypeF
+    X86_FP80  : LFloatFormat
     ||| PowerPC double-double (128-bit)
-    PPC_FP128 : LTypeF
-  ||| LLVM type representation.
-  |||
-  ||| Represents all possible LLVM IR types including primitives,
-  ||| aggregates, functions, and target-specific types.
-  public export
-  -- TODO: Target types
-  data LType : Type where
-    ||| Generic pointer type (opaque pointer)
-    LPtr : LType
-    ||| Named type
-    LNamed : String -> LType 
-    ||| Pointer type to something (depreacted)
-    LPtrTo : LType -> LType
-    ||| Pointer to type in address space (depractated)
-    LPtrToAddr : AddressSpace -> LType -> LType
-    ||| Pointer in specific address space
-    LPtrAddr : AddressSpace -> LType
-    ||| Void type (no value)
-    LVoid : LType
-    ||| Function type with fixed arguments
-    LFun : LType -> List LType -> LType
-    ||| Variadic function type with fixed and variable arguments
-    LFunVarArg : LType -> List LType -> LType -> LType
-    ||| Opaque type (structure not defined)
-    LOpaque : LType 
-    ||| Integer type with specified bit width
-    LInt : Int -> LType
-    ||| Floating-point type
-    LFloating : LTypeF -> LType
-    ||| x86 Advanced Matrix Extensions type
-    LX86_AMX : LType
-    ||| Fixed-size vector type
-    LVector : Int -> LType -> LType
-    ||| Scalable vector type (size determined at runtime)
-    LVectorScale : Int -> LType -> LType
-    ||| Label type for basic block references
-    LLabel : LType
-    ||| Token type for representing state
-    LToken : LType
-    ||| Array type with fixed size and element type
-    LArray : Int -> LType -> LType
-    ||| Structure type with named fields
-    LStruct : List LType -> LType
-    ||| Packed structure type (no padding)
-    LPackedStruct : List LType -> LType
-    ||| Metadata type
-    LMetadata :  LType
+    PPC_FP128 : LFloatFormat
+  mutual
+    public export 
+    data LTargetArg : Type where 
+      TargetType : LType -> LTargetArg
+      TargetInt : Int -> LTargetArg 
+    ||| LLVM type representation.
+    |||
+    ||| Represents all possible LLVM IR types including primitives,
+    ||| aggregates, functions, and target-specific types.
+    public export
+    -- DONE: Target types
+    data LType : Type where
+      ||| Generic pointer type (opaque pointer)
+      LPtr : LType
+      ||| Named type
+      LNamed : String -> LType 
+      ||| Pointer type to something (depreacted)
+      LPtrTo : LType -> LType
+      ||| Pointer to type in address space (depractated)
+      LPtrToAddr : AddressSpace -> LType -> LType
+      ||| Pointer in specific address space
+      LPtrAddr : AddressSpace -> LType
+      ||| Void type (no value)
+      LVoid : LType
+      ||| Function type with fixed arguments
+      LFun : LType -> List LType -> LType
+      ||| Variadic function type with fixed and variable arguments
+      LFunVarArg : LType -> List LType -> LType -> LType
+      ||| Opaque type (structure not defined)
+      LOpaque : LType 
+      ||| Integer type with specified bit width
+      LInt : Int -> LType
+      ||| Floating-point type
+      LFloating : LFloatFormat -> LType
+      ||| x86 Advanced Matrix Extensions type
+      LX86_AMX : LType
+      ||| Fixed-size vector type
+      LVector : Int -> LType -> LType
+      ||| Scalable vector type (size determined at runtime)
+      LVectorScale : Int -> LType -> LType
+      ||| Label type for basic block references
+      LLabel : LType
+      ||| Token type for representing state
+      LToken : LType
+      ||| Array type with fixed size and element type
+      LArray : Int -> LType -> LType
+      ||| Structure type with named fields
+      LStruct : List LType -> LType
+      ||| Packed structure type (no padding)
+      LPackedStruct : List LType -> LType
+      ||| Metadata type
+      LMetadata :  LType
+      LTarget : String -> List LTargetArg -> LType 
     
 ||| Wrapper for values with explicit type information.
 |||
@@ -496,6 +502,22 @@ namespace LTerm
       MetadataValue : WithType LValue -> Metadata
       MetadataCustom : String -> Metadata
       MetadataSpecial : String -> List (String, String) -> Metadata
+    -- [ ]: Distinguish between constant and non-constant
+    public export 
+    data LConstExpr : Type where 
+      LConstTrunc : LValue -> LType -> LConstExpr
+      LConstPtrToInt : LValue -> LType -> LConstExpr
+      LConstPtrToAddr : LValue -> LType -> LConstExpr
+      LConstIntToPtr : LValue -> LType -> LConstExpr
+      LConstBitcast : LValue -> LType -> LConstExpr
+      LConstAddrSpaceCast :  LValue -> LType -> LConstExpr
+      -- [ ]: Get element pointer
+      LConstExtractElement : LValue -> LValue -> LConstExpr
+      LConstInsertElement : LValue -> LValue -> LConstExpr
+      LConstShuffleVector : LValue -> LValue -> LConstExpr
+      LConstAdd : LValue -> LValue -> LConstExpr
+      LConstSub : LValue -> LValue -> LConstExpr
+      LConstXor : LValue -> LValue -> LConstExpr
     public export
     data LValue : Type where 
       ||| Integer constant value
@@ -528,11 +550,12 @@ namespace LTerm
       LPtr : Name -> LValue
       -- TODO: Basic block, dso-local, pointer auth, constant expression
       LVar : Name -> LValue
-      
-  public export
-  %deprecate
-  LConstE : LValue -> LValue
-  LConstE = id
+      LDsoLocalEquivalent : String -> LValue
+      LNoCFI : String -> LValue
+      LConstE : LConstExpr -> LValue
+      -- [ ]: PtrAuth 
+
+
 
 public export 
 record Annotation where 
@@ -594,3 +617,10 @@ FastMath : Type
 FastMath = List FastMathFlag
 
 
+public export 
+Semigroup Annotation where 
+  (MkAnnotation a) <+> (MkAnnotation b) = MkAnnotation (a ++ b)
+
+public export 
+Monoid Annotation where 
+  neutral = MkAnnotation []

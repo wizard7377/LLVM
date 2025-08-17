@@ -132,7 +132,7 @@ export
 |||
 ||| @ c The constant to convert to an expression
 constExpr : LValue -> LValue
-constExpr c = LConstE c
+constExpr c =  c
 
 
 export
@@ -168,7 +168,7 @@ export
 |||
 ||| @ name The name of the entity to create a pointer to
 ptrExpr : Name -> LValue
-ptrExpr name = LConstE (LTerm.LPtr name)
+ptrExpr name =  (LTerm.LPtr name)
 
 export
 ||| Create a local variable pointer expression.
@@ -217,7 +217,7 @@ export
 |||
 ||| @ target The target variable name to assign to
 ||| @ op The operation whose result to assign
-assign : Name -> LInstruction -> LStatement
+assign : Name -> LExpr -> LStatement
 assign target op = MkLStatement (Just target) op []
 
 
@@ -230,7 +230,7 @@ export
 ||| value is not needed.
 |||
 ||| @ op The operation to execute and discard
-discard : LInstruction -> LStatement
+discard : LExpr -> LStatement
 discard op = MkLStatement Nothing op []
 
 

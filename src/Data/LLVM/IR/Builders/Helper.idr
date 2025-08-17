@@ -43,7 +43,7 @@ export
 |||
 ||| This example creates a function call to an "add" function with two integer
 ||| arguments, showcasing how to use the function call builders with typed arguments.
-exampleCall : LInstruction
+exampleCall : LExpr
 exampleCall = simpleCall 
   (LFun (LType.LInt 32) [LType.LInt 32, LType.LInt 32]) 
   (globalPtr "add") 

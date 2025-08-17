@@ -12,6 +12,66 @@ import System
 import Data.String
 %default covering 
 
+  
+public export 
+data FCError : Type where 
+  NoContext : FCError
+  NoModule : FCError
+  NoBuilders : FCError
+  NoFunctions : FCError 
+  EmptyFunction : String -> FCError
+  NoScope : String -> FCError
+  NoGeneric : FCError
+  NoBlock : String -> FCError
+  InternalError : String -> FCError
+
+public export 
+data Usages : Type where
+  UseFunction : Usages 
+  UseScope : Name -> Usages
+  UseModule : Usages 
+  UseBuilder : Usages 
+public export 
+record WithScope {default String name : Type} {default AnyPtr ref : Type} (me : Type) where 
+  constructor MkWithScope
+  scope : SortedMap name ref
+  value : me
+  
+export 
+{a : Type} -> Cast (WithScope {ref = a} b) b where
+  cast (MkWithScope _ v) = v
+
+public export 
+Scope : Type -> Type 
+Scope t = SortedMap Name t
+public export 
+record WorkingFunction where 
+  constructor MkWorkingFunction 
+  args : List (Maybe String)
+  blocks : SortedMap String LLVMBlock
+  val : LLVMValue
+mutual 
+  public export 
+  record FCState where
+    constructor MkFCState
+    cMod : Maybe LLVMModule
+    cCon : LLVMContext
+    cFun : List WorkingFunction   
+    cBuilders : List LLVMBuilder 
+    scope : Scope (List (FCM LLVMValue))
+    level : Int
+  -- FIXME: change this so that it depenndtly tracks usages 
+  public export 
+  data FCM : {auto 0 takes : List Usages} -> {auto 0 gives : List Usages} -> {auto 0 sees : List Usages} -> Type -> Type where 
+    MkFCM : EitherT FCError (RWST Int () FCState IO) a -> FCM a
+
+public export 
+unFCM : FCM a -> EitherT FCError (RWST Int () FCState IO) a
+unFCM (MkFCM m) = m
+
+public export
+noScope :  {me : Type} -> {0 ref : Type} -> {name : Type} -> Ord name => me -> WithScope {name = name} {ref = ref} me
+noScope {ref} {me} v = MkWithScope {ref = ref} {me = me} empty v
 
 public export 
 Functor FCM where
@@ -122,9 +182,9 @@ step {verb} name m = do
   state <- get
   let level = state.level
   modify $ the changeState ({ level $= (+ 1) }) 
-  (putMsg verb ((replicate (cast $ max 0 level) '>') ++ " " ++ name))
+  (putMsg verb ((replicate (cast $ max 0 (level - 1)) '|') ++ ">" ++ " " ++ name))
   r <- m 
-  (putMsg verb ((replicate (cast $ max 0 level) '<') ++ " " ++ name))
+  (putMsg verb ((replicate (cast $ max 0 (level - 1)) '|') ++ "<" ++ " " ++ name))
   modify $ the changeState ({ level $= (flip (-) 1) } )
   pure r
 export
@@ -203,6 +263,7 @@ Show FCError where
   show NoFunctions = "No functions available"
   show (EmptyFunction f) = "Empty function: " ++ f
   show (NoScope s) = "No scope for: " ++ s
+  show (InternalError s) = "BUG IN IDRIS LLVM: FILE BUG REPORT: " ++ s
   show _ = "Other error"
 export 
 MonadIO FCError FCM where
@@ -253,10 +314,40 @@ inScope name ref m = do
   result <- m 
   _ <- popScope name 
   pure result
-
+export
 withScope : Name -> (CPtr -> FCM (a, CPtr)) -> FCM a
 withScope name f = do 
   ref <- popScope name 
   (r, s) <- f ref 
   pushScope name s
   pure r
+export
+inBuilder : (LLVMBuilder -> FCM a) -> FCM a 
+inBuilder f = do 
+  b <- popBuilder 
+  r <- f b 
+  pushBuilder b
+  pure r
+public export
+getBlock : String -> FCM LLVMBlock
+getBlock name = do 
+  cf <- popFun 
+  case lookup name cf.blocks of 
+    Nothing => do 
+      cb <- liftFCM $ LLVMAppendBasicBlockInContext !inCon cf.val name 
+      let cf' = { blocks $= insert name cb } cf
+      pushFun cf'
+      pure cb
+    Just cb => pure cb
+public export 
+setBlock : String -> LLVMBlock -> FCM ()
+setBlock name cb = do
+  cf <- popFun
+  case lookup name cf.blocks of
+    Nothing => do 
+      let cf' = { blocks $= insert name cb } cf
+      pushFun cf' 
+    Just _ => do 
+      let cf' = { blocks $= updateExisting (const cb) name } cf
+      pushFun cf'
+    

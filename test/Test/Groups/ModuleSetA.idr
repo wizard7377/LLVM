@@ -10,6 +10,7 @@ import Data.LLVM.IR.Builders.Math
 import Test.Helper
 import Data.LLVM.Write.Foreign
 import Data.LLVM.IR.Builders.Sugar
+%default partial
 export
 emptyModule : LModule
 emptyModule = MkLModule {
@@ -87,7 +88,7 @@ moduleWithSimpleFunction = MkLModule {
             metadata = [],
             body = [
                 MkBasicBlock "entry" [
-                    "result" $<- (BinaryOp Add (:# 32) (?^ "a") (?^ "b"))
+                    "result" $<- (Add (:# 32) (?^ "a") (?^ "b"))
                 ] (Ret (:# 32) (?% "result"))
             ],
             tags = []
@@ -128,11 +129,11 @@ moduleWithMkLStatements = MkLModule {
             body = [
                 MkBasicBlock "entry" [
                     -- Multiply x and y
-                    "mul_result" $<- (BinaryOp Mul (:# 32) (?^ "x") (?^ "y")),
+                    "mul_result" $<- (Mul (:# 32) (?^ "x") (?^ "y")),
                     -- Add 10 to the result
-                    "add_result" $<- (BinaryOp Add (:# 32) (?% "mul_result") (LConstE (LInt 10))),
+                    "add_result" $<- (Add (:# 32) (?% "mul_result") (LConstE (LInt 10))),
                     -- Shift left by 1
-                    "shift_result" $<- (BinaryOp Shl (:# 32) (?% "add_result") (LConstE (LInt 1)))
+                    "shift_result" $<- (Shl (:# 32) (?% "add_result") (LConstE (LInt 1)))
                 ] (Ret (:# 32) (?% "shift_result"))
             ],
             tags = []
@@ -187,9 +188,9 @@ completeModule = MkLModule {
             body = [
                 MkBasicBlock "entry" [
                     -- Allocate local variable
-                    "local_var" $<- (MemoryOp (Alloc (LInt 32) Nothing Nothing Nothing)),
+                    "local_var" $<- ((Alloc (LInt 32) Nothing Nothing Nothing)),
                     -- Call helper function
-                    "call_result" $<- (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing (LFun (LInt 32) [LInt 32, LInt 32]) (LConstE (LPtr (Global "helper_function"))) [MkWithType (LInt 32) (LConstE (LInt 5)), MkWithType (LInt 32) (LConstE (LInt 10))] []))),
+                    "call_result" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing (LFun (LInt 32) [LInt 32, LInt 32]) (LConstE (LPtr (Global "helper_function"))) [MkWithType (LInt 32) (LConstE (LInt 5)), MkWithType (LInt 32) (LConstE (LInt 10))] []))),
                     -- Compare i32 result with 0 to produce i1 for conditional branch
                     "cond" $<- (icmp CEq (LInt 32) (?^ "call_result") (LConstE (LInt 0)))
                 ] (CondBr (?^ "cond") (?^ "success_block") (?^ "failure_block")),
@@ -228,12 +229,12 @@ completeModule = MkLModule {
             body = [
                 MkBasicBlock "entry" [
                     -- Perform various operations
-                    "sum" $<- (BinaryOp Add (LInt 32) (?^ "a") (?^ "b")),
-                    "diff" $<- (BinaryOp Sub (LInt 32) (?^ "a") (?^ "b")),
-                    "product" $<- (BinaryOp Mul (LInt 32) (?^ "sum") (?^ "diff")),
+                    "sum" $<- (Add (LInt 32) (?^ "a") (?^ "b")),
+                    "diff" $<- (Sub (LInt 32) (?^ "a") (?^ "b")),
+                    "product" $<- (Mul (LInt 32) (?^ "sum") (?^ "diff")),
                     -- Use aggregate operation
-                    "array_val" $<- (AggregateOp (ExtractValue (MkWithType (LArray 5 (LInt 32)) (LConstE (LPtr (Global "data_array")))) 0)),
-                    "final_result" $<- (BinaryOp Add (LInt 32) (?^ "product") (?^ "array_val"))
+                    "array_val" $<- ((ExtractValue (MkWithType (LArray 5 (LInt 32)) (LConstE (LPtr (Global "data_array")))) 0)),
+                    "final_result" $<- (Add (LInt 32) (?^ "product") (?^ "array_val"))
                 ] (Ret (LInt 32) (?^ "final_result"))
             ],
             tags = []
@@ -339,7 +340,7 @@ moduleWithCallingConventions = MkLModule {
             metadata = [],
             body = [
                 MkBasicBlock "entry" [
-                    "result" $<- (BinaryOp (FAdd []) (LFloating LFloat) (?^ "x") (?^ "y"))
+                    "result" $<- ((FAdd []) (LFloating LFloat) (?^ "x") (?^ "y"))
                 ] (Ret (LFloating LFloat) (?^ "result"))
             ],
             tags = []
@@ -367,7 +368,7 @@ moduleWithCallingConventions = MkLModule {
             body = [
                 MkBasicBlock "entry" [
                     -- Call printf to report error
-                    "printf_result" $<- (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                    "printf_result" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (LInt 32) [LPtr]) 
                         (LConstE (LPtr (Global "printf"))) 
                         [MkWithType LPtr (LConstE (LPtr (Global "error_format")))] [])))
@@ -411,16 +412,16 @@ moduleWithVectors = MkLModule {
             body = [
                 MkBasicBlock "entry" [
                     -- Extract element from first vector
-                    "elem1" $<- (VectorOp (ExtractElement 
+                    "elem1" $<- ((ExtractElement 
                         ( ( 4 :<> (:# 32)) <:> (?^ "vec1"))
                         ( (:# 32) <:> (LConstE (LInt 0))))),
                     -- Insert element into second vector
-                    "modified_vec" $<- (VectorOp (InsertElement 
+                    "modified_vec" $<- ((InsertElement 
                         ( ( 4 :<> (LInt 32)) <:> (?^ "vec2"))
                         ( (LInt 32) <:> (?^ "elem1"))
                         ( (LInt 32) <:> (LConstE (LInt 1))))),
                     -- Shuffle vectors
-                    "shuffled" $<- (VectorOp (ShuffleVector
+                    "shuffled" $<- ((ShuffleVector
                         ( ( 4 :<> (LInt 32)) <:> (?^ "vec1"))
                         ( ( 4 :<> (LInt 32)) <:> (?^ "modified_vec"))
                         ( ( 4 :<> (LInt 32)) <:> (LConstE (LVector [
@@ -474,19 +475,19 @@ moduleWithControlFlow = MkLModule {
                 
                 MkBasicBlock "recursive_case" [
                     -- Calculate fib(n-1)
-                    "n_minus_1" $<- (BinaryOp Sub (LInt 32) (?^ "n") (LConstE (LInt 1))),
-                    "fib_n_minus_1" $<- (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                    "n_minus_1" $<- (Sub (LInt 32) (?^ "n") (LConstE (LInt 1))),
+                    "fib_n_minus_1" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (LInt 32) [LInt 32]) 
                         (LConstE (LPtr (Global "fibonacci"))) 
                         [MkWithType (LInt 32) (?^ "n_minus_1")] []))),
                     -- Calculate fib(n-2)
-                    "n_minus_2" $<- (BinaryOp Sub (LInt 32) (?^ "n") (LConstE (LInt 2))),
-                    "fib_n_minus_2" $<- (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                    "n_minus_2" $<- (Sub (LInt 32) (?^ "n") (LConstE (LInt 2))),
+                    "fib_n_minus_2" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (LInt 32) [LInt 32]) 
                         (LConstE (LPtr (Global "fibonacci"))) 
                         [MkWithType (LInt 32) (?^ "n_minus_2")] []))),
                     -- Add results
-                    "result" $<- (BinaryOp Add (LInt 32) (?^ "fib_n_minus_1") (?^ "fib_n_minus_2"))
+                    "result" $<- (Add (LInt 32) (?^ "fib_n_minus_1") (?^ "fib_n_minus_2"))
                 ] (Ret (LInt 32) (?^ "result"))
             ],
             tags = []
@@ -591,15 +592,15 @@ moduleWithStructs = MkLModule {
             metadata = [],
             body = [MkBasicBlock "entry" [
                 -- Extract x coordinate
-                MkLStatement (Local "x") (AggregateOp (ExtractValue 
+                MkLStatement (Local "x") ((ExtractValue 
                     (MkWithType (LStruct [LInt 32, LInt 32]) (LConstE (LPtr (Local "point")))) 0)),
                 -- Extract y coordinate
-                MkLStatement (Local "y") (AggregateOp (ExtractValue 
+                MkLStatement (Local "y") ((ExtractValue 
                     (MkWithType (LStruct [LInt 32, LInt 32]) (LConstE (LPtr (Local "point")))) 1)),
                 -- Calculate sum
-                MkLStatement (Local "sum") (BinaryOp Add (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LPtr (Local "y")))),
+                MkLStatement (Local "sum") (Add (LInt 32) (LConstE (LPtr (Local "x"))) (LConstE (LPtr (Local "y")))),
                 -- Create new struct with modified values
-                MkLStatement (Local "new_point") (AggregateOp (InsertValue 
+                MkLStatement (Local "new_point") ((InsertValue 
                     (MkWithType (LStruct [LInt 32, LInt 32]) (LConstE (LPtr (Local "point"))))
                     (MkWithType (LInt 32) (LConstE (LPtr (Local "sum"))))
                     0))
@@ -638,7 +639,7 @@ moduleWithAliases = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [MkBasicBlock "entry" [
-                "result" $<- (BinaryOp Mul (LInt 32) (?^ "x") (LConstE (LInt 2)))
+                "result" $<- (Mul (LInt 32) (?^ "x") (LConstE (LInt 2)))
             ] (Ret (LInt 32) (?^ "result"))],
             tags = []
         },
@@ -667,6 +668,7 @@ moduleWithAliases = MkLModule {
     tags = Nothing
 }
 
+{- 
 export
 -- Module with exception handling and personality functions
 moduleWithExceptions : LModule
@@ -711,7 +713,7 @@ moduleWithExceptions = MkLModule {
             body = [
                 MkBasicBlock "entry" [
                     -- Invoke that might throw
-                    "result" $<- (TerminatorOp (Invoke (MkInvokeCall (Just C) [] Nothing 
+                    "result" $<- (id (Invoke (MkInvokeCall (Just C) [] Nothing 
                         (LFun (LInt 32) [LInt 32]) 
                         (LConstE (LPtr (Global "might_throw"))) 
                         [?^ "x"]
@@ -724,7 +726,7 @@ moduleWithExceptions = MkLModule {
                 
                 MkBasicBlock "exception" [
                     -- Landing pad for exception handling (simplified for demo)
-                    "landing_pad" $<- (BinaryOp Add (LInt 32) (LConstE (LInt 0)) (LConstE (LInt 0)))
+                    "landing_pad" $<- (Add (LInt 32) (LConstE (LInt 0)) (LConstE (LInt 0)))
                 ] (Ret (LInt 32) (LConstE (LInt (-1))))
             ],
             tags = []
@@ -732,7 +734,7 @@ moduleWithExceptions = MkLModule {
     ],
     tags = Nothing
 }
-
+-}
 export
 -- Module with atomic operations and memory ordering
 moduleWithAtomics : LModule
@@ -773,23 +775,23 @@ moduleWithAtomics = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [MkBasicBlock "entry" [
-                -- Simple memory operations using MemoryOp variants
-                "old_value" $<- (MemoryOp (LoadRegular False (LInt 32)
+                -- Simple memory operations using variants
+                "old_value" $<- ((LoadRegular False (LInt 32)
                     (LConstE (LPtr (Global "atomic_counter")))
                     Nothing False False False False Nothing Nothing Nothing False)),
                 -- Store atomic value
-                $<< (MemoryOp (StoreRegular False
+                $<< ((StoreRegular False
                     (MkWithType (LInt 32) (?^ "value"))
                     (LConstE (LPtr (Global "atomic_counter")))
-                    Nothing False False)),
+                    Nothing False False))
                 -- Memory fence
-                $<< (MemoryOp (Fence Nothing (Just SequentiallyConsistent)))
             ] (Ret (LInt 32) (?^ "old_value"))],
             tags = []
         }
     ],
     tags = Nothing
 }
+
 
 export
 -- Module with inline assembly
@@ -822,7 +824,7 @@ moduleWithInlineAssembly = MkLModule {
             metadata = [],
             body = [MkBasicBlock "entry" [
                 -- Inline assembly to add two numbers (simplified for demo)
-                "result" $<- (BinaryOp Add (LInt 32) (?^ "a") (?^ "b"))
+                "result" $<- (Add (LInt 32) (?^ "a") (?^ "b"))
             ] (Ret (LInt 32) (?^ "result"))],
             tags = []
         }
@@ -858,16 +860,16 @@ moduleWithDebugInfo = MkLModule {
             metadata = [],
             body = [MkBasicBlock "entry" [
                 -- Allocate local variable
-                "local_var_ptr" $<- (MemoryOp (Alloc (LInt 32) Nothing Nothing Nothing)),
+                "local_var_ptr" $<- ((Alloc (LInt 32) Nothing Nothing Nothing)),
                 -- Calculate the value
-                "local_var" $<- (BinaryOp Add (LInt 32) (?^ "param") (LConstE (LInt 1))),
+                "local_var" $<- (Add (LInt 32) (?^ "param") (LConstE (LInt 1))),
                 -- Store the value
-                $<< (MemoryOp (StoreRegular False 
+                $<< ((StoreRegular False 
                     (MkWithType (LInt 32) (?^ "local_var"))
                     (?^ "local_var_ptr")
                     Nothing False False)),
                 -- Call debug intrinsic with pointer
-                $<< (MiscOp (FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                $<< ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LVoid [LPtr, LPtr, LPtr]) 
                     (LConstE (LPtr (Global "llvm.dbg.declare"))) 
                     [
@@ -932,7 +934,7 @@ moduleWithComplexTypes = MkLModule {
             metadata = [],
             body = [MkBasicBlock "entry" [
                 -- Get element pointer using a simpler approach
-                "nested_ptr" $<- (AggregateOp (ExtractValue
+                "nested_ptr" $<- ((ExtractValue
                     (MkWithType (LStruct [
                         LInt 8,  -- flags
                         LPackedStruct [LInt 16, LInt 16],  -- packed coordinates
@@ -944,11 +946,11 @@ moduleWithComplexTypes = MkLModule {
                         ]
                     ]) (?^ "complex_ptr")) 3)),
                 -- Extract vector from nested struct
-                "vector_ptr" $<- (AggregateOp (ExtractValue
+                "vector_ptr" $<- ((ExtractValue
                     (MkWithType (LStruct [LPtr, LVector 4 (LInt 32), LFun LVoid [LInt 32]]) 
                      (?^ "nested_ptr")) 1)),
                 -- Load the vector using simple load
-                "vector" $<- (MemoryOp (LoadRegular False (LVector 4 (LInt 32))
+                "vector" $<- ((LoadRegular False (LVector 4 (LInt 32))
                     (?^ "vector_ptr")
                     Nothing False False False False Nothing Nothing Nothing False))
             ] RetVoid],

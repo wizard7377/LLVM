@@ -219,185 +219,14 @@ data Wrapping : Type where
     ||| No signed or unsigned wrap (nuw nsw)
     NoSignedUnsigned : Wrapping
 
-||| Unary operation opcodes.
-||| Models LLVM IR unary instructions like:
-||| ```llvm
-||| %result = fneg float %x
-||| ```
-public export
-data UnaryOpcode : Type where
-    ||| Floating point negation
-    FNeg : UnaryOpcode
 
-||| Binary operation opcodes for arithmetic and logical operations.
-||| Models LLVM IR binary instructions like:
-||| ```llvm
-||| %result = add i32 %a, %b
-||| %result = fadd float %x, %y
-||| %result = and i1 %p, %q
-||| %result = shl i32 %val, 2
-||| ```
-|||All the simple binary opcodes
 public export
-data BinaryOpcode : Type where
-    ||| Integer addition
-    Add : BinaryOpcode
-    ||| Integer addition with wrap flags
-    AddWrap : Wrapping -> BinaryOpcode
-    ||| Floating point addition with fast math
-    FAdd : FastMath -> BinaryOpcode
-    ||| Integer subtraction
-    Sub : BinaryOpcode
-    ||| Integer subtraction with wrap flags
-    SubWrap : Wrapping -> BinaryOpcode
-    ||| Floating point subtraction with fast math
-    FSub : FastMath -> BinaryOpcode
-    ||| Integer multiplication
-    Mul : BinaryOpcode
-    ||| Integer multiplication with wrap flags
-    MulWrap : Wrapping -> BinaryOpcode
-    ||| Floating point multiplication with fast math
-    FMul : FastMath -> BinaryOpcode
-    ||| Unsigned integer division
-    UDiv : BinaryOpcode
-    ||| Exact unsigned integer division
-    UDivExact : BinaryOpcode
-    ||| Signed integer division
-    SDiv : BinaryOpcode
-    ||| Exact signed integer division
-    SDivExact : BinaryOpcode
-    ||| Floating point division with fast math
-    FDiv : FastMath -> BinaryOpcode
-    ||| Unsigned integer remainder
-    URem : BinaryOpcode
-    ||| Signed integer remainder
-    SRem : BinaryOpcode
-    ||| Floating point remainder with fast math
-    FRem : FastMath -> BinaryOpcode
-    ||| Shift left
-    Shl : BinaryOpcode
-    ||| Shift left with wrap flags
-    ShlWrap : Wrapping -> BinaryOpcode
-    ||| Logical shift right
-    LShr : BinaryOpcode
-    ||| Exact logical shift right
-    LShrExact : BinaryOpcode
-    ||| Arithmetic shift right
-    AShr : BinaryOpcode
-    ||| Exact arithmetic shift right
-    AShrExact : BinaryOpcode
-    ||| Bitwise AND
-    And : BinaryOpcode
-    ||| Bitwise OR
-    Or : BinaryOpcode
-    ||| Disjoint bitwise OR (operands have no common set bits)
-    DisjointOr : BinaryOpcode
-    ||| Bitwise XOR
-    Xor : BinaryOpcode
-||| Vector operation opcodes.
-||| Models LLVM IR vector manipulation instructions like:
-||| ```llvm
-||| %result = insertelement <4 x i32> %vec, i32 %val, i32 0
-||| %result = extractelement <4 x i32> %vec, i32 2
-||| %result = shufflevector <4 x i32> %v1, <4 x i32> %v2, <4 x i32> <i32 0, i32 5, i32 2, i32 7>
-||| ```
-public export
-data VectorOpcode : Type where
-    ||| Insert element into vector at specified index
-    InsertElement : WithType LValue -> WithType LValue -> WithType LValue -> VectorOpcode
-    ||| Shuffle two vectors according to mask
-    ShuffleVector : WithType LValue -> WithType LValue -> WithType LValue -> VectorOpcode
-    ||| Extract element from vector at specified index
-    ExtractElement : WithType LValue -> WithType LValue -> VectorOpcode
+data CatchClause : Type where
+    ||| Catch clause for landing pad instructions
+    Catching : LType -> LValue -> CatchClause
+    ||| Filter clause for landing pad instructions
+    Filtering : LType -> LValue -> CatchClause
 
-||| Aggregate operation opcodes for structs and arrays.
-||| Models LLVM IR aggregate manipulation instructions like:
-||| ```llvm
-||| %result = extractvalue {i32, float} %agg, 0
-||| %result = insertvalue {i32, float} %agg, i32 42, 0
-||| ```
-public export
-data AggregateOpcode : Type where
-    ||| Extract value from aggregate at specified index
-    ExtractValue : WithType LValue -> Nat -> AggregateOpcode
-    ||| Insert value into aggregate at specified index
-    InsertValue : WithType LValue -> WithType LValue -> Nat -> AggregateOpcode
-||| Type conversion operation opcodes.
-||| Models LLVM IR conversion instructions like:
-||| ```llvm
-||| %result = trunc i32 %val to i16
-||| %result = zext i16 %val to i32
-||| %result = bitcast i8* %ptr to i32*
-||| %result = addrspacecast i8* %ptr to i8 addrspace(1)*
-||| ```
-public export
-data ConversionOpCode : Type where 
-    ||| Truncate integer to smaller type
-    Trunc : Wrapping -> ConversionOpCode
-    ||| Zero extend integer to larger type
-    ZExt : ConversionOpCode 
-    ||| Sign extend integer to larger type
-    SExt : ConversionOpCode
-    ||| Truncate floating point to smaller precision
-    FPTrunc : FastMath -> ConversionOpCode
-    ||| Extend floating point to larger precision
-    FPExt : FastMath -> ConversionOpCode
-    ||| Convert floating point to unsigned integer
-    FPToUi : ConversionOpCode
-    ||| Convert floating point to signed integer
-    FPToSi : ConversionOpCode
-    ||| Convert unsigned integer to floating point
-    UiToFP : ConversionOpCode
-    ||| Convert signed integer to floating point
-    SiToFP : ConversionOpCode
-    ||| Convert pointer to integer
-    PtrToInt : ConversionOpCode
-    -- TODO: IntToPtr : ConversionOpCode
-    ||| Bitwise go between types of same size
-    BitCast : ConversionOpCode
-    ||| Convert pointer between address spaces
-    AddrSpaceCast : AddressSpace -> ConversionOpCode
-||| Comparison operation opcodes.
-||| Models LLVM IR comparison instructions like:
-||| ```llvm
-||| %result = icmp eq i32 %a, %b
-||| %result = fcmp olt float %x, %y
-||| %result = fcmp true float %a, %b    ; always true
-||| ```
-public export
-data CompareOpcode : Type where 
-    ||| Integer comparison
-    ICmp : Comparison -> CompareOpcode
-    ||| Integer comparison with sign information
-    ICmpSign : Comparison -> CompareOpcode
-    ||| Ordered floating point comparison
-    FCmpOrd : FastMath -> Comparison -> CompareOpcode
-    ||| Unordered floating point comparison
-    FCmpUnOrd : FastMath -> Comparison -> CompareOpcode
-    ||| Always false comparison
-    FCmpFalse : CompareOpcode
-    ||| Always true comparison
-    FCmpTrue : CompareOpcode
-
-||| Miscellaneous operation opcodes.
-||| Models LLVM IR miscellaneous instructions like:
-||| ```llvm
-||| %result = phi i32 [ %val1, %bb1 ], [ %val2, %bb2 ]
-||| %result = select i1 %cond, i32 %true_val, i32 %false_val
-||| %result = freeze i32 %val
-||| ```
-public export
-data MiscOpcode : Type where 
-    ||| PHI node for SSA form
-    Phi : LType -> List (LValue, Label) -> MiscOpcode
-    ||| Conditional select instruction
-    Select : FastMath -> WithType LValue -> WithType LValue -> WithType LValue -> MiscOpcode
-    ||| Freeze instruction (converts poison to undef)
-    Freeze : WithType LValue -> MiscOpcode
-    ||| Function call operation
-    FnCallOp : FnCall -> MiscOpcode
-    -- TODO: VaArg : 
-    -- TODO: LandingPad, CatchPad, CleanUpPad
 
 
 public export
@@ -414,19 +243,47 @@ data AtomicOrder : Type where
     AcquireRelease : AtomicOrder
     ||| Sequentially consistent atomic ordering
     SequentiallyConsistent : AtomicOrder
-||| Memory operation opcodes for memory allocation and access.
-||| Models LLVM IR memory instructions like:
+
+||| Miscellaneous operation opcodes.
+||| Models LLVM IR miscellaneous instructions like:
 ||| ```llvm
-||| %ptr = alloca i32, align 4
-||| %ptr = alloca i32, i32 %count, align 8
-||| %ptr = alloca i32, align 4, addrspace(1)
+||| %result = phi i32 [ %val1, %bb1 ], [ %val2, %bb2 ]
+||| %result = select i1 %cond, i32 %true_val, i32 %false_val
+||| %result = freeze i32 %val
 ||| ```
 public export
-data MemoryOpcode : Type where
+data LExpr : Type where 
+    ||| PHI node for SSA form
+    Phi : LType -> List (LValue, Label) -> LExpr
+    ||| Conditional select instruction
+    Select : FastMath -> WithType LValue -> WithType LValue -> WithType LValue -> LExpr
+    ||| Freeze instruction (converts poison to undef)
+    Freeze : WithType LValue -> LExpr
+    ||| Function call operation
+    FnCallOp : FnCall -> LExpr
+    -- [ ]: VaArg
+    LandingPad : LType -> List CatchClause -> LExpr
+    LandingPadCleanup : LType -> List CatchClause -> LExpr
+    CatchPad : Name -> LValue -> LExpr
+    CleanupPad : Name -> LValue -> LExpr
+    ||| Memory operation opcodes for memory allocation and access.
+    ||| Models LLVM IR memory instructions like:
+    ||| ```llvm
+    ||| %ptr = alloca i32, align 4
+    ||| %ptr = alloca i32, i32 %count, align 8
+    ||| %ptr = alloca i32, align 4, addrspace(1)
+    ||| ```
+    ||| Memory operation opcodes for memory allocation and access.
+    ||| Models LLVM IR memory instructions like:
+    ||| ```llvm
+    ||| %ptr = alloca i32, align 4
+    ||| %ptr = alloca i32, i32 %count, align 8
+    ||| %ptr = alloca i32, align 4, addrspace(1)
+    ||| ```
     -- TODO: Inalloca?
     ||| <result> = alloca [inalloca] <type> [, <ty> <NumElements>] [, align <alignment>] [, addrspace(<num>)]     ; yields type addrspace(num)*:result
     ||| Stack allocation instruction
-    Alloc : LType -> Maybe (WithType Nat) -> Maybe Nat -> Maybe AddressSpace -> MemoryOpcode
+    Alloc : LType -> Maybe (WithType Nat) -> Maybe Nat -> Maybe AddressSpace -> LExpr
     -- TODO: Load, because im not dealing with that right now
     ||| Many of the args are written as Bools, as the spec has them as useless metadata
     LoadRegular : 
@@ -442,7 +299,7 @@ data MemoryOpcode : Type where
         (dereferenceableOrNull : Maybe Metadata) ->
         (aligned : Maybe Nat) ->
         (noUndef : Bool) ->
-        MemoryOpcode
+        LExpr
     LoadAtomic : 
         (volatile : Bool) ->
         (tpe : LType) ->
@@ -452,7 +309,7 @@ data MemoryOpcode : Type where
         (align : Maybe Nat) ->
         (nontemporal : Bool) -> 
         (invariantGroup : Bool) ->
-        MemoryOpcode
+        LExpr
 
     StoreRegular : 
         (volatile : Bool) ->
@@ -461,7 +318,7 @@ data MemoryOpcode : Type where
         (align : Maybe Nat) ->
         (nonTemporal : Bool) -> 
         (invariantGroup : Bool) ->
-        MemoryOpcode
+        LExpr
     StoreAtomic : 
         (volatile : Bool) ->
         (tpe : WithType LValue) ->
@@ -470,48 +327,123 @@ data MemoryOpcode : Type where
         (ordering : Maybe AtomicOrder) ->
         (align : Maybe Nat) ->
         (invariantGroup : Bool) ->
-        MemoryOpcode
+        LExpr
     Fence : 
         (scope : Maybe String) ->
         (ordering : Maybe AtomicOrder) ->
-        MemoryOpcode
+        LExpr
+    CmpXChg : (weak : Bool) -> (volatile : Bool) -> LValue -> WithType LValue -> WithType LValue -> (syncscope : Maybe String) -> AtomicOrder -> AtomicOrder -> LExpr 
+    
     -- TODO: Cmpxchg, atomicrmw, etc.
+    ||| Unary operation opcodes.
+    ||| Models LLVM IR unary instructions like:
+    ||| ```llvm
+    ||| %result = fneg float %x
+    ||| ```
 
-public export
-data CatchClause : Type where
-    ||| Catch clause for landing pad instructions
-    Catching : LType -> LValue -> CatchClause
-    ||| Filter clause for landing pad instructions
-    Filtering : LType -> LValue -> CatchClause
-public export 
-data ExceptOpcode : Type where 
-    LandingPad : LType -> List CatchClause -> ExceptOpcode
-    LandingPadCleanup : LType -> List CatchClause -> ExceptOpcode
-    CatchPad : Name -> LValue -> ExceptOpcode
-    CleanupPad : Name -> LValue -> ExceptOpcode
-||| LLVM operations categorized by type.
-||| Represents all possible LLVM IR operations.
-public export
-data LInstruction : Type where 
-    ||| Terminator instruction (ends basic blocks)
-    TerminatorOp : Terminator -> LInstruction
-    ||| Unary operation
-    UnaryOp : UnaryOpcode -> LType -> LValue -> LInstruction
-    ||| Binary operation
-    BinaryOp : BinaryOpcode -> LType -> LValue -> LValue -> LInstruction
-    ||| Vector operation
-    VectorOp : VectorOpcode -> LInstruction
-    ||| Aggregate operation
-    AggregateOp : AggregateOpcode -> LInstruction
-    ||| Type conversion operation
-    ConversionOp : ConversionOpCode -> WithType LValue -> LType -> LInstruction
-    ||| Miscellaneous operation
-    MiscOp : MiscOpcode -> LInstruction
-    ||| Memory operation
-    MemoryOp : MemoryOpcode -> LInstruction
-    ||| Exception handling operation 
-    ExceptOp : ExceptOpcode -> LInstruction
-    CompareOp : CompareOpcode -> LType -> LValue -> LValue -> LInstruction
+    ||| Floating point negation
+    FNeg : LType -> LValue -> LExpr
+
+    ||| Binary operation opcodes for arithmetic and logical operations.
+    ||| Models LLVM IR binary instructions like:
+    ||| ```llvm
+    ||| %result = add i32 %a, %b
+    ||| %result = fadd float %x, %y
+    ||| %result = and i1 %p, %q
+    ||| %result = shl i32 %val, 2
+    ||| ```
+    |||All the simple binary opcodes
+
+    Add : LType -> LValue -> LValue -> LExpr
+    AddWrap : Wrapping -> LType -> LValue -> LValue -> LExpr
+    FAdd : FastMath -> LType -> LValue -> LValue -> LExpr
+    Sub : LType -> LValue -> LValue -> LExpr
+    SubWrap : Wrapping -> LType -> LValue -> LValue -> LExpr
+    FSub : FastMath -> LType -> LValue -> LValue -> LExpr
+    Mul : LType -> LValue -> LValue -> LExpr
+    MulWrap : Wrapping -> LType -> LValue -> LValue -> LExpr
+    FMul : FastMath -> LType -> LValue -> LValue -> LExpr
+    UDiv : LType -> LValue -> LValue -> LExpr
+    UDivExact : LType -> LValue -> LValue -> LExpr
+    SDiv : LType -> LValue -> LValue -> LExpr
+    SDivExact : LType -> LValue -> LValue -> LExpr
+    FDiv : FastMath -> LType -> LValue -> LValue -> LExpr
+    URem : LType -> LValue -> LValue -> LExpr
+    SRem : LType -> LValue -> LValue -> LExpr
+    FRem : FastMath -> LType -> LValue -> LValue -> LExpr
+    Shl : LType -> LValue -> LValue -> LExpr
+    ShlWrap : Wrapping -> LType -> LValue -> LValue -> LExpr
+    LShr : LType -> LValue -> LValue -> LExpr
+    LShrExact : LType -> LValue -> LValue -> LExpr
+    AShr : LType -> LValue -> LValue -> LExpr
+    AShrExact : LType -> LValue -> LValue -> LExpr
+    And : LType -> LValue -> LValue -> LExpr
+    Or : LType -> LValue -> LValue -> LExpr
+    DisjointOr : LType -> LValue -> LValue -> LExpr
+    Xor : LType -> LValue -> LValue -> LExpr
+    ||| Vector operation opcodes.
+    ||| Models LLVM IR vector manipulation instructions like:
+    ||| ```llvm
+    ||| %result = insertelement <4 x i32> %vec, i32 %val, i32 0
+    ||| %result = extractelement <4 x i32> %vec, i32 2
+    ||| %result = shufflevector <4 x i32> %v1, <4 x i32> %v2, <4 x i32> <i32 0, i32 5, i32 2, i32 7>
+    ||| ```
+
+    ||| Insert element into vector at specified index
+    InsertElement : WithType LValue -> WithType LValue -> WithType LValue -> LExpr
+    ||| Shuffle two vectors according to mask
+    ShuffleVector : WithType LValue -> WithType LValue -> WithType LValue -> LExpr
+    ||| Extract element from vector at specified index
+    ExtractElement : WithType LValue -> WithType LValue -> LExpr
+
+    ||| Aggregate operation opcodes for structs and arrays.
+    ||| Models LLVM IR aggregate manipulation instructions like:
+    ||| ```llvm
+    ||| %result = extractvalue {i32, float} %agg, 0
+    ||| %result = insertvalue {i32, float} %agg, i32 42, 0
+    ||| ```
+
+    ||| Extract value from aggregate at specified index
+    ExtractValue : WithType LValue -> Nat -> LExpr
+    ||| Insert value into aggregate at specified index
+    InsertValue : WithType LValue -> WithType LValue -> Nat -> LExpr
+    ||| Type conversion operation opcodes.
+    ||| Models LLVM IR conversion instructions like:
+    ||| ```llvm
+    ||| %result = trunc i32 %val to i16
+    ||| %result = zext i16 %val to i32
+    ||| %result = bitcast i8* %ptr to i32*
+    ||| %result = addrspacecast i8* %ptr to i8 addrspace(1)*
+    ||| ```
+
+    Trunc : Wrapping -> WithType LValue -> LType -> LExpr
+    ZExt : WithType LValue -> LType -> LExpr
+    SExt : WithType LValue -> LType -> LExpr
+    FPTrunc : FastMath -> WithType LValue -> LType -> LExpr
+    FPExt : FastMath -> WithType LValue -> LType -> LExpr
+    FPToUi : WithType LValue -> LType -> LExpr
+    FPToSi : WithType LValue -> LType -> LExpr
+    UiToFP : WithType LValue -> LType -> LExpr
+    SiToFP : WithType LValue -> LType -> LExpr
+    PtrToInt : WithType LValue -> LType -> LExpr
+    -- TODO: IntToPtr : LExpr
+    BitCast : WithType LValue -> LType -> LExpr
+    AddrSpaceCast : AddressSpace -> WithType LValue -> LType -> LExpr
+    ||| Comparison operation opcodes.
+    ||| Models LLVM IR comparison instructions like:
+    ||| ```llvm
+    ||| %result = icmp eq i32 %a, %b
+    ||| %result = fcmp olt float %x, %y
+    ||| %result = fcmp true float %a, %b    ; always true
+    ||| ```
+
+    ICmp : Comparison -> LType -> LValue -> LValue -> LExpr
+    ICmpSign : Comparison -> LType -> LValue -> LValue -> LExpr
+    FCmpOrd : FastMath -> Comparison -> LType -> LValue -> LValue -> LExpr
+    FCmpUnOrd : FastMath -> Comparison -> LType -> LValue -> LValue -> LExpr
+    FCmpFalse : LType -> LValue -> LValue -> LExpr
+    FCmpTrue : LType -> LValue -> LValue -> LExpr
+
 
 ||| LLVM statements that can appear in basic blocks.
 ||| Models different forms of LLVM IR statements like:
@@ -526,7 +458,7 @@ record LStatement where
     ||| The name of the result variable (if any)
     target : Maybe Name
     ||| The instruction being executed
-    instruction : LInstruction
+    instruction : LExpr
     ||| The metadata associated with the statement (if any)
     metadata : List Metadata
 

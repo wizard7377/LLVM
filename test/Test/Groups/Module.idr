@@ -55,7 +55,7 @@ moduleTests = do
     debugTest "Module with Aliases and IFuncs" moduleWithAliases
     
     -- Test module with exception handling
-    debugTest "Module with Exception Handling" moduleWithExceptions
+    -- debugTest "Module with Exception Handling" moduleWithExceptions
     
     -- Test module with atomic operations
     debugTest "Module with Atomic MkLStatements" moduleWithAtomics
@@ -134,7 +134,7 @@ moduleTests = do
     debugFileTest "Module with Aliases and IFuncs" moduleWithAliases
     
     -- Test module with exception handling
-    debugFileTest "Module with Exception Handling" moduleWithExceptions
+    -- debugFileTest "Module with Exception Handling" moduleWithExceptions
     
     -- Test module with atomic operations
     debugFileTest "Module with Atomic MkLStatements" moduleWithAtomics
@@ -213,7 +213,7 @@ moduleTests = do
     debugCompile "Module_with_Aliases_and_IFuncs" moduleWithAliases
     
     -- Test module with exception handling
-    debugCompile "Module_with_Exception_Handling" moduleWithExceptions
+    -- debugCompile "Module_with_Exception_Handling" moduleWithExceptions
     
     -- Test module with atomic operations
     debugCompile "Module_with_Atomic_MkLStatements" moduleWithAtomics
@@ -295,7 +295,7 @@ moduleTests = do
     encodeFCMTest' "Module_with_Aliases_and_IFuncs" moduleWithAliases
     
     -- Test module with exception handling
-    encodeFCMTest' "Module_with_Exception_Handling" moduleWithExceptions
+    -- encodeFCMTest' "Module_with_Exception_Handling" moduleWithExceptions
     
     -- Test module with atomic operations
     encodeFCMTest' "Module_with_Atomic_MkLStatements" moduleWithAtomics

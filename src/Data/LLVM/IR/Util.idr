@@ -16,8 +16,11 @@ implementation LBasicBlock (Destination -> List LStatement) where
     resolve n f = f n
 
 export
-implementation LBasicBlock (List LStatement, LInstruction) where 
+implementation LBasicBlock (List LStatement, LExpr) where 
 
     resolve ( n) (stmt, op) = stmt ++ [MkLStatement n op]
 
 -}
+public export 
+interface CanNote a where 
+    note : a -> Annotation -> a

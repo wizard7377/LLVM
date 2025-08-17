@@ -13,252 +13,157 @@ import Data.String
 import Data.LLVM.Write.Foreign.Monad
 import Data.LLVM.Write.Foreign.Values
 --%default covering 
-%default partial
-maybeListToMap : Ord a => {default 0 index : Int} -> List (Maybe a) -> SortedMap a Int
-maybeListToMap {index} ((Just x) :: xs) = mergeWith (\x, y => y) (insert x index empty) (maybeListToMap {index = index + 1} xs)
-maybeListToMap {index} (Nothing :: xs) = maybeListToMap {index = index + 1} xs
-maybeListToMap [] = empty
-woScope : Functor f => {b : Type} -> f (WithScope {ref = b} a) -> f a
-woScope = map (WithScope.value)
-  
-export
-Encode FCM LType LLVMType where
-  encode LType.LPtr = do
-    gbl <- liftFCM $ LLVMGetGlobalContext
-    ty <- liftFCM $ LLVMPointerTypeInContext gbl
-    pure ty
-  encode (LPtrTo ty) = do 
-    ty' <- encode' ty
-    liftFCM $ LLVMPointerType ty' 0
-  encode LVoid = liftFCM $ LLVMVoidType
-  encode (LFun ret args) = do 
-    args' <- traverse encode' args
-    ret' <- encode' ret
-    argList <- liftIO $ toCList' args'
-    let argList' = prim__castPtr argList
-    liftFCM $ LLVMFunctionType ret' argList' (cast $ length args) 0
-  encode (LType.LInt n) = liftFCM $ LLVMIntType $ cast n
-  encode (LType.LVector n ty) = do 
-    ty' <- encode' ty
-    liftFCM $ LLVMVectorType ty' (cast n)
-  encode LOpaque = ?enlopaq
-  encode LLabel = fcm $ LLVMLabelTypeInContext !inCon
-  encode LType.LToken = fcm $ LLVMTokenTypeInContext !inCon
-  encode (LType.LArray size e) = do 
-    e' <- encode' e 
-    fcm $ LLVMArrayType2 e' $ cast size
-  encode (LFloating f) = encode f
-  encode (LType.LStruct fields) = do 
-    fields' <- traverse encode' fields
-    structTy <- fcm $ LLVMStructTypeInContext !inCon !(liftIO $ prim__castPtr <$> toCList' fields') (cast $ length fields) 0
-    pure structTy
-  encode (LPackedStruct fields) = do 
-    fields' <- traverse encode' fields
-    structTy <- fcm $ LLVMStructTypeInContext !inCon !(liftIO $ prim__castPtr <$> toCList' fields') (cast $ length fields) 1
-    pure structTy
-  encode (LFunVarArg ret args rest) = do 
-    ret' <- encode' ret
-    args' <- traverse encode' args
-    rest' <- encode' rest
-    argList <- liftIO $ toCList' (args' ++ [rest'])
-    liftFCM $ LLVMFunctionType ret' (castPtr argList) (cast $ length args + 1) 1
-  encode _ = ?h10
-public export
-[ewt] {a : Type} -> Encode FCM a CPtr => Encode FCM (WithType a) CPtr where 
-    encode = ?h11
 
-public export
-{a : Type} -> Encode FCM a CPtr => Encode FCM (WithType a) CPtr where 
-    encode = ?h12
+%default partial 
 
-withIndex : List a -> List (Int, a)
-withIndex xs = go 0 xs
-  where
-    go : Int -> List a -> List (Int, a)
-    go _ [] = []
-    go n (x :: xs) = (n, x) :: go (n + 1) xs
-mutual
-    export
-    Encode FCM Metadata CPtr where
-        encode (MetadataTuple elems) = do
-            elems' <- traverse encode' elems
-            elemList <- liftIO $ toCList' elems'
-            liftFCM $ LLVMMDNodeInContext !inCon (castPtr elemList) (cast $ length elems)
-        encode (MetadataNamed name) = do
-            liftFCM $ LLVMMDStringInContext !inCon name (cast $ length name)
-        encode (MetadataNode name) = ?mnh
-        encode (MetadataString str) = do
-            liftFCM $ LLVMMDStringInContext !inCon str (cast $ length str)
-        encode (MetadataValue (MkWithType ty expr)) = do
-            ty' <- encode' ty
-            expr' <- encode' (MkWithType ty expr)
-            liftFCM $ LLVMValueAsMetadata expr'
-        encode (MetadataCustom custom) = do
-            liftFCM $ LLVMMDStringInContext !inCon custom (cast $ length custom)
-    
-    export
-    Encode FCM (WithType LValue) CPtr where
-      encode (MkWithType ty v) = step "Make with type" $ do 
-        ty' <- encode' ty
-        case v of 
-          LVar name => step ("get name value: " ++ show name) $ do 
-            case name of 
-              Temporary n => ?ewte10
-              Local n => getScope name
-              Global n => ?ewte11 
-              Parameter n => getScope name
-              Unnamed n => ?ewte13
-              
-          LBool b => do 
-            if b then liftFCM $ LLVMConstInt ty' 1 0 else liftFCM $ LLVMConstInt ty' 0 0
-          LInt i => liftFCM $ LLVMConstInt ty' (cast i) 0
-          LNull => liftFCM $ LLVMConstNull ty'
-          LTerm.LFloat f => liftFCM $ LLVMConstReal ty' ?ewte2
-          
-          LTerm.LString s => liftFCM $ LLVMConstString s (cast $ length s + 1) 0
-          LTerm.LPoison => liftFCM $ LLVMGetPoison ty'
-          LTerm.LZero => liftFCM $ LLVMConstNull ty'
-          _ => ?ewte3
-
-
-
-export 
-Encode FCM GVarDef CPtr where
-	encode (MkGVarDef name symbolInfo threadLocality addressInfo addressSpace externallyInitialized constant ty init tags) = step "Global var def" $ do 
-    ty' <- encode' ty
-    seed <- liftFCM $ LLVMAddGlobal !inMod ty' name
-    pure seed --TODO:
-export
-Encode FCM Attribute CPtr where 
-    encode = ?h18
-export
-Encode FCM CaseBranch CPtr where
-	encode = ?h19
-
-export
-Encode FCM InvokeCall CPtr where
-	encode = ?h20
-
-export
-Encode FCM Wrapping CEnum where
-	encode NoSigned = fcmPure $ (the CEnum (cast 1))
-	encode NoUnsigned = fcmPure $ (the CEnum (cast 2))
-	encode NoSignedUnsigned = fcmPure $ (the CEnum (cast 3))
-
-export
-Encode FCM (UnaryOpcode, LType, LValue) CPtr where
-	encode = ?h22
-
-export 
-Encode FCM (CompareOpcode, LType, LValue, LValue) CPtr where 
-  encode (op, ty, e0, e1) = step ("Compare opcode") $ do
-    e0' <- encode' $ MkWithType ty e0
-    e1' <- encode' $ MkWithType ty e1
-    case op of 
-      _ => ?coph
-export
-Encode FCM (BinaryOpcode, LType, LValue, LValue) CPtr where
-	encode (op, ty, e0, e1) = step ("Binary opcode") $ do 
-    e0' <- encode' $ MkWithType ty e0
-    e1' <- encode' $ MkWithType ty e1
-    ty' <- encode' ty
-    case op of 
-      Add => do
-        builder <- popBuilder
-        res <- liftFCM $ LLVMBuildAdd builder e0' e1' "add"
-        pushBuilder builder
-        pure res
-      _ => ?h23
-
-    
-
-public export
-Encode FCM BrCall CPtr where 
-	encode = ?h24
-public export
-Encode FCM CatchSwitch CPtr where
-	encode = ?h25
-export
-Encode FCM FastMathFlag CEnum where 
-	encode FFast = fcmPure $ (the CEnum (cast 1))
-	encode NoNaNs = fcmPure $ (the CEnum (cast 2))
-	encode NoInfs = fcmPure $ (the CEnum (cast 4))
-	encode NoSignedZeros = fcmPure $ (the CEnum (cast 8))
-
-public export
-Encode FCM TailCall CEnum where 
-	encode Tail = fcmPure $ (the CEnum (cast 1))
-	encode MustTail = fcmPure $ (the CEnum (cast 2))
-	encode NoTail = fcmPure $ (the CEnum (cast 0))
-public export
-Encode FCM FnCall CPtr where
-	encode = ?h28
 
 public export
 Encode FCM Terminator CPtr where
-	encode = ?h29
-public export
-Encode FCM (ConversionOpCode, WithType LValue, LType) CPtr where
-	encode = ?h30
+	encode op = step "terminator opcode: " $ do
+    cf <- popFun 
+    cb <- popBuilder 
+    res <- case op of
+      Ret ty val => do 
+        vv <- encode (MkWithType ty val)
+        r <- liftFCM $ LLVMBuildRet cb vv 
+        pure r
+      RetVoid => do 
+        liftFCM $ LLVMBuildRetVoid cb
+      CondBr cond ifTrue ifFalse => do 
+        cond' <- encode cond
+        ifTrue' <- getBlock ifTrue 
+        ifFalse' getBlock ifFalse
+        liftFCM $ LLVMBuildCondBr cb cond' ifTrue' ifFalse
 
-public export
-Encode FCM VectorOpcode CPtr where
-	encode = ?h31
+        
+    pushBuilder cb 
+    pushFun cf
+    pure res
+      
+public export 
+Encode FCM LExpr CPtr where
+  encode e = step "Encoding expression" $ do
+    builder <- popBuilder
+    res <- case e of
+      Phi ty pairs => throwError (InternalError "Phi node encoding not implemented")
+      Select fm c t f => throwError (InternalError "Select encoding not implemented")
+      Freeze v => throwError (InternalError "Freeze encoding not implemented")
+      FnCallOp fncall => encode fncall
+      LandingPad ty clauses => throwError (InternalError "LandingPad encoding not implemented")
+      LandingPadCleanup ty clauses => throwError (InternalError "LandingPadCleanup encoding not implemented")
+      CatchPad name v => throwError (InternalError "CatchPad encoding not implemented")
+      CleanupPad name v => throwError (InternalError "CleanupPad encoding not implemented")
+      Alloc ty mcount malign maddrspace => throwError (InternalError "Alloc encoding not implemented")
+      LoadRegular v tpe addr align nontemp invLoad invGroup nonNull deref derefOrNull aligned noUndef => throwError (InternalError "LoadRegular encoding not implemented")
+      LoadAtomic v tpe addr scope ordering align nontemp invGroup => throwError (InternalError "LoadAtomic encoding not implemented")
+      StoreRegular v tpe addr align nontemp invGroup => throwError (InternalError "StoreRegular encoding not implemented")
+      StoreAtomic v tpe addr scope ordering align invGroup => throwError (InternalError "StoreAtomic encoding not implemented")
+      Fence scope ordering => throwError (InternalError "Fence encoding not implemented")
+      FNeg ty v => do
+        v' <- encode' (MkWithType ty v)
+        liftFCM $ LLVMBuildFNeg builder v' "fneg"
+      Add ty a b => do
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildAdd builder a' b' "add"
+      AddWrap wrap ty a b => throwError (InternalError "AddWrap encoding not implemented")
+      FAdd fm ty a b => throwError (InternalError "FAdd encoding not implemented")
+      Sub ty a b => do
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildSub builder a' b' "sub"
+      SubWrap wrap ty a b => throwError (InternalError "SubWrap encoding not implemented")
+      FSub fm ty a b => throwError (InternalError "FSub encoding not implemented")
+      Mul ty a b => do
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildMul builder a' b' "mul"
+      MulWrap wrap ty a b => throwError (InternalError "MulWrap encoding not implemented")
+      FMul fm ty a b => throwError (InternalError "FMul encoding not implemented")
+      UDiv ty a b => do
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildUDiv builder a' b' "udiv"
+      UDivExact ty a b => throwError (InternalError "UDivExact encoding not implemented")
+      SDiv ty a b => do
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildSDiv builder a' b' "sdiv"
+      SDivExact ty a b => throwError (InternalError "SDivExact encoding not implemented")
+      FDiv fm ty a b => throwError (InternalError "FDiv encoding not implemented")
+      URem ty a b => do
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildURem builder a' b' "urem"
+      SRem ty a b => do
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildSRem builder a' b' "srem"
+      FRem fm ty a b => throwError (InternalError "FRem encoding not implemented")
+      Shl ty a b => do
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildShl builder a' b' "shl"
+      ShlWrap wrap ty a b => throwError (InternalError "ShlWrap encoding not implemented")
+      LShr ty a b => do
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildLShr builder a' b' "lshr"
+      LShrExact ty a b => throwError (InternalError "LShrExact encoding not implemented")
+      AShr ty a b => do
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildAShr builder a' b' "ashr"
+      AShrExact ty a b => throwError (InternalError "AShrExact encoding not implemented")
+      And ty a b => do
 
-export
-Encode FCM AggregateOpcode CPtr where
-	encode = ?h32
-export 
-Encode FCM MiscOpcode CPtr where
-	encode = ?h33
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildAnd builder a' b' "and"
+      Or ty a b => do
 
-emptyNode : VString 
-emptyNode = "!{}"
-nonTempNode : VString
-nonTempNode = "!{ i32 1 }"
-export
-Encode FCM AtomicOrder CEnum where
-	encode Unordered = fcmPure $ (the CEnum (cast 1))
-	encode Monotonic = fcmPure $ (the CEnum (cast 2))
-	encode Acquire = fcmPure $ (the CEnum (cast 4))
-	encode Release = fcmPure $ (the CEnum (cast 5))
-	encode AcquireRelease = fcmPure $ (the CEnum (cast 6))
-	encode SequentiallyConsistent = fcmPure $ (the CEnum (cast 7))
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildOr builder a' b' "or"
+      DisjointOr ty a b => throwError (InternalError "DisjointOr encoding not implemented")
+      Xor ty a b => do
 
-export 
-Encode FCM MemoryOpcode CPtr where
-	encode = ?h35
+        a' <- encode' (MkWithType ty a)
+        b' <- encode' (MkWithType ty b)
+        liftFCM $ LLVMBuildXor builder a' b' "xor"
+      InsertElement v1 v2 v3 => throwError (InternalError "InsertElement encoding not implemented")
+      ShuffleVector v1 v2 v3 => throwError (InternalError "ShuffleVector encoding not implemented")
+      ExtractElement v1 v2 => throwError (InternalError "ExtractElement encoding not implemented")
+      ExtractValue v n => throwError (InternalError "ExtractValue encoding not implemented")
+      InsertValue v1 v2 n => throwError (InternalError "InsertValue encoding not implemented")
+      Trunc wrap v tpe => throwError (InternalError "Trunc encoding not implemented")
+      ZExt v tpe => throwError (InternalError "ZExt encoding not implemented")
+      SExt v tpe => throwError (InternalError "SExt encoding not implemented")
+      FPTrunc fm v tpe => throwError (InternalError "FPTrunc encoding not implemented")
+      FPExt fm v tpe => throwError (InternalError "FPExt encoding not implemented")
+      FPToUi v tpe => throwError (InternalError "FPToUi encoding not implemented")
+      FPToSi v tpe => throwError (InternalError "FPToSi encoding not implemented")
+      UiToFP v tpe => throwError (InternalError "UiToFP encoding not implemented")
+      SiToFP v tpe => throwError (InternalError "SiToFP encoding not implemented")
+      PtrToInt v tpe => throwError (InternalError "PtrToInt encoding not implemented")
+      BitCast v tpe => throwError (InternalError "BitCast encoding not implemented")
+      AddrSpaceCast addr v tpe => throwError (InternalError "AddrSpaceCast encoding not implemented")
+      ICmp cmp ty a b => throwError (InternalError "ICmp encoding not implemented")
+      ICmpSign cmp ty a b => throwError (InternalError "ICmpSign encoding not implemented")
+      FCmpOrd fm cmp ty a b => throwError (InternalError "FCmpOrd encoding not implemented")
+      FCmpUnOrd fm cmp ty a b => throwError (InternalError "FCmpUnOrd encoding not implemented")
+      FCmpFalse ty a b => throwError (InternalError "FCmpFalse encoding not implemented")
+      FCmpTrue ty a b => throwError (InternalError "FCmpTrue encoding not implemented")
+    pushBuilder builder
+    pure res
 
-export 
-Encode FCM CatchClause CPtr where
-	encode = ?h36
-
-export 
-Encode FCM ExceptOpcode CPtr where
-	encode = ?h37
-
-export
-Encode FCM LInstruction CPtr where
-	encode op = step "operation" $ case op of
-    TerminatorOp t => encode' t
-    UnaryOp u t e => encode' (u, t, e)
-    BinaryOp b t e0 e1 => encode' (b, t, e0, e1)
-    VectorOp v => encode' v
-    AggregateOp a => encode' a
-    ConversionOp c e t => encode' (c, e, t)
-    MiscOp m => encode' m
-    MemoryOp m => encode' m
-    ExceptOp e => encode' e
-    CompareOp o ty e0 e1 => encode' (o, ty, e0, e1)
-    
 
 export
 Encode FCM LStatement CPtr where
     -- TODO:
     encode (MkLStatement (Just name) op _) = step "statement" $ do 
             res <- encode' op
-            cBuild <- popBuilder 
-            pushBuilder cBuild
+            pushScope name res
             --TODO
             pure res
             
@@ -266,13 +171,13 @@ Encode FCM LStatement CPtr where
             res <- encode' op
             pure res
 
-
 public export
 Encode FCM BasicBlock CPtr where
     encode (MkBasicBlock name statements term) = step ("BasicBlock: " ++ name) $ do 
-        f <- popFun
+        
         putMsg 15 ("aapending block to function")
-        block <- fcm $ LLVMAppendBasicBlockInContext !inCon (snd f) name
+        block <- getBlock name 
+        f <- popFun 
         builder <- fcm $ LLVMCreateBuilderInContext !inCon
         _ <- fcm $ LLVMPositionBuilderAtEnd builder block
         putMsg 15 ("encoding block statements")
@@ -286,14 +191,14 @@ public export
 	encode (MkArgument ty attr name) = step ("arg spec") $ do 
             ty' <- encode' ty
             -- TODO: attr' <- encode att
-            (ns, fv) <- popFun
+            fv <- popFun
             v <- case name of 
               Just n => do 
-                let v' = fcm $ LLVMGetLastParam fv
+                let v' = fcm $ LLVMGetLastParam fv.val
                 pushScope' (Parameter n) v' 
                 v'
-              Nothing => fcm $ LLVMGetLastParam fv
-            pushFun (ns, fv) 
+              Nothing => fcm $ LLVMGetLastParam fv.val
+            pushFun fv
             pure v
             -- TODO
 public export 
@@ -334,11 +239,12 @@ Encode FCM FunctionDef LLVMValue where
             let argCount = length args 
             
             fty <- liftFCM $ LLVMFunctionType returnType' (prim__castPtr args'') (cast argCount) 0
-            fv <- liftFCM $ LLVMAddFunction !inMod name fty
-            (_, (argNames1, fv1)) <- usingFun (argNames, fv) $ for_ args (encode @{ArgsOf}) 
+            fv' <- liftFCM $ LLVMAddFunction !inMod name fty
+            let fv = MkWorkingFunction argNames empty fv'
+            (_, fv1) <- usingFun fv $ for_ args (encode @{ArgsOf}) 
             -- START HERE
             -- pushFun (MkWithScope (argNames fv)
-            (body, (argNames',fv')) <- usingFun (argNames1, fv1) (traverse encode' body)
+            (body, fv2) <- usingFun fv1 (traverse encode' body)
             -- TODO: Personality
             -- TODO: Rest
             pure fv'
@@ -411,6 +317,3 @@ Encode FCM LModule CPtr where
 
     
     
-  
-	
-

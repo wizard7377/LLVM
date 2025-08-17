@@ -3,8 +3,10 @@
 ||| Ops starting with `?` create variables
 ||| Ops starting with `#` create (constant) values
 ||| `$` creates statements
-||| `!` creates basic blocks
+||| `!` creates basic blocks *or* instructions
 ||| `:` creates types
+||| `@` creates attributes
+||| `^` creates metadata, and `^^` creates annotations, however `^^` attaches an annotation to a value
 module Data.LLVM.IR.Builders.Sugar
 
 import Data.LLVM.IR.Builders.Core
@@ -16,7 +18,7 @@ export
 implementation FromString Name where 
     fromString = local
 public export 
-prefix 10 ?*
+prefix 8 ?*
 
 public export 
 ||| Convenient operator to create a pointer expression from a name.
@@ -41,18 +43,18 @@ public export
 |||
 ||| @ target The target variable name to assign to
 ||| @ op The operation whose result to assign
-($<-) : Name -> LInstruction -> LStatement
+($<-) : Name -> LExpr -> LStatement
 ($<-) target op = MkLStatement (Just target) op []
 
 public export 
 prefix 1 $<< 
 
 public export
-($<<) : LInstruction -> LStatement
+($<<) : LExpr -> LStatement
 ($<<) v = MkLStatement Nothing v []
 
 public export 
-prefix 10 ?%
+prefix 8 ?%
 
 
 public export 
@@ -60,14 +62,14 @@ public export
 (?%) name = LTerm.LVar $ local name
 
 public export 
-prefix 10 ?@
+prefix 8 ?@
 
 public export 
 (?@) : String -> LValue
 (?@) name = LTerm.LVar $ global name
 
 public export 
-prefix 10 ?^
+prefix 8 ?^
 
 public export 
 (?^) : String -> LValue 
@@ -75,7 +77,7 @@ public export
 
 
 public export 
-prefix 10 ##
+prefix 8 ##
 
 public export 
 (##) : Int -> LValue 
@@ -89,14 +91,14 @@ public export
 (!:) name (stmts, term) = MkBasicBlock name stmts term
 
 public export 
-prefix 10 :?
+prefix 8 :?
 
 public export
 (:?) : Type -> LType 
 (:?) t = lowerTypeReflect t
 
 public export 
-prefix 10 :#
+prefix 8 :#
 
 public export
 (:#) : Int -> LType 
@@ -105,6 +107,7 @@ public export
 public export 
 infix 1 <:>
 
+||| Combine a type and value
 public export 
 (<:>) : LType -> a -> WithType a
 (<:>) t x = MkWithType t x
@@ -115,3 +118,21 @@ infixr 1 :<>
 public export 
 (:<>) : Int -> LType -> LType
 (:<>) n x = LType.LVector n x
+{- 
+public export 
+infixl 9 ^^ 
+public export 
+(^^) : CanNote a => a -> Annotation -> a
+(^^) x n = note x n
+-}
+public export 
+prefix 10 ^#
+public export 
+(^#) : Nat -> Metadata 
+(^#) n = MetadataNode n 
+
+public export 
+prefix 10 ^>
+public export 
+(^>) : String -> Metadata
+(^>) name = MetadataString name

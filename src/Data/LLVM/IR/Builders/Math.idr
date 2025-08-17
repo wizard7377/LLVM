@@ -29,8 +29,8 @@ icmp :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-icmp pred ty lhs rhs = CompareOp (ICmp pred) ty lhs rhs
+    LExpr
+icmp pred ty lhs rhs = (ICmp pred) ty lhs rhs
 
 
 export
@@ -42,9 +42,9 @@ fcmp :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-fcmp True {fastMath} pred ty lhs rhs = CompareOp (FCmpOrd fastMath pred) ty lhs rhs
-fcmp False {fastMath} pred ty lhs rhs = CompareOp (FCmpUnOrd fastMath pred) ty lhs rhs
+    LExpr
+fcmp True {fastMath} pred ty lhs rhs = (FCmpOrd fastMath pred) ty lhs rhs
+fcmp False {fastMath} pred ty lhs rhs = (FCmpUnOrd fastMath pred) ty lhs rhs
 
 export
 ||| Create division operation (unsigned).
@@ -53,9 +53,9 @@ udiv :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-udiv {exact = False} ty lhs rhs = BinaryOp UDiv ty lhs rhs
-udiv {exact = True} ty lhs rhs = BinaryOp UDivExact ty lhs rhs
+    LExpr
+udiv {exact = False} ty lhs rhs = UDiv ty lhs rhs
+udiv {exact = True} ty lhs rhs = UDivExact ty lhs rhs
 
 export
 ||| Create division operation (signed).
@@ -64,9 +64,9 @@ sdiv :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-sdiv {exact = False} ty lhs rhs = BinaryOp SDiv ty lhs rhs  
-sdiv {exact = True} ty lhs rhs = BinaryOp SDivExact ty lhs rhs
+    LExpr
+sdiv {exact = False} ty lhs rhs = SDiv ty lhs rhs  
+sdiv {exact = True} ty lhs rhs = SDivExact ty lhs rhs
 
 export
 ||| Create floating point division operation.
@@ -75,18 +75,18 @@ fdiv :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-fdiv {fastMath} ty lhs rhs = BinaryOp (FDiv fastMath) ty lhs rhs
+    LExpr
+fdiv {fastMath} ty lhs rhs = (FDiv fastMath) ty lhs rhs
 
 export
 ||| Create remainder operation (unsigned).
-urem : LType -> LValue -> LValue -> LInstruction
-urem ty lhs rhs = BinaryOp URem ty lhs rhs
+urem : LType -> LValue -> LValue -> LExpr
+urem ty lhs rhs = URem ty lhs rhs
 
 export
 ||| Create remainder operation (signed).
-srem : LType -> LValue -> LValue -> LInstruction  
-srem ty lhs rhs = BinaryOp SRem ty lhs rhs
+srem : LType -> LValue -> LValue -> LExpr  
+srem ty lhs rhs = SRem ty lhs rhs
 
 export
 ||| Create floating point remainder operation.
@@ -95,8 +95,8 @@ frem :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-frem {fastMath} ty lhs rhs = BinaryOp (FRem fastMath) ty lhs rhs
+    LExpr
+frem {fastMath} ty lhs rhs = (FRem fastMath) ty lhs rhs
 
 export
 ||| Create shift left operation.
@@ -105,9 +105,9 @@ shl :
     (ty : LType) ->
     (value : LValue) ->
     (amount : LValue) ->
-    LInstruction
-shl {wrap = Nothing} ty value amount = BinaryOp Shl ty value amount
-shl {wrap = Just w} ty value amount = BinaryOp (ShlWrap w) ty value amount
+    LExpr
+shl {wrap = Nothing} ty value amount = Shl ty value amount
+shl {wrap = Just w} ty value amount = (ShlWrap w) ty value amount
 
 export
 ||| Create logical shift right operation.
@@ -116,9 +116,9 @@ lshr :
     (ty : LType) ->
     (value : LValue) ->
     (amount : LValue) ->
-    LInstruction
-lshr {exact = False} ty value amount = BinaryOp LShr ty value amount
-lshr {exact = True} ty value amount = BinaryOp LShrExact ty value amount
+    LExpr
+lshr {exact = False} ty value amount = LShr ty value amount
+lshr {exact = True} ty value amount = LShrExact ty value amount
 
 export
 ||| Create arithmetic shift right operation.
@@ -127,9 +127,9 @@ ashr :
     (ty : LType) ->
     (value : LValue) ->
     (amount : LValue) ->
-    LInstruction
-ashr {exact = False} ty value amount = BinaryOp AShr ty value amount
-ashr {exact = True} ty value amount = BinaryOp AShrExact ty value amount
+    LExpr
+ashr {exact = False} ty value amount = AShr ty value amount
+ashr {exact = True} ty value amount = AShrExact ty value amount
 
 export
 ||| Create bitwise AND operation.
@@ -140,8 +140,8 @@ export
 ||| @ ty The integer type of both operands (must be the same)
 ||| @ lhs The left-hand side operand
 ||| @ rhs The right-hand side operand
-and : LType -> LValue -> LValue -> LInstruction
-and ty lhs rhs = BinaryOp And ty lhs rhs
+and : LType -> LValue -> LValue -> LExpr
+and ty lhs rhs = And ty lhs rhs
 
 export
 ||| Create bitwise OR operation.
@@ -159,9 +159,9 @@ or :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-or {disjoint = False} ty lhs rhs = BinaryOp Or ty lhs rhs
-or {disjoint = True} ty lhs rhs = BinaryOp DisjointOr ty lhs rhs
+    LExpr
+or {disjoint = False} ty lhs rhs = Or ty lhs rhs
+or {disjoint = True} ty lhs rhs = DisjointOr ty lhs rhs
 
 export
 ||| Create bitwise XOR operation.
@@ -172,8 +172,8 @@ export
 ||| @ ty The integer type of both operands (must be the same)
 ||| @ lhs The left-hand side operand
 ||| @ rhs The right-hand side operand
-xor : LType -> LValue -> LValue -> LInstruction
-xor ty lhs rhs = BinaryOp Xor ty lhs rhs
+xor : LType -> LValue -> LValue -> LExpr
+xor ty lhs rhs = Xor ty lhs rhs
 
 
 export
@@ -185,8 +185,8 @@ export
 ||| @ ty The integer type of both operands (must be the same)
 ||| @ lhs The left-hand side operand
 ||| @ rhs The right-hand side operand
-add : LType -> LValue -> LValue -> LInstruction
-add ty lhs rhs = BinaryOp Add ty lhs rhs
+add : LType -> LValue -> LValue -> LExpr
+add ty lhs rhs = Add ty lhs rhs
 
 export
 ||| Create a subtract operation.
@@ -197,8 +197,8 @@ export
 ||| @ ty The integer type of both operands (must be the same)
 ||| @ lhs The left-hand side operand (minuend)
 ||| @ rhs The right-hand side operand (subtrahend)
-sub : LType -> LValue -> LValue -> LInstruction
-sub ty lhs rhs = BinaryOp Sub ty lhs rhs
+sub : LType -> LValue -> LValue -> LExpr
+sub ty lhs rhs = Sub ty lhs rhs
 
 export
 ||| Create a multiply operation.
@@ -209,8 +209,8 @@ export
 ||| @ ty The integer type of both operands (must be the same)
 ||| @ lhs The left-hand side operand
 ||| @ rhs The right-hand side operand
-mul : LType -> LValue -> LValue -> LInstruction
-mul ty lhs rhs = BinaryOp Mul ty lhs rhs
+mul : LType -> LValue -> LValue -> LExpr
+mul ty lhs rhs = Mul ty lhs rhs
 
 
 export
@@ -219,9 +219,9 @@ trunc :
     {default Nothing wrap : Maybe Wrapping} ->
     (from : WithType LValue) ->
     (to : LType) ->
-    LInstruction
-trunc {wrap = Nothing} from to = ConversionOp (Trunc NoSignedUnsigned) from to
-trunc {wrap = Just w} from to = ConversionOp (Trunc w) from to
+    LExpr
+trunc {wrap = Nothing} from to = (Trunc NoSignedUnsigned) from to
+trunc {wrap = Just w} from to = (Trunc w) from to
 
 export
 ||| Create a zero extend operation.
@@ -231,8 +231,8 @@ export
 |||
 ||| @ from The typed source value with smaller bit width
 ||| @ to The target type with larger bit width
-zext : (from : WithType LValue) -> (to : LType) -> LInstruction
-zext from to = ConversionOp ZExt from to
+zext : (from : WithType LValue) -> (to : LType) -> LExpr
+zext from to = ZExt from to
 
 export
 ||| Create a sign extend operation.
@@ -242,8 +242,8 @@ export
 |||
 ||| @ from The typed source value with smaller bit width
 ||| @ to The target type with larger bit width
-sext : (from : WithType LValue) -> (to : LType) -> LInstruction
-sext from to = ConversionOp SExt from to
+sext : (from : WithType LValue) -> (to : LType) -> LExpr
+sext from to = SExt from to
 
 export
 ||| Create a bitcast operation.
@@ -254,8 +254,8 @@ export
 |||
 ||| @ from The typed source value to reinterpret
 ||| @ to The target type to reinterpret as
-bitcast : (from : WithType LValue) -> (to : LType) -> LInstruction
-bitcast from to = ConversionOp BitCast from to
+bitcast : (from : WithType LValue) -> (to : LType) -> LExpr
+bitcast from to = BitCast from to
 
 export
 ||| Create a floating point truncate operation.
@@ -263,8 +263,8 @@ fptrunc :
     {default [] fastMath : FastMath} ->
     (from : WithType LValue) ->
     (to : LType) ->
-    LInstruction
-fptrunc {fastMath} from to = ConversionOp (FPTrunc fastMath) from to
+    LExpr
+fptrunc {fastMath} from to = (FPTrunc fastMath) from to
 
 export
 ||| Create a floating point extend operation.
@@ -272,8 +272,8 @@ fpext :
     {default [] fastMath : FastMath} ->
     (from : WithType LValue) ->
     (to : LType) ->
-    LInstruction
-fpext {fastMath} from to = ConversionOp (FPExt fastMath) from to
+    LExpr
+fpext {fastMath} from to = (FPExt fastMath) from to
 
 
 -- Additional missing builders that were identified in the audit:
@@ -286,8 +286,8 @@ addWrap :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-addWrap wrap ty lhs rhs = BinaryOp (AddWrap wrap) ty lhs rhs
+    LExpr
+addWrap wrap ty lhs rhs = (AddWrap wrap) ty lhs rhs
 
 export
 ||| Create subtraction with wrapping flags.
@@ -296,8 +296,8 @@ subWrap :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-subWrap wrap ty lhs rhs = BinaryOp (SubWrap wrap) ty lhs rhs
+    LExpr
+subWrap wrap ty lhs rhs = (SubWrap wrap) ty lhs rhs
 
 export
 ||| Create multiplication with wrapping flags.
@@ -306,8 +306,8 @@ mulWrap :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-mulWrap wrap ty lhs rhs = BinaryOp (MulWrap wrap) ty lhs rhs
+    LExpr
+mulWrap wrap ty lhs rhs = (MulWrap wrap) ty lhs rhs
 
 -- 2. Missing enhanced shift operations
 export
@@ -317,65 +317,65 @@ shlWrap :
     (ty : LType) ->
     (value : LValue) ->
     (amount : LValue) ->
-    LInstruction
-shlWrap wrap ty value amount = BinaryOp (ShlWrap wrap) ty value amount
+    LExpr
+shlWrap wrap ty value amount = (ShlWrap wrap) ty value amount
 
 -- 3. Missing enhanced comparison builders with specific predicates
 export
 ||| Integer comparison: equal.
-icmpEq : LType -> LValue -> LValue -> LInstruction
+icmpEq : LType -> LValue -> LValue -> LExpr
 icmpEq = icmp CEq
 
 export
 ||| Integer comparison: not equal.
-icmpNe : LType -> LValue -> LValue -> LInstruction
+icmpNe : LType -> LValue -> LValue -> LExpr
 icmpNe = icmp CNe
 
 export
 ||| Integer comparison: unsigned less than.
-icmpULt : LType -> LValue -> LValue -> LInstruction
+icmpULt : LType -> LValue -> LValue -> LExpr
 icmpULt = icmp CULt
 
 export
 ||| Integer comparison: signed less than.
-icmpSLt : LType -> LValue -> LValue -> LInstruction
+icmpSLt : LType -> LValue -> LValue -> LExpr
 icmpSLt = icmp CSLt
 
 export
 ||| Integer comparison: unsigned greater than.
-icmpUGt : LType -> LValue -> LValue -> LInstruction
+icmpUGt : LType -> LValue -> LValue -> LExpr
 icmpUGt = icmp CUGt
 
 export
 ||| Integer comparison: signed greater than.
-icmpSGt : LType -> LValue -> LValue -> LInstruction
+icmpSGt : LType -> LValue -> LValue -> LExpr
 icmpSGt = icmp CSGt
 
 export
 ||| Integer comparison: unsigned less than or equal.
-icmpULe : LType -> LValue -> LValue -> LInstruction
+icmpULe : LType -> LValue -> LValue -> LExpr
 icmpULe = icmp CULe
 
 export
 ||| Integer comparison: signed less than or equal.
-icmpSLe : LType -> LValue -> LValue -> LInstruction
+icmpSLe : LType -> LValue -> LValue -> LExpr
 icmpSLe = icmp CSLe
 
 export
 ||| Integer comparison: unsigned greater than or equal.
-icmpUGe : LType -> LValue -> LValue -> LInstruction
+icmpUGe : LType -> LValue -> LValue -> LExpr
 icmpUGe = icmp CUGe
 
 export
 ||| Integer comparison: signed greater than or equal.
-icmpSGe : LType -> LValue -> LValue -> LInstruction
+icmpSGe : LType -> LValue -> LValue -> LExpr
 icmpSGe = icmp CSGe
 
 
 export
 ||| Create a floating point negation operation.
-fneg : LType -> LValue -> LInstruction
-fneg ty operand = UnaryOp FNeg ty operand
+fneg : LType -> LValue -> LExpr
+fneg ty operand = FNeg ty operand
 
 export
 ||| Create floating point addition with fast math flags.
@@ -384,8 +384,8 @@ fadd :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-fadd {fastMath} ty lhs rhs = BinaryOp (FAdd fastMath) ty lhs rhs
+    LExpr
+fadd {fastMath} ty lhs rhs = (FAdd fastMath) ty lhs rhs
 
 export
 ||| Create floating point subtraction with fast math flags.
@@ -394,8 +394,8 @@ fsub :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-fsub {fastMath} ty lhs rhs = BinaryOp (FSub fastMath) ty lhs rhs
+    LExpr
+fsub {fastMath} ty lhs rhs = (FSub fastMath) ty lhs rhs
 
 export
 ||| Create floating point multiplication with fast math flags.
@@ -404,5 +404,5 @@ fmul :
     (ty : LType) ->
     (lhs : LValue) ->
     (rhs : LValue) ->
-    LInstruction
-fmul {fastMath} ty lhs rhs = BinaryOp (FMul fastMath) ty lhs rhs
+    LExpr
+fmul {fastMath} ty lhs rhs = (FMul fastMath) ty lhs rhs

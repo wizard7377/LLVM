@@ -54,42 +54,9 @@ Walk a b => Walk b c => Walk a c where
   go = go . (the (a -> b) go)
  
 public export 
-Walk LInstruction LStatement where 
+Walk LExpr LStatement where 
     go op = MkLStatement Nothing op []
 
 public export 
 Walk Name LValue where 
     go n = LTerm.LVar n
-
-public export 
-Walk Terminator LInstruction where 
-  go = TerminatorOp
-public export 
-Walk (UnaryOpcode, LType, LValue) LInstruction where
-  go (a, b, c) = UnaryOp a b c 
- 
-public export 
-Walk (BinaryOpcode, LType, LValue, LValue) LInstruction where
-  go (a, b, c, d) = BinaryOp a b c d
- 
-public export 
-Walk VectorOpcode LInstruction where 
-  go = VectorOp
-public export 
-Walk AggregateOpcode LInstruction where 
-  go = AggregateOp
-  
-public export 
-Walk (ConversionOpCode, LType, LValue, LType) LInstruction where 
-  go (a, b, c, d) = ConversionOp a (withType b c) d
-  
-public export 
-Walk MiscOpcode LInstruction where 
-  go = MiscOp
-  
-public export 
-Walk MemoryOpcode LInstruction where 
-  go = MemoryOp 
-public export 
-Walk ExceptOpcode LInstruction where 
-  go = ExceptOp

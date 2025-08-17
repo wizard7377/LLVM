@@ -69,7 +69,7 @@ Endable (List a) a where
     endWith acc s = acc ++ [s]
 
 export 
-Endable BasicBlock LInstruction where 
+Endable BasicBlock LExpr where 
     endWith acc s = let 
         statement : LStatement = MkLStatement Nothing s []
         in endWith acc statement

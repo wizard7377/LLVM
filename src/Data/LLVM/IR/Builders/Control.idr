@@ -138,16 +138,16 @@ export
 |||
 ||| @ ty The type of the value being returned
 ||| @ expr The expression representing the value to return
-ret : LType -> LValue -> LStatement
-ret ty expr = MkLStatement Nothing (TerminatorOp (Ret ty expr)) []
+ret : LType -> LValue -> Terminator
+ret ty expr = (id (Ret ty expr)) 
 
 export
 ||| Create a void return statement.
 |||
 ||| Creates a return statement for functions with void return type.
 ||| This terminates the function without returning a value.
-retVoid : LStatement
-retVoid = MkLStatement Nothing (TerminatorOp RetVoid) []
+retVoid : Terminator
+retVoid = (id RetVoid) 
 
 export
 ||| Create a conditional branch statement.
@@ -159,8 +159,8 @@ export
 ||| @ cond Boolean expression to test (must be i1 type)
 ||| @ trueLabel Expression representing the label to jump to if condition is true
 ||| @ falseLabel Expression representing the label to jump to if condition is false
-condBr : LValue -> LValue -> LValue -> LStatement
-condBr cond trueLabel falseLabel = MkLStatement Nothing (TerminatorOp (CondBr cond trueLabel falseLabel)) []
+condBr : LValue -> LValue -> LValue -> Terminator
+condBr cond trueLabel falseLabel = (id (CondBr cond trueLabel falseLabel)) 
 
 export
 ||| Create an unconditional branch statement.
@@ -169,8 +169,8 @@ export
 ||| to implement simple control flow transfers like goto statements.
 |||
 ||| @ target Expression representing the label to jump to
-br : LValue -> LStatement
-br target = MkLStatement Nothing (TerminatorOp (JumpBr target)) []
+br : LValue -> Terminator
+br target = (id (JumpBr target)) 
 
 
 export
@@ -185,8 +185,8 @@ export
 indirectBr :
     (address : LValue) ->
     (possibleDests : List LValue) ->
-    LStatement
-indirectBr address dests = MkLStatement Nothing (TerminatorOp (IndirectBr address dests)) []
+    Terminator
+indirectBr address dests = (id (IndirectBr address dests)) 
 
 export
 ||| Create an invoke instruction (function call with exception handling).
@@ -198,8 +198,8 @@ export
 ||| @ call The invoke call specification with function, arguments, and labels
 invoke :
     (call : InvokeCall) ->
-    LStatement
-invoke call = MkLStatement Nothing (TerminatorOp (Invoke call)) []
+    Terminator
+invoke call = (id (Invoke call)) 
 
 export
 ||| Create an unreachable instruction.
@@ -207,8 +207,8 @@ export
 ||| Creates an unreachable instruction indicating that this point in the code
 ||| should never be reached during execution. This is used for optimization
 ||| and to indicate impossible code paths.
-unreachable : LStatement
-unreachable = MkLStatement Nothing (TerminatorOp Unreachable) []
+unreachable : Terminator
+unreachable = (id Unreachable) 
 
 
 export
@@ -227,8 +227,8 @@ alloca :
     {default Nothing count : Maybe (WithType Nat)} ->
     {default Nothing align : Maybe Nat} ->
     {default Nothing addrSpace : Maybe AddressSpace} ->
-    LInstruction
-alloca ty {count} {align} {addrSpace} = MemoryOp (Alloc ty count align addrSpace)
+    LExpr
+alloca ty {count} {align} {addrSpace} = (Alloc ty count align addrSpace)
 
 export
 ||| Create a simple load operation.
@@ -245,8 +245,8 @@ load :
     (ty : LType) ->
     (ptr : LValue) ->
     {default Nothing align : Maybe Nat} ->
-    LInstruction
-load {volatile} ty ptr {align} = MemoryOp (LoadRegular volatile ty ptr align False False False False Nothing Nothing Nothing False)
+    LExpr
+load {volatile} ty ptr {align} = (LoadRegular volatile ty ptr align False False False False Nothing Nothing Nothing False)
 
 export
 ||| Create a simple store operation.
@@ -263,8 +263,8 @@ store :
     (value : WithType LValue) ->
     (ptr : LValue) ->
     {default Nothing align : Maybe Nat} ->
-    LInstruction
-store {volatile} value ptr {align} = MemoryOp (StoreRegular volatile value ptr align False False)
+    LExpr
+store {volatile} value ptr {align} = (StoreRegular volatile value ptr align False False)
 
 export
 ||| Create an atomic load operation.
@@ -275,9 +275,9 @@ loadAtomic :
     {default Nothing scope : Maybe String} ->
     {default Nothing ordering : Maybe AtomicOrder} ->
     {default Nothing align : Maybe Nat} ->
-    LInstruction
+    LExpr
 loadAtomic {volatile} ty ptr {scope} {ordering} {align} = 
-    MemoryOp (LoadAtomic volatile ty ptr scope ordering align False False)
+    (LoadAtomic volatile ty ptr scope ordering align False False)
 
 export
 ||| Create an atomic store operation.
@@ -288,27 +288,9 @@ storeAtomic :
     {default Nothing scope : Maybe String} ->
     {default Nothing ordering : Maybe AtomicOrder} ->
     {default Nothing align : Maybe Nat} ->
-    LInstruction
+    LExpr
 storeAtomic {volatile} value ptr {scope} {ordering} {align} = 
-    MemoryOp (StoreAtomic volatile value ptr scope ordering align False)
-
-||| Create a switch statement with default case and branches.
-|||
-||| Creates a switch statement (internal helper version) that transfers control
-||| based on the value of an expression. The expression is compared against
-||| each case value, and control transfers to the corresponding label.
-|||
-||| @ ty The type of the switch expression and case values
-||| @ value The expression to switch on
-||| @ defaultLabel The label to jump to if no cases match
-||| @ cases List of case branches with values and target labels
-mkSwitch' :
-    (ty : LType) ->
-    (value : LValue) ->
-    (defaultLabel : Name) ->
-    (cases : List CaseBranch) ->
-    LStatement
-mkSwitch' ty value defaultLabel cases = MkLStatement Nothing (TerminatorOp (Switch ty value defaultLabel cases)) []
+    (StoreAtomic volatile value ptr scope ordering align False)
 
 export
 ||| Create a switch statement with default case and branches.
@@ -326,8 +308,8 @@ mkSwitch :
     (value : LValue) ->
     (defaultLabel : Name) ->
     (cases : List CaseBranch) ->
-    LInstruction
-mkSwitch ty value defaultLabel cases = (TerminatorOp (Switch ty value defaultLabel cases))
+    Terminator
+mkSwitch ty value defaultLabel cases = (id (Switch ty value defaultLabel cases))
 
 export
 ||| Create a case branch for switch statements.
@@ -415,12 +397,12 @@ mutual
 
     export
     ||| Create a function call operation.
-    call : FnCall -> LInstruction
-    call fnCall = MiscOp (FnCallOp fnCall)
+    call : FnCall -> LExpr
+    call fnCall = (FnCallOp fnCall)
 
     export
     ||| Create a simple function call operation.
-    simpleCall : LType -> LValue -> List (WithType LValue) -> LInstruction
+    simpleCall : LType -> LValue -> List (WithType LValue) -> LExpr
     simpleCall ty fn args = call (simpleFnCall ty fn args)
 
 
@@ -439,8 +421,8 @@ insertElement :
     (vector : WithType LValue) ->
     (element : WithType LValue) ->
     (index : WithType LValue) ->
-    LInstruction
-insertElement vector element index = VectorOp (InsertElement vector element index)
+    LExpr
+insertElement vector element index = (InsertElement vector element index)
 
 export
 ||| Create an extract element operation.
@@ -453,8 +435,8 @@ export
 extractElement :
     (vector : WithType LValue) ->
     (index : WithType LValue) ->
-    LInstruction
-extractElement vector index = VectorOp (ExtractElement vector index)
+    LExpr
+extractElement vector index = (ExtractElement vector index)
 
 export
 ||| Create a shuffle vector operation.
@@ -470,8 +452,8 @@ shuffleVector :
     (vec1 : WithType LValue) ->
     (vec2 : WithType LValue) ->
     (mask : WithType LValue) ->
-    LInstruction
-shuffleVector vec1 vec2 mask = VectorOp (ShuffleVector vec1 vec2 mask)
+    LExpr
+shuffleVector vec1 vec2 mask = (ShuffleVector vec1 vec2 mask)
 
 export
 ||| Create an extract value operation.
@@ -484,8 +466,8 @@ export
 extractValue :
     (aggregate : WithType LValue) ->
     (index : Nat) ->
-    LInstruction
-extractValue aggregate index = AggregateOp (ExtractValue aggregate index)
+    LExpr
+extractValue aggregate index = (ExtractValue aggregate index)
 
 export
 ||| Create an insert value operation.
@@ -500,8 +482,8 @@ insertValue :
     (aggregate : WithType LValue) ->
     (element : WithType LValue) ->
     (index : Nat) ->
-    LInstruction
-insertValue aggregate element index = AggregateOp (InsertValue aggregate element index)
+    LExpr
+insertValue aggregate element index = (InsertValue aggregate element index)
 
 export
 ||| Create a PHI node.
@@ -515,8 +497,8 @@ export
 phi :
     (ty : LType) ->
     (incomingValues : List (LValue, Label)) ->
-    LInstruction
-phi ty incoming = MiscOp (Phi ty incoming)
+    LExpr
+phi ty incoming = (Phi ty incoming)
 
 export
 ||| Create a select operation.
@@ -534,8 +516,8 @@ select :
     (condition : WithType LValue) ->
     (trueValue : WithType LValue) ->
     (falseValue : WithType LValue) ->
-    LInstruction
-select {fastMath} condition trueValue falseValue = MiscOp (Select fastMath condition trueValue falseValue)
+    LExpr
+select {fastMath} condition trueValue falseValue = (Select fastMath condition trueValue falseValue)
 
 export
 ||| Create a freeze operation.
@@ -545,8 +527,8 @@ export
 ||| in LLVM IR optimization.
 |||
 ||| @ value The typed value to freeze
-freeze : (value : WithType LValue) -> LInstruction
-freeze value = MiscOp (Freeze value)
+freeze : (value : WithType LValue) -> LExpr
+freeze value = (Freeze value)
 
 export
 ||| Create an invoke call with configurable options.
@@ -582,49 +564,49 @@ invokeCall {cc} {returnAttrs} {addressSpace} tpe fnval args normal unwind =
 -- 4. Missing advanced terminator builders
 export
 ||| Create a resume instruction for exception propagation.
-resume : LType -> LValue -> LStatement
-resume ty value = MkLStatement Nothing (TerminatorOp (Resume ty value)) []
+resume : LType -> LValue -> Terminator
+resume ty value =  (id (Resume ty value)) 
 
 export
 ||| Create a catch return instruction.
-catchRet : LValue -> Label -> LStatement
-catchRet value label = MkLStatement Nothing (TerminatorOp (CatchRet value label)) []
+catchRet : LValue -> Label -> Terminator
+catchRet value label =  (id (CatchRet value label)) 
 
 export
 ||| Create a cleanup return to caller.
-cleanupRetCaller : LValue -> LStatement
-cleanupRetCaller value = MkLStatement Nothing (TerminatorOp (CleanupRetCaller value)) []    
+cleanupRetCaller : LValue -> Terminator
+cleanupRetCaller value =  (id (CleanupRetCaller value)) 
 
 export
 ||| Create a cleanup return to specific label.
-cleanupRet : LValue -> Label -> LStatement
-cleanupRet value label = MkLStatement Nothing (TerminatorOp (CleanupRet value label)) []
+cleanupRet : LValue -> Label -> Terminator
+cleanupRet value label =  (id (CleanupRet value label)) 
 
 export
 ||| Create a call branch instruction.
-callBR : BrCall -> LStatement
-callBR call = MkLStatement Nothing (TerminatorOp (CallBR call)) []
+callBR : BrCall -> Terminator
+callBR call =  (id (CallBR call)) 
 
 -- 5. Missing exception handling operation builders
 export
 ||| Create a landing pad instruction.
-landingPad : LType -> List CatchClause -> LInstruction
-landingPad ty clauses = ExceptOp (LandingPad ty clauses)
+landingPad : LType -> List CatchClause -> LExpr
+landingPad ty clauses = (LandingPad ty clauses)
 
 export
 ||| Create a landing pad with cleanup.
-landingPadCleanup : LType -> List CatchClause -> LInstruction
-landingPadCleanup ty clauses = ExceptOp (LandingPadCleanup ty clauses)
+landingPadCleanup : LType -> List CatchClause -> LExpr
+landingPadCleanup ty clauses = (LandingPadCleanup ty clauses)
 
 export
 ||| Create a catch pad instruction.
-catchPad : Name -> LValue -> LInstruction
-catchPad name value = ExceptOp (CatchPad name value)
+catchPad : Name -> LValue -> LExpr
+catchPad name value = (CatchPad name value)
 
 export
 ||| Create a cleanup pad instruction.
-cleanupPad : Name -> LValue -> LInstruction
-cleanupPad name value = ExceptOp (CleanupPad name value)
+cleanupPad : Name -> LValue -> LExpr
+cleanupPad name value = (CleanupPad name value)
 
 export
 ||| Create a catch clause.
@@ -638,9 +620,9 @@ filtering ty value = Filtering ty value
 
 export
 ||| Create a catch switch instruction.
-catchSwitch : Name -> Maybe Label -> List Label -> Maybe Label -> LStatement
+catchSwitch : Name -> Maybe Label -> List Label -> Maybe Label -> Terminator
 catchSwitch name parent handlers unwind = 
-    MkLStatement Nothing (TerminatorOp (CatchSwitchOp (MkCatchSwitch name parent handlers unwind))) []
+    (id (CatchSwitchOp (MkCatchSwitch name parent handlers unwind))) 
 
 -- 6. Missing constant builders for new types
 
@@ -669,5 +651,6 @@ export
 fence :
     {default Nothing scope : Maybe String} ->
     {default Nothing ordering : Maybe AtomicOrder} ->
-    LInstruction
-fence {scope} {ordering} = MemoryOp (Fence scope ordering)
+    LExpr
+fence {scope} {ordering} = (Fence scope ordering)
+
