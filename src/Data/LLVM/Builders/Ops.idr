@@ -1,20 +1,20 @@
-module Data.LLVM.IR.Builders.Ops
+module Data.LLVM.Builders.Ops
 
 
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
---import Data.LLVM.Write.Assembly
+--import Data.LLVM.Write.Text.Encode
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
 import Data.List
 import Data.Walk
 import Data.LLVM.IR.Util
-import Data.LLVM.IR.Builders.Core
+import Data.LLVM.Builders.Core
 
 
 
-export
+public export
 ||| Make a global variable definition with configurable options.
 |||
 ||| Creates a global variable definition with comprehensive configuration
@@ -41,7 +41,7 @@ globalDef :
     {default False isConst : Bool} ->
     (ty : LType) ->
     {default Nothing init : Maybe LValue} ->
-    {default [] tags : List LTag} ->
+    {default neutral tags : Annotation} ->
     GVarDef
 globalDef name {symbolInfo} {threadLocality} {addressInfo} {addressSpace} {externallyInitialized} {isConst} ty {init} {tags} =
     MkGVarDef
@@ -56,7 +56,7 @@ globalDef name {symbolInfo} {threadLocality} {addressInfo} {addressSpace} {exter
         init
         tags
 
-export
+public export
 ||| Create an alias for an existing global value.
 |||
 ||| Creates an alias that provides an alternative name for an existing
@@ -79,7 +79,7 @@ alias :
     (ty : LType) ->
     {default ty ty2 : LType} ->
     (target : String) ->
-    {default [] tags : List LTag} ->
+    {default neutral tags : Annotation} ->
     Alias
 alias name {symbolInfo} {threadLocality} {addressInfo} ty {ty2} target {tags} =
     MkAlias
@@ -89,11 +89,11 @@ alias name {symbolInfo} {threadLocality} {addressInfo} ty {ty2} target {tags} =
         addressInfo
         ty 
         target 
-        []
+        neutral
         -- TODO: Remaining types
 
 
-export
+public export
 ||| Create an LLVM module with configurable options.
 |||
 ||| Creates a complete LLVM module with optional data layout specification,
@@ -108,11 +108,11 @@ mkModule :
     {default Nothing dataLayout : Maybe String} ->
     {default Nothing target : Maybe String} ->
     {default [] text : List LClause} ->
-    {default Nothing tags : Maybe (List LTag)} ->
+    {default neutral tags : Annotation} ->
     LModule
 mkModule {dataLayout} {target} {text} {tags} = MkLModule dataLayout target text tags
 
-export
+public export
 ||| Create a simple LLVM module with text clauses.
 |||
 ||| Creates a basic LLVM module with only the essential text clauses,

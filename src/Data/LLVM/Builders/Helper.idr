@@ -1,18 +1,18 @@
-module Data.LLVM.IR.Builders.Helper
+module Data.LLVM.Builders.Helper
 
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
---import Data.LLVM.Write.Assembly
+--import Data.LLVM.Write.Text.Encode
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
 import Data.List
 import Data.Walk
 import Data.LLVM.IR.Util
-import Data.LLVM.IR.Builders.Core
-import Data.LLVM.IR.Builders.Ops
-import Data.LLVM.IR.Builders.Math
-import Data.LLVM.IR.Builders.Control
+import Data.LLVM.Builders.Core
+import Data.LLVM.Builders.Ops
+import Data.LLVM.Builders.Math
+import Data.LLVM.Builders.Control
 
 public export 
 lowerTypeReflect : (a : Type) -> LType 

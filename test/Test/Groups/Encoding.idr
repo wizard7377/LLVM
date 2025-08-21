@@ -2,7 +2,7 @@ module Test.Groups.Encoding
 
 import Data.LLVM
 import Data.LLVM.IR
-import Data.LLVM.Write.Assembly
+import Data.LLVM.Write.Text.Encode
 import Data.LLVM.Write.Foreign
 import Data.LLVM.Class
 import Test.Helper

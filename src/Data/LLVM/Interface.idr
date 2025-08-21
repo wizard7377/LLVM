@@ -1,8 +1,8 @@
 module Data.LLVM.Interface
 import Data.LLVM.Class
-import Data.LLVM.Write.Assembly
+import Data.LLVM.Write.Text.Encode
 import Data.LLVM.IR
-import public Data.LLVM.IR.Builders
+import public Data.LLVM.Builders
 import Data.Walk
 public export
 interface Startable a b where 
@@ -71,7 +71,7 @@ Endable (List a) a where
 export 
 Endable BasicBlock LExpr where 
     endWith acc s = let 
-        statement : LStatement = MkLStatement Nothing s []
+        statement : LStatement = MkLStatement Nothing s neutral
         in endWith acc statement
 
 public export 

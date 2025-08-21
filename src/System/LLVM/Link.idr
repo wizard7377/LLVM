@@ -2,7 +2,7 @@ module System.LLVM.Link
 import System.LLVM.Common
 import Data.LLVM.IR.Program
 import System
-
+import System.LLVM.Stage
 intercalate : String -> List String -> String
 intercalate sep [] = ""
 intercalate sep [x] = x
@@ -21,4 +21,8 @@ linkLLVM {context} inputs = do
     if r == 0 
         then pure context.output 
         else throwError $ LinkError out
+
+export 
+[linkLLVMStage] Stage (List String) String where
+    runStage {context} inputs = linkLLVM {context} inputs
 

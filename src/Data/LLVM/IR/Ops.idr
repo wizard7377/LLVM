@@ -150,9 +150,9 @@ data Terminator : Type where
     ||| Return value from function
     Ret : LType -> LValue -> Terminator
     ||| Conditional branch (br i1 %cond, label %true, label %false)
-    CondBr : LValue -> LValue -> LValue -> Terminator
+    CondBr : LValue -> Label -> Label -> Terminator
     ||| Unconditional branch (br label %target)
-    JumpBr : LValue -> Terminator
+    JumpBr : Label -> Terminator
     ||| Switch statement with multiple cases
     Switch : LType -> LValue -> Name -> List CaseBranch -> Terminator
     ||| Indirect branch through computed address
@@ -460,7 +460,7 @@ record LStatement where
     ||| The instruction being executed
     instruction : LExpr
     ||| The metadata associated with the statement (if any)
-    metadata : List Metadata
+    metadata : Annotation
 
 ||| Basic block 
 public export 

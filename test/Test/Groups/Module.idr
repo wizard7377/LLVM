@@ -4,14 +4,14 @@ module Test.Groups.Module
 
 import Data.LLVM
 import Data.LLVM.IR
-import Data.LLVM.Write.Assembly
+import Data.LLVM.Write.Text.Encode
 import Data.LLVM.Class
 import Data.LLVM.IR.Builders.Math
 import Test.Helper
 import Data.LLVM.Write.Foreign
 import Test.Groups.ModuleSetA
 import Test.Groups.ModuleSetB
-%hide Data.LLVM.IR.Builders.Core.emptyModule
+%hide Data.LLVM.Builders.Core.emptyModule
 
 export
 moduleTests : IO ()

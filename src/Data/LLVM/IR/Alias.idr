@@ -1,7 +1,7 @@
 module Data.LLVM.IR.Alias
 
 import Data.LLVM.IR.Core       
---import Data.LLVM.Write.Assembly
+--import Data.LLVM.Write.Text.Encode
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 

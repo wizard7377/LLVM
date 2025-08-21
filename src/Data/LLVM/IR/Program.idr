@@ -37,7 +37,7 @@ record GVarDef where
   ||| Optional initializer value
   initializer : Maybe LValue
   ||| Metadata tags
-  tags : List LTag
+  tags : Annotation
 
 ||| Attribute group definition.
 ||| Models LLVM IR attribute group definitions like:
@@ -122,7 +122,7 @@ record FunctionDef where
   ||| Function body with basic blocks and instructions
   body : List BasicBlock
   ||| Additional metadata tags
-  tags: List LTag
+  tags: Annotation
 ||| Function declaration without implementation.
 ||| Models LLVM IR function declarations like:
 ||| ```llvm
@@ -156,7 +156,7 @@ record FunctionDec where
   ||| Prologue data (prologue Constant)
   prologue: Maybe LValue
   ||| Additional metadata tags
-  tags: List LTag
+  tags: Annotation
 ||| Alias definition.
 ||| Models LLVM IR alias definitions like:
 ||| ```llvm
@@ -180,7 +180,7 @@ record Alias where
   ||| Name of the aliasee (the target being aliased)
   aliasee : String 
   ||| Additional metadata tags
-  tags: List LTag
+  tags: Annotation
 
 ||| Indirect function (IFunc) definition.
 ||| Models LLVM IR IFunc definitions like:
@@ -206,7 +206,7 @@ record IFunc where
   ||| Name of the resolver function
   resolver : String 
   ||| Additional metadata tags
-  tags: List LTag
+  tags: Annotation
 
 public export 
 record TypeDef where 
@@ -258,7 +258,7 @@ record LModule where
   ||| List of top-level declarations and definitions
   text: List LClause
   ||| Module-level metadata tags
-  tags: Maybe (List LTag)
+  tags: Annotation
 -- TODO: Comdats
 -- TODO: fin param attributes
 

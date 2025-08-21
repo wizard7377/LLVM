@@ -24,3 +24,14 @@ implementation LBasicBlock (List LStatement, LExpr) where
 public export 
 interface CanNote a where 
     note : a -> Annotation -> a
+  
+
+public export 
+implementation CanNote LStatement where 
+  note e a = { metadata $= (<+> a) } e
+
+  
+||| A very simple lens that sets a value
+public export 
+interface Setter a b where 
+  setting : (b -> b) -> (a -> a)

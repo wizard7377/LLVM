@@ -16,7 +16,9 @@ import Data.LLVM.Write.Foreign.Values
 
 %default partial 
 
-
+public export 
+Encode FCM Label LLVMBlock where 
+  encode (NamedLabel n) = getBlock n
 public export
 Encode FCM Terminator CPtr where
 	encode op = step "terminator opcode: " $ do
@@ -30,10 +32,10 @@ Encode FCM Terminator CPtr where
       RetVoid => do 
         liftFCM $ LLVMBuildRetVoid cb
       CondBr cond ifTrue ifFalse => do 
-        cond' <- encode cond
-        ifTrue' <- getBlock ifTrue 
-        ifFalse' getBlock ifFalse
-        liftFCM $ LLVMBuildCondBr cb cond' ifTrue' ifFalse
+        cond' <- encode (withType (LType.LInt 1) cond)
+        ifTrue' <- (encode ifTrue)
+        ifFalse' <- (encode ifFalse)
+        liftFCM $ LLVMBuildCondBr cb cond' ifTrue' ifFalse'
 
         
     pushBuilder cb 
@@ -283,7 +285,7 @@ Encode FCM Alias CPtr where
 
 public export 
 Encode FCM IFunc CPtr where 
-	encode = ?h45
+	encode (MkIFunc name symInfo threadLocality addressInfo fTpe rTpe res tags) = ?h45
 public export 
 Encode FCM AttributeGroupDef CPtr where 
 	encode = ?h46

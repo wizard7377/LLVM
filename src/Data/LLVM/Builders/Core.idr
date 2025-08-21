@@ -1,9 +1,9 @@
-module Data.LLVM.IR.Builders.Core
+module Data.LLVM.Builders.Core
 
 
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
---import Data.LLVM.Write.Assembly
+--import Data.LLVM.Write.Text.Encode
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
@@ -19,7 +19,7 @@ export
 ||| Returns a minimal LModule that can be used as a starting point for
 ||| building LLVM modules or as a default module.
 emptyModule : LModule
-emptyModule = MkLModule Nothing Nothing [] Nothing 
+emptyModule = MkLModule Nothing Nothing [] neutral 
 
 export 
 ||| Create empty symbol information with no linkage, preemption, visibility, or storage.
@@ -218,7 +218,7 @@ export
 ||| @ target The target variable name to assign to
 ||| @ op The operation whose result to assign
 assign : Name -> LExpr -> LStatement
-assign target op = MkLStatement (Just target) op []
+assign target op = MkLStatement (Just target) op neutral
 
 
 
@@ -231,7 +231,7 @@ export
 |||
 ||| @ op The operation to execute and discard
 discard : LExpr -> LStatement
-discard op = MkLStatement Nothing op []
+discard op = MkLStatement Nothing op neutral
 
 
 export 

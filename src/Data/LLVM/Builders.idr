@@ -17,11 +17,11 @@
 |||
 ||| All builder functions use default arguments where sensible to reduce verbosity
 ||| while still allowing full customization when needed.
-module Data.LLVM.IR.Builders
+module Data.LLVM.Builders
 
-import public Data.LLVM.IR.Builders.Core
-import public Data.LLVM.IR.Builders.Ops
-import public Data.LLVM.IR.Builders.Math
-import public Data.LLVM.IR.Builders.Control
-import public Data.LLVM.IR.Builders.Helper
-import public Data.LLVM.IR.Builders.Sugar 
+import public Data.LLVM.Builders.Core
+import public Data.LLVM.Builders.Ops
+import public Data.LLVM.Builders.Math
+import public Data.LLVM.Builders.Control
+import public Data.LLVM.Builders.Helper
+import public Data.LLVM.Builders.Sugar 

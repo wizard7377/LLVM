@@ -31,9 +31,9 @@
 module Data.LLVM 
 
 import public Data.LLVM.Class as LClass
-import public Data.LLVM.Write.Assembly as LWrite
+import public Data.LLVM.Write.Text.Encode as LWrite
 import public Data.LLVM.IR as LIR
-import public Data.LLVM.IR.Builders
+import public Data.LLVM.Builders
 import public Data.LLVM.IR.Alias
 import public Data.LLVM.Interface
 import public Data.LLVM.Casts as LCasts

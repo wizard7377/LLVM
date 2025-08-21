@@ -2,14 +2,14 @@ module Test.Groups.ModuleSetB
 
 import Data.LLVM
 import Data.LLVM.IR
-import Data.LLVM.Write.Assembly
+import Data.LLVM.Write.Text.Encode
 import Data.LLVM.Class
-import Data.LLVM.IR.Builders.Math
+import Data.LLVM.Builders.Math
 import Test.Helper
 import Data.LLVM.Write.Foreign
 
 
-%hide Data.LLVM.IR.Builders.Core.emptyModule
+%hide Data.LLVM.Builders.Core.emptyModule
 
 export
 moduleWithPhiAndSelect : LModule
@@ -38,23 +38,23 @@ moduleWithPhiAndSelect = MkLModule {
             metadata = [],
             body = [
                 MkBasicBlock "entry" [
-                    "cond_bool" $<- (icmp CNe (LInt 32) (?^ "cond") (LConstE (LInt 0)))
-                ] (CondBr (?^ "cond_bool") (?^ "bb_true") (?^ "bb_false")),
+                    "cond_bool" $<- (icmp CNe (LInt 32) (?^ "cond") ( (LInt 0)))
+                ] (CondBr (?^ "cond_bool") (#^ "bb_true") (#^ "bb_false")),
                 MkBasicBlock "bb_true" [
-                    "val_true" $<- (Add (LInt 32) (?^ "x") (LConstE (LInt 1)))
-                ] (JumpBr (?^ "merge")),
+                    "val_true" $<- (Add (LInt 32) (?^ "x") ( (LInt 1)))
+                ] (JumpBr (#^ "merge")),
                 MkBasicBlock "bb_false" [
-                    "val_false" $<- (Sub (LInt 32) (?^ "y") (LConstE (LInt 1)))
-                ] (JumpBr (?^ "merge")),
+                    "val_false" $<- (Sub (LInt 32) (?^ "y") ( (LInt 1)))
+                ] (JumpBr (#^ "merge")),
                 MkBasicBlock "merge" [
-                    "phi_result" $<- (Phi (LInt 32) [((?^ "val_true"), (?^ "bb_true")), ((?^ "val_false"), (?^ "bb_false"))]),
+                    "phi_result" $<- (Phi (LInt 32) [((?^ "val_true"), (#^ "bb_true")), ((?^ "val_false"), (#^ "bb_false"))]),
                     "select_result" $<- (Select [] (MkWithType (LInt 32) (?^ "cond_bool")) (MkWithType (LInt 32) (?^ "val_true")) (MkWithType (LInt 32) (?^ "val_false")))
                 ] (Ret (LInt 32) (?^ "select_result"))
             ],
-            tags = []
+            tags = neutral
         }
     ],
-    tags = Nothing
+    tags = neutral
 }
 
 export
@@ -85,21 +85,21 @@ moduleWithVectorAndAggregate = MkLModule {
             body = [
                 MkBasicBlock "entry" [
                     -- Extract element 2 from vector
-                    "elem2" $<- (ExtractElement ((4 :<> (:# 32)) <:> (?^ "vec")) ((:# 32) <:> (LConstE (LInt 2)))),
+                    "elem2" $<- (ExtractElement ((4 :<> (:# 32)) <::> (?^ "vec")) ((:# 32) <::> ( (LInt 2)))),
                     -- Insert value into vector at index 1
-                    "vec2" $<- (InsertElement ((4 :<> (:# 32)) <:> (?^ "vec")) ((:# 32) <:> (?^ "elem2")) ((:# 32) <:> (LConstE (LInt 1)))),
+                    "vec2" $<- (InsertElement ((4 :<> (:# 32)) <::> (?^ "vec")) ((:# 32) <::> (?^ "elem2")) ((:# 32) <::> ( (LInt 1)))),
                     -- Shuffle vector with itself
-                    "shuffled" $<- (ShuffleVector ((4 :<> (:# 32)) <:> (?^ "vec2")) ((4 :<> (:# 32)) <:> (?^ "vec2")) ((4 :<> (:# 32)) <:> (LConstE (LVector [((:# 32) <:> (LInt 0)), ((:# 32) <:> (LInt 1)), ((:# 32) <:> (LInt 2)), ((:# 32) <:> (LInt 3))])))),
+                    "shuffled" $<- (ShuffleVector ((4 :<> (:# 32)) <::> (?^ "vec2")) ((4 :<> (:# 32)) <::> (?^ "vec2")) ((4 :<> (:# 32)) <::> ( (LVector [((:# 32) <::> (LInt 0)), ((:# 32) <::> (LInt 1)), ((:# 32) <::> (LInt 2)), ((:# 32) <::> (LInt 3))])))),
                     -- Extract value from struct
                     "x_val" $<- (ExtractValue (MkWithType (LStruct [LInt 32, LInt 32]) (?^ "s")) 0),
                     -- Insert value into struct
                     "s2" $<- (InsertValue (MkWithType (LStruct [LInt 32, LInt 32]) (?^ "s")) (MkWithType (LInt 32) (?^ "x_val")) 1)
                 ] (Ret (LInt 32) (?^ "x_val"))
             ],
-            tags = []
+            tags = neutral
         }
     ],
-    tags = Nothing
+    tags = neutral
 }
 
 export
@@ -139,10 +139,10 @@ moduleWithCastsAndComparisons = MkLModule {
                     "a_bitcast" $<- (BitCast (MkWithType (LInt 32) (?^ "a")) (LInt 32))
                 ] (Ret (LInt 1) (?^ "a_trunc"))
             ],
-            tags = []
+            tags = neutral
         }
     ],
-    tags = Nothing
+    tags = neutral
 }
 
 export
@@ -186,10 +186,10 @@ moduleWithConversionsAndMemory = MkLModule {
                     "loaded" $<- (LoadRegular False (LInt 64) (?^ "local_ptr") (Just 8) False False False False Nothing Nothing Nothing False)
                 ] (Ret (LInt 64) (?^ "loaded"))
             ],
-            tags = []
+            tags = neutral
         }
     ],
-    tags = Nothing
+    tags = neutral
 }
 
 export
@@ -229,10 +229,10 @@ moduleWithAllComparisons = MkLModule {
                     "sge" $<- (ICmp CSGe (LInt 32) (?^ "x") (?^ "y")),
                     "slt" $<- (ICmp CSLt (LInt 32) (?^ "x") (?^ "y")),
                     "sle" $<- (ICmp CSLe (LInt 32) (?^ "x") (?^ "y"))
-                ] (Ret (LInt 32) (LConstE (LInt 0)))
+                ] (Ret (LInt 32) ( (LInt 0)))
             ],
-            tags = []
+            tags = neutral
         }
     ],
-    tags = Nothing
+    tags = neutral
 }

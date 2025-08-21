@@ -560,7 +560,7 @@ namespace LTerm
 public export 
 record Annotation where 
   constructor MkAnnotation 
-  metadata : List Metadata
+  metadata : List (String, Metadata)
 ||| Custom metadata tags for LLVM constructs.
 |||
 ||| Tags provide a way to attach custom metadata to various LLVM IR elements
@@ -590,9 +590,8 @@ record SymbolInfo where
 ||| Labels are represented as expressions for flexibility in referencing
 ||| different types of basic block identifiers.
 public export
-Label : Type
-Label = LValue
-
+data Label : Type where 
+  NamedLabel : String -> Label
 ||| Fast math optimization flags for floating-point operations.
 |||
 ||| These flags enable various floating-point optimizations by relaxing

@@ -7,7 +7,7 @@ else
 endif
 PACK ?= pack
 testFiles := $(patsubst %.ll,%.ss,$(wildcard generated/*.ll)) 
-loud ?= 1
+loud ?= 0
 srcFiles := $(wildcard *.idr)
 OPTS += $(CG_D) $(cg)
 DBG ?=

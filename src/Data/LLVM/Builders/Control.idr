@@ -1,15 +1,15 @@
-module Data.LLVM.IR.Builders.Control 
+module Data.LLVM.Builders.Control 
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
---import Data.LLVM.Write.Assembly
+--import Data.LLVM.Write.Text.Encode
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
 import Data.List
 import Data.Walk
 import Data.LLVM.IR.Util
-import Data.LLVM.IR.Builders.Core
-import Data.LLVM.IR.Builders.Ops
+import Data.LLVM.Builders.Core
+import Data.LLVM.Builders.Ops
 
 export
 ||| Create a function definition with comprehensive configuration options.
@@ -57,7 +57,7 @@ functionDef :
     {default Nothing personality : Maybe LValue} ->
     {default [] metadata : List Metadata} ->
     (body : List BasicBlock) ->
-    {default [] tags : List LTag} ->
+    {default neutral tags : Annotation} ->
     FunctionDef
 functionDef name {symbolInfo} {callingConvention} {returnAttrs} retType args {addressInfo} {addressSpace} {fnAttributes} {section} {partition} {comdat} {alignment} {gc} {fprefix} {prologue} {personality} {metadata} body {tags} =
     MkFunctionDef
@@ -114,7 +114,7 @@ functionDec :
     {default Nothing gc : Maybe String} ->
     {default Nothing fprefix : Maybe LValue} ->
     {default Nothing prologue : Maybe LValue} ->
-    {default [] tags : List LTag} ->
+    {default neutral tags : Annotation} ->
     FunctionDec
 functionDec name {symbolInfo} {callingConvention} {returnAttrs} retType args {addressInfo} {alignment} {gc} {fprefix} {prologue} {tags} =
     MkFunctionDec
@@ -159,7 +159,7 @@ export
 ||| @ cond Boolean expression to test (must be i1 type)
 ||| @ trueLabel Expression representing the label to jump to if condition is true
 ||| @ falseLabel Expression representing the label to jump to if condition is false
-condBr : LValue -> LValue -> LValue -> Terminator
+condBr : LValue -> Label -> Label -> Terminator
 condBr cond trueLabel falseLabel = (id (CondBr cond trueLabel falseLabel)) 
 
 export
@@ -169,7 +169,7 @@ export
 ||| to implement simple control flow transfers like goto statements.
 |||
 ||| @ target Expression representing the label to jump to
-br : LValue -> Terminator
+br : Label -> Terminator
 br target = (id (JumpBr target)) 
 
 

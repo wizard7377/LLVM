@@ -12,7 +12,7 @@ module Data.LLVM.Casts
 
 import Data.LLVM.Class
 import Data.LLVM.IR
-import Data.LLVM.Write.Assembly
+import Data.LLVM.Write.Text.Encode
 
 import Data.Walk
 public export
@@ -55,7 +55,7 @@ Walk a b => Walk b c => Walk a c where
  
 public export 
 Walk LExpr LStatement where 
-    go op = MkLStatement Nothing op []
+    go op = MkLStatement Nothing op neutral
 
 public export 
 Walk Name LValue where 

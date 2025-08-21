@@ -5,7 +5,7 @@ import Data.String
 import Data.LLVM.Class
 import System.File.ReadWrite
 import System.LLVM
-import Data.LLVM.IR.Builders
+import Data.LLVM.Builders
 import Data.LLVM.IR.Program
 import Data.LLVM.Write
 import System.Escape
@@ -84,9 +84,9 @@ encodeIOTest m {e} name value = seperate $ do
       Left e => putStrLn $ showRed $ "Test " ++ name ++ " failed with error: " ++ show e
 
 public export
-encodeFCMTest : {default CPtr b : Type} -> EncodeIO CC.FCError CC.FCM a b => String -> a -> IO ()
-encodeFCMTest {b} name value = encodeIOTest CC.FCM {e = CC.FCError} {b = b} name value
+encodeFCMTest : {default CPtr b : Type} -> EncodeIO FCError FCM a b => String -> a -> IO ()
+encodeFCMTest {b} name value = encodeIOTest FCM {e = FCError} {b = b} name value
 
 public export
-encodeFCMTest' : EncodeIO CC.FCError CC.FCM LModule CPtr => String -> LModule -> IO ()
+encodeFCMTest' : EncodeIO FCError FCM LModule CPtr => String -> LModule -> IO ()
 encodeFCMTest' = encodeFCMTest {b = CPtr}

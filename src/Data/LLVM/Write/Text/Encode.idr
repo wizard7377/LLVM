@@ -4,7 +4,7 @@
 ||| allowing them to be converted to their textual LLVM IR representation.
 ||| It handles proper formatting, escaping, and syntax generation for
 ||| a complete LLVM IR module.
-module Data.LLVM.Write.Assembly
+module Data.LLVM.Write.Text.Encode
 
 import Data.LLVM.IR
 import Data.LLVM.Class
@@ -12,6 +12,9 @@ import Data.Walk
 import public Data.LLVM.Write.Types
 --%default covering
 --%default partial --TODO: FIXME:
+
+Encode ATM Label VString where
+    encode (NamedLabel name) = pure $ "%" <++> go name
 export 
 Encode ATM Linkage VString where
     encode Private = pure "private"
@@ -131,6 +134,7 @@ Encode ATM LType VString where
         tStr <- encode t
         pure $ "< vscale x " <+> vshow s <+> " x " <+> tStr <+> ">"
     encode LX86_AMX = pure "x86_amx"
+    encode (LTarget head args) = ?enlttar
 public export
 [ewt] {a : Type} -> Encode ATM a VString => Encode ATM (WithType a) VString where 
     encode (MkWithType t v) = do
@@ -164,7 +168,12 @@ mutual
         encode (MetadataCustom s) = pure $ go s
         encode (MetadataNode n) = pure $ "!" <++> (go $ show n)
         encode (MetadataSpecial h t) = ?enmda
-
+    export 
+    Encode ATM Annotation VString where
+      encode (MkAnnotation tags) = intercalate "," <$> (traverse tagEncode tags)
+        where 
+          tagEncode : (String, Metadata) -> ATM VString
+          tagEncode (s, m) = (pure $ "!" <++> go s) <+> encode m
     export
     Encode ATM LValue VString where
         encode (LTerm.LInt n) = pure $ go $ show n
@@ -188,8 +197,9 @@ mutual
         encode (LTerm.LMetadata m) = do
             mStr <- encode m
             pure $ "metadata" <+> mStr
-        encode (LTerm.LPtr name) = encode name
+        encode (LTerm.LPtr name) = "ptr" <+> encode name
         encode (LTerm.LVar name) = encode name
+        encode _ = ?ltermres
 export 
 Encode ATM GVarDef VString where
     encode (MkGVarDef name symbolInfo threadLocality addressInfo addressSpace externallyInitialized global tpe init tags) = do
@@ -199,7 +209,7 @@ Encode ATM GVarDef VString where
         addrSpaceStr <- encodeIf addressSpace
         tpeStr <- encode tpe
         initStr <- encode @{just} init
-        tagsStr <- encode @{each} tags
+        tagsStr <- encode tags
         let externStr = if externallyInitialized == Just True then "external" else ""
         let globalStr = if global then "global" else "constant"
         pure $ "@" <++> go name <+> "=" <+> spacedVString [
@@ -409,7 +419,7 @@ Encode ATM Terminator VString where
         condStr <- encode cond
         trueStr <- encode true
         falseStr <- encode false
-        pure $ "br i1" <+> condStr <+> ", label" <+> trueStr <+> "," <+> falseStr
+        pure $ "br i1" <+> condStr <+> ", label" <+> trueStr <+> "," <+> "label" <+> falseStr
     encode (JumpBr label) = do
         labelStr <- encode label
         pure $ "br label" <+> labelStr
@@ -793,6 +803,7 @@ Encode ATM LExpr VString where
         aStr <- encode a
         bStr <- encode b
         pure $ "fcmp true " <+> tpeStr <+> aStr <+> ", " <+> bStr
+    encode _ = ?enle
 
 
 export
@@ -811,7 +822,7 @@ Encode ATM BasicBlock VString where
         nameStr <- (<++> ":") <$> encode name
         statementsStr <- encode @{tabbed} statements
         termStr : VString <- encode term
-        pure $ nameStr <+> statementsStr <+> termStr
+        pure $ nameStr <+> statementsStr <++> "\n" <++> termStr <++> "\n"
 public export
 Encode ATM Argument VString where
     encode (MkArgument tpe attrs (Just name)) = do
@@ -824,9 +835,6 @@ Encode ATM Argument VString where
         attrsStr <- encode @{nosep} attrs
         pure $ tpeStr <+> attrsStr
 
-export 
-Encode ATM Annotation VString where 
-    encode (MkAnnotation metadata) = encode @{nosep} metadata
 {-
 
 define [linkage] [PreemptionSpecifier] [visibility] [DLLStorageClass]
@@ -867,7 +875,7 @@ Encode ATM FunctionDef VString where
         prologueStr <- encodeIf prologue
         personalityStr <- encodeIf personality
         metadataStr <- encode @{each} metadata
-        tagsStr <- pure $ intercalate "," (map (runIdentity . encode) tags)
+        tagsStr <- encode tags
         bodyStr <- encode @{tabbed} body
         pure $ "define" <+> 
             symbolInfoStr <+> 
@@ -915,7 +923,7 @@ Encode ATM FunctionDec VString where
         gcStr <- encodeIf gc
         fprefixStr <- encodeIf fprefix
         prologueStr <- encodeIf prologue
-        tagsStr <- pure $ intercalate "," (map (runIdentity . encode) tags)
+        tagsStr <- encode tags
         pure $ "declare" <+> 
             symbolInfoStr <+> 
             callingConventionStr <+> 
@@ -962,7 +970,7 @@ Encode ATM IFunc VString where
         addressSpaceStr <- encode addressSpace
         aliaseeTyStr <- encode aliaseeTy
         aliaseeStr <- encode aliasee
-        tagsStr <- pure $ intercalate "," (map (runIdentity . encode) tags)
+        tagsStr <- encode tags
         pure $ "@" <++> go name <+> 
             symbolInfoStr <+> 
             threadLocalityStr <+> 

@@ -1,9 +1,9 @@
-module Data.LLVM.IR.Builders.Math 
+module Data.LLVM.Builders.Math 
 
 
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
---import Data.LLVM.Write.Assembly
+--import Data.LLVM.Write.Text.Encode
 import Data.LLVM.IR.Ops
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
