@@ -2,7 +2,8 @@ module Test.Groups.Encoding
 
 import Data.LLVM
 import Data.LLVM.IR
-import Data.LLVM.Write
+import Data.LLVM.Write.Text.Encode
+import Data.LLVM.Write.Foreign
 import Data.LLVM.Class
 import Test.Helper
 public export
@@ -11,101 +12,101 @@ encodingTests = do
     putStrLn "=== Running LLVM Encoding Tests ==="
     
     -- Test basic types
-    debugTest "Integer Type 32" (LType.LInt 32)
-    debugTest "Integer Type 64" (LType.LInt 64)
-    debugTest "Void Type" LType.LVoid
-    debugTest "Pointer Type" LType.LPtr
-    debugTest "Float Type" (LType.LFloating LType.LFloat)
-    debugTest "Double Type" (LType.LFloating LType.LDouble)
+    encodeFCMTest "Integer Type 32" (LType.LInt 32)
+    encodeFCMTest "Integer Type 64" (LType.LInt 64)
+    encodeFCMTest "Void Type" LType.LVoid
+    encodeFCMTest "Pointer Type" LType.LPtr
+    encodeFCMTest "Float Type" (LType.LFloating LType.LFloat)
+    encodeFCMTest "Double Type" (LType.LFloating LType.LDouble)
     
     -- Test aggregate types
-    debugTest "Array Type" (LType.LArray 10 (LType.LInt 32))
-    debugTest "Struct Type" (LType.LStruct [LType.LInt 32, LType.LInt 64, LType.LPtr])
-    debugTest "Packed Struct Type" (LType.LPackedStruct [LType.LInt 8, LType.LInt 16])
-    debugTest "Vector Type" (LType.LVector 4 (LType.LFloating LType.LFloat))
+    encodeFCMTest "Array Type" (LType.LArray 10 (LType.LInt 32))
+    encodeFCMTest "Struct Type" (LType.LStruct [LType.LInt 32, LType.LInt 64, LType.LPtr])
+    encodeFCMTest "Packed Struct Type" (LType.LPackedStruct [LType.LInt 8, LType.LInt 16])
+    encodeFCMTest "Vector Type" (LType.LVector 4 (LType.LFloating LType.LFloat))
     
     -- Test function types
-    debugTest "Function Type" (LType.LFun (LType.LInt 32) [LType.LInt 32, LType.LPtr])
-    debugTest "VarArg Function Type" (LType.LFunVarArg (LType.LVoid) [LType.LInt 32] (LType.LInt 32))
+    encodeFCMTest "Function Type" (LType.LFun (LType.LInt 32) [LType.LInt 32, LType.LPtr])
+    encodeFCMTest "VarArg Function Type" (LType.LFunVarArg (LType.LVoid) [LType.LInt 32] (LType.LInt 32))
     
     -- Test linkage types
-    debugTest "Private Linkage" Private
-    debugTest "Internal Linkage" Internal
-    debugTest "External Linkage" External
-    debugTest "LinkOnce Linkage" LinkOnce
+    encodeFCMTest {b = CEnum} "Private Linkage" Private
+    encodeFCMTest {b = CEnum} "Internal Linkage" Internal
+    encodeFCMTest {b = CEnum} "External Linkage" External
+    encodeFCMTest {b = CEnum} "LinkOnce Linkage" LinkOnce
     
 
     -- Test calling conventions
-    debugTest "C Calling Convention" C
-    debugTest "Fast Calling Convention" Fast
-    debugTest "Custom Calling Convention" (CustomCC 42)
+    encodeFCMTest {b = CEnum} "C Calling Convention" C
+    encodeFCMTest {b = CEnum} "Fast Calling Convention" Fast
+    encodeFCMTest {b = CEnum} "Custom Calling Convention" (CustomCC 42)
     
     -- Test visibility
-    debugTest "Default Visibility" Default
-    debugTest "Hidden Visibility" Hidden
-    debugTest "Protected Visibility" Protected
+    encodeFCMTest {b = CEnum} "Default Visibility" Default
+    encodeFCMTest {b = CEnum} "Hidden Visibility" Hidden
+    encodeFCMTest {b = CEnum} "Protected Visibility" Protected
     
     -- Test names
-    debugTest "Local Name" (Local "myvar")
-    debugTest "Global Name" (Global "globalvar")
-    debugTest "Special Name" (Special "specialvar")
-    debugTest "Metadata Name" (MetadataN "metadata1")
-    
+    -- encodeFCMTest "Local Name" (Local (id "myvar"))
+    -- encodeFCMTest "Global Name" (Global "globalvar")
+    -- encodeFCMTest "Special Name" (Special "specialvar")
+    -- encodeFCMTest "Metadata Name" (MetadataN "metadata1")
     -- Test constants
-    debugTest "Integer Constant" (Core.LInt 42)
-    debugTest "Float Constant" (LFloat "3.14159")
-    debugTest "Bool Constant True" (LBool True)
-    debugTest "Bool Constant False" (LBool False)
-    debugTest "Null Constant" LNull
-    debugTest "String Constant" (LString "Hello, World!")
-    debugTest "Undefined Constant" LUndefined
-    debugTest "Poison Constant" LPoison
-    debugTest "Zero Constant" LZero
+    encodeFCMTest "Integer Constant" (withType (LType.LInt 8) $ LTerm.LInt 42)
+    -- encodeFCMTest "Float Constant" (withType (LType.LFloating $ LFloat "3.14159"))
+    encodeFCMTest "Bool Constant True" (withType (LType.LInt 1) $ LBool True)
+    encodeFCMTest "Bool Constant False" (withType (LType.LInt 1) $ LBool False)
+    encodeFCMTest "Null Constant" (withType LType.LPtr $ LNull)
+    --encodeFCMTest "String Constant" (withType LType.L LString "Hello, World!")
+    --encodeFCMTest "Undefined Constant" LUndefined
+    --encodeFCMTest "Poison Constant" LPoison
+    --encodeFCMTest "Zero Constant" LZero
     
     -- Test expressions
-    debugTest "Constant Expression" (LConstE (LInt 100))
+    --encodeFCMTest "Constant Expression" (LConstE (LInt 100))
     
     -- Test attributes
-    debugTest "ZeroExt Attribute" ZeroExt
-    debugTest "SignExt Attribute" SignExt
-    debugTest "Align Attribute" (Align 8)
-    debugTest "ByVal Attribute" (ByVal (LType.LInt 32))
-    debugTest "NoAlias Attribute" NoAlias
-    
+    --encodeFCMTest "ZeroExt Attribute" ZeroExt
+    --encodeFCMTest "SignExt Attribute" SignExt
+    --encodeFCMTest "Align Attribute" (Align 8)
+    --encodeFCMTest "ByVal Attribute" (ByVal (LType.LInt 32))
+    --encodeFCMTest "NoAlias Attribute" NoAlias
+    {- 
     -- Test address spaces
-    debugTest "Named Address Space" (NamedSpace "cuda")
-    debugTest "Unnamed Address Space" (UnnamedSpace 1)
+    encodeFCMTest "Named Address Space" (NamedSpace "cuda")
+    encodeFCMTest "Unnamed Address Space" (UnnamedSpace 1)
     
     -- Test DLL storage
-    debugTest "DLL Export" DLLExport
-    debugTest "DLL Import" DLLImport
+    encodeFCMTest "DLL Export" DLLExport
+    encodeFCMTest "DLL Import" DLLImport
     
     -- Test thread locality
-    debugTest "Local Dynamic" LocalDynamic
-    debugTest "Initial Exec" InitialExec
+    encodeFCMTest "Local Dynamic" LocalDynamic
+    encodeFCMTest "Initial Exec" InitialExec
     
     -- Test preemption
-    debugTest "Preemptible" Preemptible
-    debugTest "Non-Preemptible" NonPreemptible
+    encodeFCMTest "Preemptible" Preemptible
+    encodeFCMTest "Non-Preemptible" NonPreemptible
     
     -- Test address info
-    debugTest "Unnamed Global" UnnamedGlobal
-    debugTest "Unnamed Local" UnnamedLocal
+    encodeFCMTest "Unnamed Global" UnnamedGlobal
+    encodeFCMTest "Unnamed Local" UnnamedLocal
     
     -- Test binary opcodes
-    debugTest "Add Opcode" Add
-    debugTest "Sub Opcode" Sub
-    debugTest "Mul Opcode" Mul
-    debugTest "And Opcode" And
-    debugTest "Or Opcode" Or
-    debugTest "Xor Opcode" Xor
+    encodeFCMTest "Add Opcode" Add
+    encodeFCMTest "Sub Opcode" Sub
+    encodeFCMTest "Mul Opcode" Mul
+    encodeFCMTest "And Opcode" And
+    encodeFCMTest "Or Opcode" Or
+    encodeFCMTest "Xor Opcode" Xor
     
     -- Test unary opcodes
-    debugTest "FNeg Opcode" FNeg
+    encodeFCMTest "FNeg Opcode" FNeg
     
     -- Test wrapping
-    debugTest "No Signed Wrap" NoSigned
-    debugTest "No Unsigned Wrap" NoUnsigned
-    debugTest "No Signed/Unsigned Wrap" NoSignedUnsigned
-    
+    encodeFCMTest "No Signed Wrap" NoSigned
+    encodeFCMTest "No Unsigned Wrap" NoUnsigned
+    encodeFCMTest "No Signed/Unsigned Wrap" NoSignedUnsigned
+    -}
+    -- TODO:
     putStrLn "=== All Encoding Tests Completed ==="

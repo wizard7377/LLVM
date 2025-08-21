@@ -5,7 +5,7 @@ public export
 record Context where 
   constructor MkContext
   typing : List (Name, Type)
-  values : List (Name, LExpr)
+  values : List (Name, LValue)
 
 public export 
 emptyContext : Context 

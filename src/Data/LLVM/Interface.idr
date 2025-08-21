@@ -1,6 +1,6 @@
 module Data.LLVM.Interface
 import Data.LLVM.Class
-import Data.LLVM.Write
+import Data.LLVM.Write.Text.Encode
 import Data.LLVM.IR
 import public Data.LLVM.Builders
 import Data.Walk
@@ -41,12 +41,12 @@ public export
         v : b = go s
         in endWith acc v
 export
-Startable Block LStatement where
+Startable BasicBlock LStatement where
     startWith s acc = let 
         v : LStatement = go s
         in startWith v acc
 export
-Endable Block LStatement where
+Endable BasicBlock LStatement where
     endWith acc s = let 
         v : LStatement = go s
         in endWith acc v
@@ -69,9 +69,9 @@ Endable (List a) a where
     endWith acc s = acc ++ [s]
 
 export 
-Endable Block LOperation where 
+Endable BasicBlock LExpr where 
     endWith acc s = let 
-        statement : LStatement = Operation Trash s 
+        statement : LStatement = MkLStatement Nothing s neutral
         in endWith acc statement
 
 public export 

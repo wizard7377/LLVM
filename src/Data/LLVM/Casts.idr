@@ -12,7 +12,8 @@ module Data.LLVM.Casts
 
 import Data.LLVM.Class
 import Data.LLVM.IR
-import Data.LLVM.Write
+import Data.LLVM.Write.Text.Encode
+
 import Data.Walk
 public export
 Walk GVarDef LClause where 
@@ -36,63 +37,26 @@ public export
 Walk AttributeGroupDef LClause where 
     go d = AttributeGroupC d
 public export
-Walk LType FunctionArgSpec where 
-    go t = MkFunctionArgSpec t [] Nothing
+Walk LType Argument where 
+    go t = MkArgument t [] Nothing
 public export
-Walk Int LExpr where 
-    go i =  (LInt i)
+Walk Int LValue where 
+    go i =  (LTerm.LInt i)
 public export
-Walk String LExpr where 
-    go s =  (LString s)
+Walk String LValue where 
+    go s =  (LTerm.LString s)
 public export
-Walk Bool LExpr where 
-    go b =  (LBool b)
+Walk Bool LValue where 
+    go b =  (LTerm.LBool b)
 
 public export 
 Walk a b => Walk b c => Walk a c where 
   go = go . (the (a -> b) go)
  
 public export 
-Walk LOperation LStatement where 
-    go op = Operation Trash op
+Walk LExpr LStatement where 
+    go op = MkLStatement Nothing op neutral
 
 public export 
-Walk Name LExpr where 
-    go n = LVar n
-
-public export 
-Walk Terminator LOperation where 
-  go = TerminatorOp
-public export 
-Walk (UnaryOpcode, LType, LExpr) LOperation where
-  go (a, b, c) = UnaryOp a b c 
- 
-public export 
-Walk (BinaryOpcode, LType, LExpr, LExpr) LOperation where
-  go (a, b, c, d) = BinaryOp a b c d
- 
-public export 
-Walk VectorOpcode LOperation where 
-  go = VectorOp
-public export 
-Walk AggregateOpcode LOperation where 
-  go = AggregateOp
-  
-public export 
-Walk (ConversionOpCode, LType, LExpr, LType) LOperation where 
-  go (a, b, c, d) = ConversionOp a (withType b c) d
-  
-public export 
-Walk MiscOpcode LOperation where 
-  go = MiscOp
-  
-public export 
-Walk MemoryOpcode LOperation where 
-  go = MemoryOp 
-public export 
-Walk ExceptOpcode LOperation where 
-  go = ExceptOp
-
-public export 
-Walk (List LStatement) Block where 
-  go = MkBlock
+Walk Name LValue where 
+    go n = LTerm.LVar n

@@ -6,6 +6,7 @@ import System
 import Control.App
 import System.File.ReadWrite
 import Control.Monad.Identity
+import System.LLVM.Stage
 export 
 assembleLLVM : {context : Context} -> LModule -> String -> Compile String
 assembleLLVM {context} mod output = do 
@@ -29,3 +30,9 @@ assembleForeign {context} mod output = do
     (out, r) <- runCmd cmd
     (unless $ r == 0) (throwError $ AssembleError out)
     pure output
+
+export
+[assembleLLVMStage] Stage (LModule, String) String where
+    runStage {context} (mod, output) = assembleLLVM {context} mod output
+[assembleForeignStage] Stage (String, String) String where
+    runStage {context} (mod, output) = assembleForeign {context} mod output

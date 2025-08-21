@@ -35,9 +35,9 @@ record GVarDef where
   ||| The type of the global variable
   gtpe : LType.LType
   ||| Optional initializer value
-  initializer : Maybe LExpr
+  initializer : Maybe LValue
   ||| Metadata tags
-  tags : List LTag
+  tags : Annotation
 
 ||| Attribute group definition.
 ||| Models LLVM IR attribute group definitions like:
@@ -53,13 +53,7 @@ record AttributeGroupDef where
   ||| List of attributes in this group
   attrs : List Attribute
 
-||| Function body containing a list of statements/instructions.
-||| Models the body of an LLVM function between the opening and closing braces.
-public export 
-record Block where 
-  constructor MkBlock
-  ||| List of basic blocks and instructions
-  statements : List LStatement
+
 ||| Function definition with implementation.
 ||| Models LLVM IR function definitions like:
 ||| ```llvm
@@ -100,7 +94,7 @@ record FunctionDef where
   ||| Return type
   returnType : LType 
   ||| Function parameters with their types and attributes
-  args : List FunctionArgSpec
+  args : List Argument
   ||| Address significance (unnamed_addr, local_unnamed_addr)
   addressInfo : Maybe AddressInfo
   ||| Address space (addrspace(N))
@@ -118,17 +112,17 @@ record FunctionDef where
   ||| Garbage collector name (gc "name")
   gc : Maybe String
   ||| Prefix data (prefix Constant)
-  fprefix: Maybe LExpr
+  fprefix: Maybe LValue
   ||| Prologue data (prologue Constant)
-  prologue: Maybe LExpr
+  prologue: Maybe LValue
   ||| Personality function (personality Constant)
-  personality : Maybe LExpr
+  personality : Maybe LValue
   ||| Attached metadata (!name !N)*
   metadata : List Metadata
   ||| Function body with basic blocks and instructions
-  body : Block
+  body : List BasicBlock
   ||| Additional metadata tags
-  tags: List LTag
+  tags: Annotation
 ||| Function declaration without implementation.
 ||| Models LLVM IR function declarations like:
 ||| ```llvm
@@ -150,7 +144,7 @@ record FunctionDec where
   ||| Return type
   returnType : LType 
   ||| Function parameters with their types and attributes
-  args : List FunctionArgSpec
+  args : List Argument
   ||| Address significance (unnamed_addr, local_unnamed_addr)
   addressInfo : Maybe AddressInfo
   ||| Function alignment (align N)
@@ -158,11 +152,11 @@ record FunctionDec where
   ||| Garbage collector name (gc "name")
   gc : Maybe String 
   ||| Prefix data (prefix Constant)
-  fprefix: Maybe LExpr 
+  fprefix: Maybe LValue 
   ||| Prologue data (prologue Constant)
-  prologue: Maybe LExpr
+  prologue: Maybe LValue
   ||| Additional metadata tags
-  tags: List LTag
+  tags: Annotation
 ||| Alias definition.
 ||| Models LLVM IR alias definitions like:
 ||| ```llvm
@@ -186,7 +180,7 @@ record Alias where
   ||| Name of the aliasee (the target being aliased)
   aliasee : String 
   ||| Additional metadata tags
-  tags: List LTag
+  tags: Annotation
 
 ||| Indirect function (IFunc) definition.
 ||| Models LLVM IR IFunc definitions like:
@@ -212,8 +206,14 @@ record IFunc where
   ||| Name of the resolver function
   resolver : String 
   ||| Additional metadata tags
-  tags: List LTag
+  tags: Annotation
 
+public export 
+record TypeDef where 
+  constructor MkTypeDef
+  name : String 
+  ty : LType 
+  ann : Annotation
 ||| Top-level clauses that can appear in an LLVM module.
 ||| Each clause represents a different kind of top-level declaration.
 public export 
@@ -232,6 +232,7 @@ data LClause : Type where
   MetadataC : String -> Metadata -> LClause
   ||| Attribute group definition (attributes #N = {...})
   AttributeGroupC : AttributeGroupDef -> LClause
+  TypeDefC : TypeDef -> LClause
   ||| Other top-level constructs (e.g., inline assembly, target info)
   OtherC : String -> LClause
 
@@ -257,7 +258,7 @@ record LModule where
   ||| List of top-level declarations and definitions
   text: List LClause
   ||| Module-level metadata tags
-  tags: Maybe (List LTag)
+  tags: Annotation
 -- TODO: Comdats
 -- TODO: fin param attributes
 

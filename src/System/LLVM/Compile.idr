@@ -3,6 +3,7 @@ module System.LLVM.Compile
 import System.LLVM.Common
 import Data.LLVM
 import System
+import System.LLVM.Stage
 export
 compileLLVM : {auto context : Context} -> String -> Compile String
 compileLLVM {context} input = do
@@ -13,4 +14,6 @@ compileLLVM {context} input = do
     
 
 
-
+export 
+[compileLLVMStage] Stage String String where
+    runStage {context} input = compileLLVM {context} input

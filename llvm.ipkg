@@ -17,44 +17,72 @@ authors = "Asher Frost"
 
 -- modules to install
 modules = 
+    Control.Runnable,
+    Data.MonadIO,
     Data.LLVM,
-    Data.LLVM.Class,
-    Data.LLVM.IR.Core,
+    Data.Walk,
+    Data.LLVM.Verify,
+    Data.LLVM.Builders,
     Data.LLVM.Write,
-    Data.LLVM.IR.Ops,
-    Data.LLVM.IR.Program,
-    Data.LLVM.Interface,
-    Data.LLVM.IR.Builders,
-    Data.LLVM.Casts,
+    Data.LLVM.IR,
     Data.LLVM.Pass,
+    Data.LLVM.Logic.Infer,
+    Data.LLVM.Logic.Casting,
+    Data.LLVM.Logic.Types,
+    Data.LLVM.Interface,
+    Data.LLVM.Logic,
     Data.LLVM.Foreign,
+    Data.LLVM.IR.Core,
+    Data.LLVM.IR.Alias,
+    Data.LLVM.IR.Ops,
+    Data.LLVM.IR.Util,
+    Data.LLVM.IR.Program,
+    Data.LLVM.Write.Text.Encode,
+    Data.LLVM.Write.Common,
+    Data.LLVM.Write.Foreign,
+    Data.LLVM.Write.Foreign.Step,
+    Data.LLVM.Write.Foreign.Monad,
+    Data.LLVM.Write.Foreign.Values,
+    Data.LLVM.Write.Types,
+    Data.LLVM.CC,
+    Data.LLVM.Class,
+    Data.LLVM.Casts,
+    Data.LLVM.CC.Prim,
+    Data.LLVM.CC.Macros,
+    Data.LLVM.CC.Support,
+    Data.LLVM.CC.Reflect,
+    Data.LLVM.Builders.Helper,
+    Data.LLVM.Builders.Inst,
+    Data.LLVM.Builders.Math,
+    Data.LLVM.Builders.Core,
+    Data.LLVM.Builders.Metadata,
+    Data.LLVM.Builders.Ops,
+    Data.LLVM.Builders.Sugar,
+    Data.LLVM.Builders.Control,
+    Data.LLVM.Builders.Builder.Complex,
+    Data.LLVM.Builders.Builder.Builder,
+    Data.LLVM.Builders.Builder.Types,
     System.LLVM,
     System.LLVM.Common,
-    System.LLVM.Build,
+    System.LLVM.Foreign,
     System.LLVM.Compile,
     System.LLVM.Link,
     System.LLVM.Assembler,
+    System.LLVM.Run,
+    System.LLVM.Stage,
     System.LLVM.Optimize,
-    System.LLVM.Foreign,
-    Data.LLVM.Logic,
-    Data.Walk,
-    Data.LLVM.IR,
-    Data.LLVM.IR.Alias,
-    Data.LLVM.IR.Builders.Helper,
-    Data.LLVM.IR.Builders.Control,
-    Data.LLVM.IR.Builders.Ops,
-    Data.LLVM.IR.Builders.Math,
-    Data.LLVM.IR.Builders.Core
+    System.LLVM.Build
+
 
 -- main file (i.e. file to load at REPL)
 -- main =
 
 -- name of executable
 -- executable =
--- opts =
+-- opts = ""
 sourcedir = "src"
--- builddir =
--- outputdir =
+builddir = "build"
+outputdir = "out"
 
 -- script to run before building
 -- prebuild =

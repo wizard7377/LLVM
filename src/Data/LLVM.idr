@@ -21,8 +21,8 @@
 ||| myModule : LModule
 ||| myModule = MkLModule {
 |||   text = [
-|||     GlobalDefC $ globalDef "myGlobal" (LInt 32) {init = Just (LInt 42)},
-|||     FunctionDefC $ functionDef "main" LVoid [] (MkBlock [
+|||     GlobalDefC $ globalDef "myGlobal" (LTerm.LInt 32) {init = Just (LTerm.LInt 42)},
+|||     FunctionDefC $ functionDef "main" LVoid [] (MkBasicBlock [
 |||       ret LVoid
 |||     ])
 |||   ]
@@ -31,11 +31,12 @@
 module Data.LLVM 
 
 import public Data.LLVM.Class as LClass
-import public Data.LLVM.Write as LWrite
+import public Data.LLVM.Write.Text.Encode as LWrite
 import public Data.LLVM.IR as LIR
-import public Data.LLVM.IR.Builders
+import public Data.LLVM.Builders
 import public Data.LLVM.IR.Alias
 import public Data.LLVM.Interface
 import public Data.LLVM.Casts as LCasts
 import public Data.LLVM.Pass as LPass
 import public Data.LLVM.Foreign as LForeign
+import public Data.LLVM.CC as CC

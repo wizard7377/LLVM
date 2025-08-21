@@ -5,6 +5,7 @@
 ||| It also provides utility functions for name escaping and type manipulation.
 module Data.LLVM.IR.Core
 
+
 ||| Escape special characters in identifiers to make them safe for LLVM IR.
 |||
 ||| Converts non-alphanumeric characters to underscore-delimited names to ensure
@@ -215,6 +216,29 @@ data AddressSpace : Type where
   NamedSpace : String -> AddressSpace
   ||| Numbered address space  
   UnnamedSpace : Int -> AddressSpace
+
+public export 
+data Register : Type where
+  ||| Register with a specific name
+  NamedRegister : String -> Register
+  ||| Register with a numeric ID
+  UnnamedRegister : Int -> Register
+
+export
+Show Register where
+  show (NamedRegister name) = "%" ++ name
+  show (UnnamedRegister id) = "%" ++ show id
+export 
+Eq Register where
+  (==) (NamedRegister n1) (NamedRegister n2) = n1 == n2
+  (==) (UnnamedRegister id1) (UnnamedRegister id2) = id1 == id2
+  (==) _ _ = False
+export 
+Ord Register where  
+  compare (NamedRegister n1) (NamedRegister n2) = compare n1 n2
+  compare (UnnamedRegister id1) (UnnamedRegister id2) = compare id1 id2
+  compare (NamedRegister _) (UnnamedRegister _) = LT
+  compare (UnnamedRegister _) (NamedRegister _) = GT
 ||| LLVM identifier types for different kinds of names.
 |||
 ||| LLVM uses different prefixes to distinguish between different types
@@ -222,25 +246,53 @@ data AddressSpace : Type where
 ||| namespace within LLVM.
 public export
 data Name : Type where 
-  ||| Local variable or register name (prefixed with %)
-  Local : String -> Name
-  ||| Global variable or function name (prefixed with @)
+  Temporary : Nat -> Name
+  Local : String -> Name 
+  Parameter : String -> Name
+  ||| Unnamed parameter 
+  Unnamed : Nat -> Name
   Global : String -> Name
-  ||| Special compiler-generated name (prefixed with $)
-  Special : String -> Name
-  ||| Metadata node name (prefixed with !)
-  MetadataN : String -> Name
-  ||| Attribute group name (prefixed with #)
-  AttributeN : String -> Name
-  ||| Basic block label name (suffixed with :)
-  LabelN : String -> Name
-  ||| LLVM intrinsic function name (starts with "@llvm.")
-  IntrinsicN : String -> Name
-  ||| User-defined custom name type
-  CustomN : String -> Name
-  ||| Trash register, for operations that don't assign
-  Trash : Name
+-- TODO: Allow for non-string idx
+public export 
+data Destination : Type where
+  ||| A destination for a branch instruction (basic block label)
+  Assign : Register -> Destination
+  Nothing : Destination
+  
 
+export
+implementation Eq Name where
+  (==) (Local n1) (Local n2) = n1 == n2
+  (==) (Global n1) (Global n2) = n1 == n2
+  (==) (Temporary id1) (Temporary id2) = id1 == id2
+  (==) (Parameter p1) (Parameter p2) = p1 == p2
+  (==) (Unnamed id1) (Unnamed id2) = id1 == id2
+  (==) _ _ = False
+export
+implementation Ord Name where
+  compare (Local x) (Local y) = compare x y
+  compare (Global x) (Global y) = compare x y
+  compare (Temporary x) (Temporary y) = compare x y
+  compare (Parameter x) (Parameter y) = compare x y
+  compare (Unnamed x) (Unnamed y) = compare x y
+  compare (Local _) _ = GT 
+  compare _ (Local _) = LT 
+  compare (Global _) _ = GT 
+  compare _ (Global _) = LT
+  compare (Temporary _) _ = GT
+  compare _ (Temporary _) = LT
+  compare (Parameter _) _ = GT
+  compare _ (Parameter _) = LT
+  compare (Unnamed _) _ = GT
+  compare _ (Unnamed _) = LT
+
+export 
+implementation Show Name where
+  show (Local n) = "local " ++ unescape n
+  show (Global n) = "global " ++ unescape n
+  show (Temporary id) = "temp " ++ show id
+  show (Parameter n) = "arg " ++ unescape n
+  show (Unnamed id) = "arg at " ++ show id
 ||| LLVM type system representation.
 |||
 ||| This namespace contains types for representing all LLVM IR types,
@@ -251,62 +303,74 @@ namespace LType
   ||| These correspond to different floating-point representations
   ||| with varying precision and range characteristics.
   public export 
-  data LTypeF : Type where
+  data LFloatFormat : Type where
     ||| IEEE 754 half precision (16-bit)
-    Half      : LTypeF
+    Half      : LFloatFormat
     ||| Brain floating point (16-bit)
-    Bfloat    : LTypeF
+    Bfloat    : LFloatFormat
     ||| IEEE 754 single precision (32-bit)
-    LFloat    : LTypeF
+    LFloat    : LFloatFormat
     ||| IEEE 754 double precision (64-bit)
-    LDouble   : LTypeF
+    LDouble   : LFloatFormat
     ||| IEEE 754 quadruple precision (128-bit)
-    FP128     : LTypeF
+    FP128     : LFloatFormat
     ||| x86 extended precision (80-bit)
-    X86_FP80  : LTypeF
+    X86_FP80  : LFloatFormat
     ||| PowerPC double-double (128-bit)
-    PPC_FP128 : LTypeF
-  ||| LLVM type representation.
-  |||
-  ||| Represents all possible LLVM IR types including primitives,
-  ||| aggregates, functions, and target-specific types.
-  public export
-  -- TODO: Target types
-  data LType : Type where
-    ||| Generic pointer type (opaque pointer)
-    LPtr : LType
-    ||| Pointer in specific address space
-    LPtrAddr : AddressSpace -> LType
-    ||| Void type (no value)
-    LVoid : LType
-    ||| Function type with fixed arguments
-    LFun : LType -> List LType -> LType
-    ||| Variadic function type with fixed and variable arguments
-    LFunVarArg : LType -> List LType -> LType -> LType
-    ||| Opaque type (structure not defined)
-    LOpaque : LType 
-    ||| Integer type with specified bit width
-    LInt : Int -> LType
-    ||| Floating-point type
-    LFloating : LTypeF -> LType
-    ||| x86 Advanced Matrix Extensions type
-    LX86_AMX : LType
-    ||| Fixed-size vector type
-    LVector : Int -> LType -> LType
-    ||| Scalable vector type (size determined at runtime)
-    LVectorScale : Int -> LType -> LType
-    ||| Label type for basic block references
-    LLabel : LType
-    ||| Token type for representing state
-    LToken : LType
-    ||| Array type with fixed size and element type
-    LArray : Int -> LType -> LType
-    ||| Structure type with named fields
-    LStruct : List LType -> LType
-    ||| Packed structure type (no padding)
-    LPackedStruct : List LType -> LType
-    ||| Metadata type
-    LMetadata :  LType
+    PPC_FP128 : LFloatFormat
+  mutual
+    public export 
+    data LTargetArg : Type where 
+      TargetType : LType -> LTargetArg
+      TargetInt : Int -> LTargetArg 
+    ||| LLVM type representation.
+    |||
+    ||| Represents all possible LLVM IR types including primitives,
+    ||| aggregates, functions, and target-specific types.
+    public export
+    -- DONE: Target types
+    data LType : Type where
+      ||| Generic pointer type (opaque pointer)
+      LPtr : LType
+      ||| Named type
+      LNamed : String -> LType 
+      ||| Pointer type to something (depreacted)
+      LPtrTo : LType -> LType
+      ||| Pointer to type in address space (depractated)
+      LPtrToAddr : AddressSpace -> LType -> LType
+      ||| Pointer in specific address space
+      LPtrAddr : AddressSpace -> LType
+      ||| Void type (no value)
+      LVoid : LType
+      ||| Function type with fixed arguments
+      LFun : LType -> List LType -> LType
+      ||| Variadic function type with fixed and variable arguments
+      LFunVarArg : LType -> List LType -> LType -> LType
+      ||| Opaque type (structure not defined)
+      LOpaque : LType 
+      ||| Integer type with specified bit width
+      LInt : Int -> LType
+      ||| Floating-point type
+      LFloating : LFloatFormat -> LType
+      ||| x86 Advanced Matrix Extensions type
+      LX86_AMX : LType
+      ||| Fixed-size vector type
+      LVector : Int -> LType -> LType
+      ||| Scalable vector type (size determined at runtime)
+      LVectorScale : Int -> LType -> LType
+      ||| Label type for basic block references
+      LLabel : LType
+      ||| Token type for representing state
+      LToken : LType
+      ||| Array type with fixed size and element type
+      LArray : Int -> LType -> LType
+      ||| Structure type with named fields
+      LStruct : List LType -> LType
+      ||| Packed structure type (no padding)
+      LPackedStruct : List LType -> LType
+      ||| Metadata type
+      LMetadata :  LType
+      LTarget : String -> List LTargetArg -> LType 
     
 ||| Wrapper for values with explicit type information.
 |||
@@ -396,13 +460,14 @@ data Attribute : Type where
   --TODO: Finish
 
 
+
 ||| Function argument specification with type and attributes.
 |||
 ||| Represents a single function parameter including its type,
 ||| any associated attributes, and optional name.
 public export
-record FunctionArgSpec where 
-  constructor MkFunctionArgSpec
+record Argument where 
+  constructor MkArgument
   ||| The type of this parameter
   type : LType
   ||| Attributes applied to this parameter
@@ -419,58 +484,83 @@ data Assembly : Type where
   ||| Basic inline assembly with assembly string
   BasicAsm : String -> Assembly
 -- TODO: Captures, nofp, inits, range, func atrributes
-mutual 
-  ||| LLVM metadata representation.
-  |||
-  ||| Metadata provides additional information that doesn't affect program
-  ||| semantics but can be used by debuggers, profilers, and other tools.
-  public export 
-  data Metadata : Type where
-    ||| A metadata tuple containing multiple metadata elements
-    MetadataTuple : List Metadata -> Metadata
-    ||| Named metadata
-    MetadataNamed : String -> Metadata
-    MetadataString : String -> Metadata
-    MetadataValue : WithType LExpr -> Metadata
-    MetadataCustom : String -> Metadata
-  public export
-  data LExpr : Type where 
-    ||| Integer constant value
-    LInt : Int -> LExpr
-    ||| Floating-point constant (as string to preserve precision)
-    LFloat : String -> LExpr
-    ||| Boolean constant (true/false)
-    LBool : Bool -> LExpr 
-    ||| Null pointer constant
-    LNull : LExpr
-    ||| Token constant for state tracking
-    LToken : LExpr 
-    ||| String literal constant
-    LString : String -> LExpr
-    ||| Array constant with typed elements
-    LArray : List (WithType LExpr) -> LExpr
-    ||| Vector constant with typed elements
-    LVector : List (WithType LExpr) -> LExpr
-    ||| Structure constant with typed fields
-    LStruct : List (WithType LExpr) -> LExpr
-    ||| Undefined value (undefined behavior if used)
-    LUndefined : LExpr
-    ||| Poison value (more undefined than undefined)
-    LPoison : LExpr
-    ||| Zero initializer for any type
-    LZero : LExpr
-    ||| Metadata constant
-    LMetadata : Metadata -> LExpr
-    ||| Pointer to named global/function
-    LPtr : Name -> LExpr
-    -- TODO: Basic block, dso-local, pointer auth, constant expression
-    LVar : Name -> LExpr
-    
-  public export
-  %deprecate
-  LConstE : LExpr -> LExpr
-  LConstE = id
 
+namespace LTerm
+  mutual 
+    ||| LLVM metadata representation.
+    |||
+    ||| Metadata provides additional information that doesn't affect program
+    ||| semantics but can be used by debuggers, profilers, and other tools.
+    public export 
+    data Metadata : Type where
+      ||| A metadata tuple containing multiple metadata elements
+      MetadataTuple : List Metadata -> Metadata
+      ||| Named metadata
+      MetadataNamed : String -> Metadata
+      MetadataNode : Nat -> Metadata
+      MetadataString : String -> Metadata
+      MetadataValue : WithType LValue -> Metadata
+      MetadataCustom : String -> Metadata
+      MetadataSpecial : String -> List (String, String) -> Metadata
+    -- [ ]: Distinguish between constant and non-constant
+    public export 
+    data LConstExpr : Type where 
+      LConstTrunc : LValue -> LType -> LConstExpr
+      LConstPtrToInt : LValue -> LType -> LConstExpr
+      LConstPtrToAddr : LValue -> LType -> LConstExpr
+      LConstIntToPtr : LValue -> LType -> LConstExpr
+      LConstBitcast : LValue -> LType -> LConstExpr
+      LConstAddrSpaceCast :  LValue -> LType -> LConstExpr
+      -- [ ]: Get element pointer
+      LConstExtractElement : LValue -> LValue -> LConstExpr
+      LConstInsertElement : LValue -> LValue -> LConstExpr
+      LConstShuffleVector : LValue -> LValue -> LConstExpr
+      LConstAdd : LValue -> LValue -> LConstExpr
+      LConstSub : LValue -> LValue -> LConstExpr
+      LConstXor : LValue -> LValue -> LConstExpr
+    public export
+    data LValue : Type where 
+      ||| Integer constant value
+      LInt : Int -> LValue
+      ||| Floating-point constant (as string to preserve precision)
+      LFloat : String -> LValue
+      ||| Boolean constant (true/false)
+      LBool : Bool -> LValue 
+      ||| Null pointer constant
+      LNull : LValue
+      ||| Token constant for state tracking
+      LToken : LValue 
+      ||| String literal constant
+      LString : String -> LValue
+      ||| Array constant with typed elements
+      LArray : List (WithType LValue) -> LValue
+      ||| Vector constant with typed elements
+      LVector : List (WithType LValue) -> LValue
+      ||| Structure constant with typed fields
+      LStruct : List (WithType LValue) -> LValue
+      ||| Undefined value (undefined behavior if used)
+      LUndefined : LValue
+      ||| Poison value (more undefined than undefined)
+      LPoison : LValue
+      ||| Zero initializer for any type
+      LZero : LValue
+      ||| Metadata constant
+      LMetadata : Metadata -> LValue
+      ||| Pointer to named global/function
+      LPtr : Name -> LValue
+      -- TODO: Basic block, dso-local, pointer auth, constant expression
+      LVar : Name -> LValue
+      LDsoLocalEquivalent : String -> LValue
+      LNoCFI : String -> LValue
+      LConstE : LConstExpr -> LValue
+      -- [ ]: PtrAuth 
+
+
+
+public export 
+record Annotation where 
+  constructor MkAnnotation 
+  metadata : List (String, Metadata)
 ||| Custom metadata tags for LLVM constructs.
 |||
 ||| Tags provide a way to attach custom metadata to various LLVM IR elements
@@ -500,9 +590,8 @@ record SymbolInfo where
 ||| Labels are represented as expressions for flexibility in referencing
 ||| different types of basic block identifiers.
 public export
-Label : Type
-Label = LExpr
-
+data Label : Type where 
+  NamedLabel : String -> Label
 ||| Fast math optimization flags for floating-point operations.
 |||
 ||| These flags enable various floating-point optimizations by relaxing
@@ -527,3 +616,10 @@ FastMath : Type
 FastMath = List FastMathFlag
 
 
+public export 
+Semigroup Annotation where 
+  (MkAnnotation a) <+> (MkAnnotation b) = MkAnnotation (a ++ b)
+
+public export 
+Monoid Annotation where 
+  neutral = MkAnnotation []
