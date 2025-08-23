@@ -18,7 +18,7 @@ module Data.LLVM.Builders.Sugar
 import Data.LLVM.Builders.Core
 import Data.LLVM.Builders.Ops 
 import Data.LLVM.IR.Core
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.IR.Util
 import Data.LLVM.Builders.Helper
 import Data.LLVM.IR.Program
@@ -32,7 +32,7 @@ export
 implementation Num LValue where 
     (+) = ?noNumAdd
     (*) = ?noNumMul
-    fromInteger = LTerm.LInt . cast
+    fromInteger = Core.LInt . cast
 export
 implementation Num LType where 
     (+) = ?noNumAdd2
@@ -40,7 +40,7 @@ implementation Num LType where
     fromInteger = LType.LInt . cast
 export 
 implementation FromString LValue where 
-    fromString = LTerm.LString
+    fromString = Core.LString
 export prefix 18 ?*
 export infixl 0 $<-
 export prefix 11 $<< 
@@ -101,25 +101,25 @@ public export
 
 public export 
 (?%) : String -> LValue
-(?%) name = LTerm.LVar $ local name
+(?%) name = Core.LVar $ local name
 
 
 
 public export 
 (?@) : String -> LValue
-(?@) name = LTerm.LVar $ global name
+(?@) name = Core.LVar $ global name
 
 
 public export 
 (?^) : String -> LValue 
-(?^) name = LTerm.LVar $ Parameter name
+(?^) name = Core.LVar $ Parameter name
 
 
 
 
 public export 
 (##) : Int -> LValue 
-(##) i = LTerm.LInt i
+(##) i = Core.LInt i
 
 
 public export 

@@ -1,7 +1,7 @@
 module Data.LLVM.IR.Util
 
 import Data.LLVM.IR.Core
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.IR.Program
 import Data.LLVM.Class
 

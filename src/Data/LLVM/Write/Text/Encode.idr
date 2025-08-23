@@ -10,11 +10,15 @@ import Data.LLVM.IR
 import Data.LLVM.Class
 import Data.Walk
 import public Data.LLVM.Write.Types
+import public Data.LLVM.Write.Text.Types
 --%default covering
 --%default partial --TODO: FIXME:
 
+wrapName : String -> VString
+wrapName name = MkVString $ unescape name
 Encode ATM Label VString where
     encode (NamedLabel name) = pure $ "%" <++> go name
+    encode (LiftedLabel block) = ?ebl
 export 
 Encode ATM Linkage VString where
     encode Private = pure "private"
@@ -60,7 +64,7 @@ Encode ATM CallingConvention VString where
     encode PreserveAll = pure "preserve_allcc"
     encode PreserveNone = pure "preserve_nonecc"
     encode CxxFastTL = pure "cxx_fast_tlscc"
-    encode Tail = pure "tailcc"
+    encode TailCC = pure "tailcc"
     encode Swift = pure "swiftcc"
     encode SwiftTail = pure "swift_tailcc"
     encode CFGuardCheck = pure "cfguard_checkcc"
@@ -176,29 +180,29 @@ mutual
           tagEncode (s, m) = (pure $ "!" <++> go s) <+> encode m
     export
     Encode ATM LValue VString where
-        encode (LTerm.LInt n) = pure $ go $ show n
-        encode (LTerm.LFloat s) = pure $ go s
-        encode (LTerm.LBool b) = pure $ if b then "true" else "false"
-        encode LTerm.LNull = pure "null"
-        encode LTerm.LToken = pure "none"
-        encode (LTerm.LString s) = pure $ "c\"" <+> go s <+> "\""
-        encode (LTerm.LArray cs) = do
+        encode (Core.LInt n) = pure $ go $ show n
+        encode (Core.LFloat s) = pure $ go s
+        encode (Core.LBool b) = pure $ if b then "true" else "false"
+        encode Core.LNull = pure "null"
+        encode Core.LToken = pure "none"
+        encode (Core.LString s) = pure $ "c\"" <+> go s <+> "\""
+        encode (Core.LArray cs) = do
             cssStr <- encode @{each} cs
             pure $ "[" <+> cssStr <+> "]"
-        encode (LTerm.LVector cs) = do
+        encode (Core.LVector cs) = do
             cssStr <- encode @{each} cs
             pure $ "<" <+> cssStr <+> ">"
-        encode (LTerm.LStruct cs) = do
+        encode (Core.LStruct cs) = do
             cssStr <- encode @{each} cs
             pure $ "{" <+> cssStr <+> "}"
-        encode LTerm.LUndefined = pure "undef"
-        encode LTerm.LPoison = pure "poison"
-        encode LTerm.LZero = pure "zeroinitializer"
-        encode (LTerm.LMetadata m) = do
+        encode Core.LUndefined = pure "undef"
+        encode Core.LPoison = pure "poison"
+        encode Core.LZero = pure "zeroinitializer"
+        encode (Core.LMetadata m) = do
             mStr <- encode m
             pure $ "metadata" <+> mStr
-        encode (LTerm.LPtr name) = "ptr" <+> encode name
-        encode (LTerm.LVar name) = encode name
+        encode (Core.LPtr name) = pure "ptr" <+> encode name
+        encode (Core.LVar name) = encode name
         encode _ = ?ltermres
 export 
 Encode ATM GVarDef VString where
@@ -431,7 +435,7 @@ Encode ATM Terminator VString where
         pure $ "switch" <+> tyStr <+> exprStr <+> ", label" <+> defaultStr <+> "[" <+> casesStr <+> "]"
     encode (IndirectBr address labels) = do
         addressStr <- encode address
-        labelsStr <- encode @{each} (map (\l => "label " <++> runIdentity (encode l)) labels)
+        labelsStr <- encode @{each} (map (\l => "label " <++> runATM (encode l)) labels)
         pure $ "indirectbr ptr " <+> addressStr <+> ", [" <+> labelsStr <+> "]"
     encode (Invoke invokeCall) = encode invokeCall
     encode (CallBR callBr) = encode callBr
@@ -493,7 +497,7 @@ public export
 Encode ATM LExpr VString where
     encode (Phi tpe pairs) = do
         tpeStr <- encode tpe
-        pairsStr <- pure $ intercalate "," (map (\(e, l) => runIdentity (encode e) <+> ", label" <+> runIdentity (encode l)) pairs)
+        pairsStr <- pure $ intercalate "," (map (\(e, l) => runATM (encode e) <+> ", label" <+> runATM (encode l)) pairs)
         pure $ "phi " <+> tpeStr <+> "[" <+> pairsStr <+> "]"
     encode (Select fastMath cond ifTrue ifFalse) = do
         fastMathStr <- encode @{nosep} fastMath
@@ -525,7 +529,7 @@ Encode ATM LExpr VString where
         tpeStr <- encode tpe
         numElemsStr <- maybe (pure "") (encode @{ewt}) numElems
         alignStr <- maybe (pure "") (\n => pure $ ", align " <+> vshow n) align
-        addrStr <- maybe (pure "") (\a => pure $ ", addrspace(" <++> runIdentity (encode a) <++> ")") addrSpace
+        addrStr <- maybe (pure "") (\a => pure $ ", addrspace(" <++> runATM (encode a) <++> ")") addrSpace
         pure $ "alloca " <+> tpeStr <+> numElemsStr <+> alignStr <+> addrStr
     encode (LoadRegular v tpe addr align nontemp invLoad invGroup nonNull deref derefOrNull aligned noUndef) = do
         tpeStr <- encode tpe
@@ -861,9 +865,9 @@ Encode ATM FunctionDef VString where
     encode (MkFunctionDef name symbolInfo callingConvention returnAttrs returnType args addressInfo addressSpace fnAttributes section partition comdat alignment gc fprefix prologue personality metadata body tags) = do
         symbolInfoStr <- encode symbolInfo
         callingConventionStr <- encodeIf callingConvention
-        returnAttrsStr <- pure $ intercalate "," (map (runIdentity . encode) returnAttrs)
+        returnAttrsStr <- pure $ intercalate "," (map (runATM . encode) returnAttrs)
         returnTypeStr <- encode returnType
-        argsStr <- pure $ intercalate "," (map (runIdentity . encode) args)
+        argsStr <- pure $ intercalate "," (map (runATM . encode) args)
         addressInfoStr <- encodeIf addressInfo
         addressSpaceStr <- encodeIf addressSpace
         alignmentStr <- encodeIf $ show <$> alignment
@@ -915,9 +919,9 @@ Encode ATM FunctionDec VString where
     encode (MkFunctionDec name symbolInfo callingConvention returnAttrs returnType args addressInfo alignment gc fprefix prologue tags) = do
         symbolInfoStr <- encode symbolInfo
         callingConventionStr <- encodeIf callingConvention
-        returnAttrsStr <- pure $ intercalate "," (map (runIdentity . encode) returnAttrs)
+        returnAttrsStr <- pure $ intercalate "," (map (runATM . encode) returnAttrs)
         returnTypeStr <- encode returnType
-        argsStr <- pure $ intercalate "," (map (runIdentity . encode) args)
+        argsStr <- pure $ intercalate "," (map (runATM . encode) args)
         addressInfoStr <- encodeIf addressInfo
         alignmentStr <- encodeIf $ show <$> alignment
         gcStr <- encodeIf gc
@@ -985,7 +989,7 @@ public export
 Encode ATM AttributeGroupDef VString where 
     encode (MkAttributeGroupDef name attrs) = do
         nameStr <- encode name
-        attrsStr <- pure $ intercalate "," (map (runIdentity . encode) attrs)
+        attrsStr <- pure $ intercalate "," (map (runATM . encode) attrs)
         pure $ "attributes #" <++> nameStr <+> "=" <+> "{" <+> attrsStr <+> "}"
 public export 
 Encode ATM LClause VString where 
@@ -1005,11 +1009,11 @@ Encode ATM LModule VString where
     encode (MkLModule dataLayout target text tags) = do
         let layout : VString = 
                 case dataLayout of  
-                    Just dl => "target datalayout = \"" <++> runIdentity (encode dl) <++> "\"\n"
+                    Just dl => "target datalayout = \"" <++> runATM (encode dl) <++> "\"\n"
                     Nothing => ""
         let target : VString = 
                 case target of
-                    Just t => "target triple = \"" <++> runIdentity (encode t) <++> "\"\n"
+                    Just t => "target triple = \"" <++> runATM (encode t) <++> "\"\n"
                     Nothing => ""
         textStr <- encode @{lined} text
         pure $ layout <++> target <++> textStr

@@ -3,7 +3,7 @@ module Data.LLVM.Builders.Helper
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
 --import Data.LLVM.Write.Text.Encode
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
 import Data.List
@@ -47,7 +47,7 @@ exampleCall : LExpr
 exampleCall = simpleCall 
   (LFun (LType.LInt 32) [LType.LInt 32, LType.LInt 32]) 
   (globalPtr "add") 
-  [withType (LType.LInt 32) (constExpr (LTerm.LInt 5)), withType (LType.LInt 32) (constExpr (LTerm.LInt 10))]
+  [withType (LType.LInt 32) (constExpr (Core.LInt 5)), withType (LType.LInt 32) (constExpr (Core.LInt 10))]
 
 export 
 ||| Create a bytecode specification with main module and additional modules.

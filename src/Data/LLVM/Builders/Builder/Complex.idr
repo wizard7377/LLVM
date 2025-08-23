@@ -1,7 +1,7 @@
 module Data.LLVM.Builders.Builder.Complex
 
 import Data.LLVM.IR.Core 
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.IR.Program
 import Data.LLVM.Builders.Builder.Types
 import Control.Monad.State

@@ -4,7 +4,7 @@ module Data.LLVM.Builders.Core
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
 --import Data.LLVM.Write.Text.Encode
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
 import Data.List
@@ -51,7 +51,7 @@ export
 |||
 ||| @ b The boolean value (True or False)
 mkBool : Bool -> LValue
-mkBool b = LTerm.LBool b
+mkBool b = Core.LBool b
 
 export
 ||| Create a string constant.
@@ -61,7 +61,7 @@ export
 |||
 ||| @ s The string value to create as a constant
 mkString : String -> LValue
-mkString s = LTerm.LString s
+mkString s = Core.LString s
 
 export
 ||| Create a null pointer constant.
@@ -70,7 +70,7 @@ export
 ||| with value zero (null). Used for pointer initialization and
 ||| null pointer checks.
 mkNull : LValue
-mkNull = LTerm.LNull
+mkNull = Core.LNull
 
 export
 ||| Create an undefined constant.
@@ -79,7 +79,7 @@ export
 ||| unspecified value. Useful for optimization and when the
 ||| specific value doesn't matter.
 mkUndefined : LValue
-mkUndefined = LTerm.LUndefined
+mkUndefined = Core.LUndefined
 
 export
 ||| Create a floating point constant.
@@ -90,7 +90,7 @@ export
 |||
 ||| @ f The string representation of the floating point value
 mkFloat : String -> LValue
-mkFloat f = LTerm.LFloat f
+mkFloat f = Core.LFloat f
 
 export
 ||| Create an array constant.
@@ -100,7 +100,7 @@ export
 |||
 ||| @ elems List of typed constant elements for the array
 mkArray : List (WithType LValue) -> LValue
-mkArray elems = LTerm.LArray elems
+mkArray elems = Core.LArray elems
 
 export
 ||| Create a struct constant.
@@ -110,7 +110,7 @@ export
 |||
 ||| @ fields List of typed constant fields for the struct
 mkStruct : List (WithType LValue) -> LValue
-mkStruct fields = LTerm.LStruct fields
+mkStruct fields = Core.LStruct fields
 
 export
 ||| Create a vector constant.
@@ -120,7 +120,7 @@ export
 |||
 ||| @ elems List of typed constant elements for the vector
 mkVector : List (WithType LValue) -> LValue
-mkVector elems = LTerm.LVector elems
+mkVector elems = Core.LVector elems
 
 
 export
@@ -168,7 +168,7 @@ export
 |||
 ||| @ name The name of the entity to create a pointer to
 ptrExpr : Name -> LValue
-ptrExpr name =  (LTerm.LPtr name)
+ptrExpr name =  (Core.LPtr name)
 
 export
 ||| Create a local variable pointer expression.
@@ -258,22 +258,22 @@ symbolInfo {lnk} {prm} {vis} {sto} = MkSymbolInfo lnk prm vis sto
 export
 ||| Create a poison constant.
 mkPoison : LValue
-mkPoison = LTerm.LPoison
+mkPoison = Core.LPoison
 
 export
 ||| Create a zero constant.
 mkZero : LValue
-mkZero = LTerm.LZero
+mkZero = Core.LZero
 
 export
 ||| Create a token constant.
 mkToken : LValue
-mkToken = LTerm.LToken
+mkToken = Core.LToken
 
 export
 ||| Create a metadata constant.
 mkMetadata : Metadata -> LValue
-mkMetadata md = LTerm.LMetadata md
+mkMetadata md = Core.LMetadata md
 
 export
 ||| Create a metadata tuple.
@@ -284,17 +284,17 @@ metadataTuple elems = MetadataTuple elems
 export
 ||| Create a variable expression from a name.
 varExpr : Name -> LValue
-varExpr name = LTerm.LVar name
+varExpr name = Core.LVar name
 
 export
 ||| Create a variable expression from a local name.
 localVar : String -> LValue
-localVar name = LTerm.LVar (Local $ id name)
+localVar name = Core.LVar (Local $ id name)
 
 export
 ||| Create a variable expression from a global name.
 globalVar : String -> LValue
-globalVar name = LTerm.LVar (Global name)
+globalVar name = Core.LVar (Global name)
 
 
 export

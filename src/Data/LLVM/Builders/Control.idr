@@ -2,7 +2,7 @@ module Data.LLVM.Builders.Control
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
 --import Data.LLVM.Write.Text.Encode
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
 import Data.List

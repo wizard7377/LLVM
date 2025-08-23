@@ -21,14 +21,16 @@ binary {context} input = do
     (unless $ r == 0) (throwError $ CompileError out)
     pure input
 
+changeOutput : (context : Context) -> String -> Context
+changeOutput context newOutput = { output := newOutput } context
 export
 compile' : {auto context : Context} -> Bytecode -> Compile String
 compile' {context} input = do 
     _ <- runCmd $ "mkdir -p " <+> (context.tempDir)
     _ <- runCmd $ "mkdir -p " <+> (context.buildDir)
     let inputs : List _ = input.modules
-    outputAsm : List String <-  traverse (\(out,mod) => assembleLLVM {context} mod out) inputs
-    extraAsm : List String <-  traverse (\(out,mod) => assembleForeign {context} mod out) context.extraIr
+    outputAsm : List String <-  traverse (\(out,mod) => assembleLLVM {context=(changeOutput context out)} mod) inputs
+    extraAsm : List String <-  traverse (\(out,mod) => assembleForeign {context=(changeOutput context out)} mod) context.extraIr
     linkedBit : String <- linkLLVM {context} (outputAsm ++ extraAsm)
     optimizedBit : String <- optimizeLLVM {context} linkedBit
     compiled <- compileLLVM {context} optimizedBit
@@ -38,8 +40,8 @@ export
 exec' : {auto context : Context} -> Bytecode -> Compile String
 exec' {context} input = do 
     let inputs : List _ = input.modules
-    outputAsm : List String <-  traverse (\(out,mod) => assembleLLVM {context} mod out) inputs
-    extraAsm : List String <-  traverse (\(out,mod) => assembleForeign {context} mod out) context.extraIr
+    outputAsm : List String <-  traverse (\(out,mod) => assembleLLVM {context=(changeOutput context out)} mod) inputs
+    extraAsm : List String <-  traverse (\(out,mod) => assembleForeign {context=(changeOutput context out)} mod) context.extraIr
     linkedBit : String <- linkLLVM {context} (outputAsm ++ extraAsm)
     optimizedBit : String <- optimizeLLVM {context} linkedBit
     result <- runLLVM {context} optimizedBit

@@ -6,7 +6,7 @@
 module Data.LLVM.IR.Program
 
 import Data.LLVM.IR.Core
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 
 ||| Global variable definition.
 ||| Models LLVM IR global variable definitions like:

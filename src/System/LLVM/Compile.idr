@@ -14,6 +14,3 @@ compileLLVM {context} input = do
     
 
 
-export 
-[compileLLVMStage] Stage String String where
-    runStage {context} input = compileLLVM {context} input

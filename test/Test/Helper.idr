@@ -25,9 +25,9 @@ showGreen str = show $ colored Green str
 showRed : String -> String
 showRed str = show $ colored Red str
 public export
-debugTest : {a : Type} -> Encode Identity a VString => String -> a -> IO ()
+debugTest : {a : Type} -> Encode ATM a VString => String -> a -> IO ()
 debugTest name value = seperate $ do
-    let str : VString = runIdentity (encode value)
+    let str : VString = runATM (encode value)
     let result = show str
     putStrLn $ "\n\nRunning test:\n=============\n" ++ name
     putStrLn $ "Value:\n=============\n\n" ++ result
@@ -37,9 +37,9 @@ public export
 removeSpaces : String -> String
 removeSpaces = pack . (filter (not . isSpace)) . unpack
 public export
-debugFileTest : {a : Type} -> Encode Identity a VString => String -> a -> IO ()
+debugFileTest : {a : Type} -> Encode ATM a VString => String -> a -> IO ()
 debugFileTest file value = seperate $ do
-    let str : VString = runIdentity (encode value)
+    let str : VString = runATM (encode value)
     let result = show str
     _ <- writeFile ("generated/" ++ (removeSpaces file) ++ ".ll") result
     putStrLn $ "Test output written to " ++ file
@@ -63,9 +63,9 @@ debugRun file value = seperate $ do
     pure ()
     --putStrLn $ "Test output written to " ++ res
 public export
-encodeTest : {a : Type} -> Encode Identity a VString => String -> a -> String -> IO ()
+encodeTest : {a : Type} -> Encode ATM a VString => String -> a -> String -> IO ()
 encodeTest name value expected = seperate $ do
-    let str : VString = runIdentity (encode value)
+    let str : VString = runATM (encode value)
     let result = show str
     if result == expected 
       then

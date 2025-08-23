@@ -22,7 +22,4 @@ linkLLVM {context} inputs = do
         then pure context.output 
         else throwError $ LinkError out
 
-export 
-[linkLLVMStage] Stage (List String) String where
-    runStage {context} inputs = linkLLVM {context} inputs
 

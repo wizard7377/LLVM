@@ -3,7 +3,7 @@ module Data.LLVM.Builders.Metadata
 import Data.LLVM.Builders.Core
 import Data.LLVM.Builders.Ops
 import Data.LLVM.IR.Core
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.Builders.Helper
 
 -- DICompileUnit TODO:

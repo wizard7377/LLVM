@@ -2,13 +2,13 @@ module Data.LLVM.IR.Alias
 
 import Data.LLVM.IR.Core       
 --import Data.LLVM.Write.Text.Encode
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.IR.Program
 
 export
 ||| Create an integer constant.
 mkInt : Int -> LValue
-mkInt i = LTerm.LInt i
+mkInt i = Core.LInt i
 
 export
 ||| Create an i1 (boolean) type.
