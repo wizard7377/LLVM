@@ -1,4 +1,4 @@
-module Data.LLVM.IR.Table
+module Data.Table
 
 public export 
 Table : Type -> Type 

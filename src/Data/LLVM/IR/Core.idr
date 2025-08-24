@@ -549,7 +549,7 @@ mutual
         ||| Type of the case value
         tpe : LType
         ||| Case value to match
-        value : LValue
+        value : (LValue True)        
         ||| Target label for this case
         label : Label
     ||| Invoke instruction call specification.
@@ -570,9 +570,9 @@ mutual
         ||| Function type
         tpe : LType 
         ||| Function value or pointer
-        fnval : LValue
+        fnval : (LValue False)        
         ||| Function arguments
-        args : List LValue
+        args : List (LValue False)        
         --fnAttrs : List ?
         --operandBundles : ?
         ||| Normal execution continuation label
@@ -597,10 +597,9 @@ mutual
         ||| Function type
         tpe : LType 
         ||| Function value or pointer
-        fnval : LValue
+        fnval : (LValue False)        
         ||| Function arguments
-        args : List LValue
-        --fnAttrs : List ?
+        args : List (LValue False)        --fnAttrs : List ?
         --operandBundles : ?
         ||| Fallthrough label for normal execution
         fallthrough : Label
@@ -661,9 +660,9 @@ mutual
         ||| Function type
         tpe : LType 
         ||| Function value or pointer
-        fnval : LValue
+        fnval : (LValue False)        
         ||| Function arguments with their types
-        args : List (WithType LValue)
+        args : List (WithType (LValue False))
         ||| Function attributes
         fnAttrs : List Attribute
         --operandBundles : ?
@@ -681,31 +680,31 @@ mutual
         ||| Return void from function
         RetVoid : Terminator
         ||| Return value from function
-        Ret : LType -> LValue -> Terminator
+        Ret : LType -> (LValue False)-> Terminator
         ||| Conditional branch (br i1 %cond, label %true, label %false)
-        CondBr : LValue -> Label -> Label -> Terminator
+        CondBr : (LValue False)-> Label -> Label -> Terminator
         ||| Unconditional branch (br label %target)
         JumpBr : Label -> Terminator
         ||| Switch statement with multiple cases
-        Switch : LType -> LValue -> Name -> List CaseBranch -> Terminator
+        Switch : LType -> (LValue False)-> Label -> List CaseBranch -> Terminator
         ||| Indirect branch through computed address
-        IndirectBr : LValue -> List LValue -> Terminator
+        IndirectBr : (LValue False)-> List (LValue False)-> Terminator
         ||| Invoke instruction (function call with exception handling)
         Invoke : InvokeCall -> Terminator
         ||| Call branch instruction (inline assembly with possible branches)
         CallBR : BrCall -> Terminator
         ||| Resume exception propagation
-        Resume : LType -> LValue -> Terminator
+        Resume : LType -> (LValue False)-> Terminator
         ||| Unreachable code marker
         Unreachable : Terminator
         ||| Catch switch for exception handling
         CatchSwitchOp : CatchSwitch -> Terminator
         ||| Return from catch handler
-        CatchRet : LValue -> Label -> Terminator
+        CatchRet : (LValue False)-> Label -> Terminator
         ||| Return from cleanup to caller
-        CleanupRetCaller : LValue -> Terminator
+        CleanupRetCaller : (LValue False)-> Terminator
         ||| Return from cleanup to specific label
-        CleanupRet : LValue -> Label -> Terminator
+        CleanupRet : (LValue False)-> Label -> Terminator
 
     ||| Integer comparison predicates for icmp instruction.
     ||| Models LLVM IR icmp comparisons like:
@@ -756,9 +755,9 @@ mutual
     public export
     data CatchClause : Type where
         ||| Catch clause for landing pad instructions
-        Catching : LType -> LValue -> CatchClause
+        Catching : LType -> (LValue False)-> CatchClause
         ||| Filter clause for landing pad instructions
-        Filtering : LType -> LValue -> CatchClause
+        Filtering : LType -> (LValue False)-> CatchClause
 
 
 
@@ -787,18 +786,18 @@ mutual
     public export
     data LExpr : Type where 
         ||| PHI node for SSA form
-        Phi : LType -> List (LValue, Label) -> LExpr
+        Phi : LType -> List ((LValue False), Label) -> LExpr
         ||| Conditional select instruction
-        Select : FastMath -> WithType LValue -> WithType LValue -> WithType LValue -> LExpr
+        Select : FastMath -> WithType (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> LExpr
         ||| Freeze instruction (converts poison to undef)
-        Freeze : WithType LValue -> LExpr
+        Freeze : WithType (LValue False)-> LExpr
         ||| Function call operation
         FnCallOp : FnCall -> LExpr
         -- [ ]: VaArg
         LandingPad : LType -> List CatchClause -> LExpr
         LandingPadCleanup : LType -> List CatchClause -> LExpr
-        CatchPad : Name -> LValue -> LExpr
-        CleanupPad : Name -> LValue -> LExpr
+        CatchPad : Name -> (LValue False)-> LExpr
+        CleanupPad : Name -> (LValue False)-> LExpr
         ||| Memory operation opcodes for memory allocation and access.
         ||| Models LLVM IR memory instructions like:
         ||| ```llvm
@@ -822,7 +821,7 @@ mutual
         LoadRegular : 
             (volatile : Bool) ->
             (tpe : LType) ->
-            (address : LValue) -> 
+            (address : (LValue False)) -> 
             (align : Maybe Nat) ->
             (nonTemporal : Bool) -> 
             (invariantLoad : Bool) ->
@@ -836,7 +835,7 @@ mutual
         LoadAtomic : 
             (volatile : Bool) ->
             (tpe : LType) ->
-            (address : LValue) -> 
+            (address : (LValue False)) -> 
             (scope : Maybe String) -> 
             (ordering : Maybe AtomicOrder) ->
             (align : Maybe Nat) ->
@@ -846,16 +845,16 @@ mutual
 
         StoreRegular : 
             (volatile : Bool) ->
-            (tpe : WithType LValue) ->
-            (address : LValue) -> 
+            (tpe : WithType (LValue False)) ->
+            (address : (LValue False)) -> 
             (align : Maybe Nat) ->
             (nonTemporal : Bool) -> 
             (invariantGroup : Bool) ->
             LExpr
         StoreAtomic : 
             (volatile : Bool) ->
-            (tpe : WithType LValue) ->
-            (address : LValue) -> 
+            (tpe : WithType (LValue False)) ->
+            (address : (LValue False)) -> 
             (scope : Maybe String) -> 
             (ordering : Maybe AtomicOrder) ->
             (align : Maybe Nat) ->
@@ -865,7 +864,7 @@ mutual
             (scope : Maybe String) ->
             (ordering : Maybe AtomicOrder) ->
             LExpr
-        CmpXChg : (weak : Bool) -> (volatile : Bool) -> LValue -> WithType LValue -> WithType LValue -> (syncscope : Maybe String) -> AtomicOrder -> AtomicOrder -> LExpr 
+        CmpXChg : (weak : Bool) -> (volatile : Bool) -> (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> (syncscope : Maybe String) -> AtomicOrder -> AtomicOrder -> LExpr 
         
         -- TODO: Cmpxchg, atomicrmw, etc.
         ||| Unary operation opcodes.
@@ -875,7 +874,7 @@ mutual
         ||| ```
 
         ||| Floating point negation
-        FNeg : LType -> LValue -> LExpr
+        FNeg : LType -> (LValue False)-> LExpr
 
         ||| Binary operation opcodes for arithmetic and logical operations.
         ||| Models LLVM IR binary instructions like:
@@ -887,33 +886,33 @@ mutual
         ||| ```
         |||All the simple binary opcodes
 
-        Add : LType -> LValue -> LValue -> LExpr
-        AddWrap : Wrapping -> LType -> LValue -> LValue -> LExpr
-        FAdd : FastMath -> LType -> LValue -> LValue -> LExpr
-        Sub : LType -> LValue -> LValue -> LExpr
-        SubWrap : Wrapping -> LType -> LValue -> LValue -> LExpr
-        FSub : FastMath -> LType -> LValue -> LValue -> LExpr
-        Mul : LType -> LValue -> LValue -> LExpr
-        MulWrap : Wrapping -> LType -> LValue -> LValue -> LExpr
-        FMul : FastMath -> LType -> LValue -> LValue -> LExpr
-        UDiv : LType -> LValue -> LValue -> LExpr
-        UDivExact : LType -> LValue -> LValue -> LExpr
-        SDiv : LType -> LValue -> LValue -> LExpr
-        SDivExact : LType -> LValue -> LValue -> LExpr
-        FDiv : FastMath -> LType -> LValue -> LValue -> LExpr
-        URem : LType -> LValue -> LValue -> LExpr
-        SRem : LType -> LValue -> LValue -> LExpr
-        FRem : FastMath -> LType -> LValue -> LValue -> LExpr
-        Shl : LType -> LValue -> LValue -> LExpr
-        ShlWrap : Wrapping -> LType -> LValue -> LValue -> LExpr
-        LShr : LType -> LValue -> LValue -> LExpr
-        LShrExact : LType -> LValue -> LValue -> LExpr
-        AShr : LType -> LValue -> LValue -> LExpr
-        AShrExact : LType -> LValue -> LValue -> LExpr
-        And : LType -> LValue -> LValue -> LExpr
-        Or : LType -> LValue -> LValue -> LExpr
-        DisjointOr : LType -> LValue -> LValue -> LExpr
-        Xor : LType -> LValue -> LValue -> LExpr
+        Add : LType -> (LValue False)-> (LValue False)-> LExpr
+        AddWrap : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
+        FAdd : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
+        Sub : LType -> (LValue False)-> (LValue False)-> LExpr
+        SubWrap : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
+        FSub : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
+        Mul : LType -> (LValue False)-> (LValue False)-> LExpr
+        MulWrap : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
+        FMul : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
+        UDiv : LType -> (LValue False)-> (LValue False)-> LExpr
+        UDivExact : LType -> (LValue False)-> (LValue False)-> LExpr
+        SDiv : LType -> (LValue False)-> (LValue False)-> LExpr
+        SDivExact : LType -> (LValue False)-> (LValue False)-> LExpr
+        FDiv : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
+        URem : LType -> (LValue False)-> (LValue False)-> LExpr
+        SRem : LType -> (LValue False)-> (LValue False)-> LExpr
+        FRem : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
+        Shl : LType -> (LValue False)-> (LValue False)-> LExpr
+        ShlWrap : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
+        LShr : LType -> (LValue False)-> (LValue False)-> LExpr
+        LShrExact : LType -> (LValue False)-> (LValue False)-> LExpr
+        AShr : LType -> (LValue False)-> (LValue False)-> LExpr
+        AShrExact : LType -> (LValue False)-> (LValue False)-> LExpr
+        And : LType -> (LValue False)-> (LValue False)-> LExpr
+        Or : LType -> (LValue False)-> (LValue False)-> LExpr
+        DisjointOr : LType -> (LValue False)-> (LValue False)-> LExpr
+        Xor : LType -> (LValue False)-> (LValue False)-> LExpr
         ||| Vector operation opcodes.
         ||| Models LLVM IR vector manipulation instructions like:
         ||| ```llvm
@@ -923,11 +922,11 @@ mutual
         ||| ```
 
         ||| Insert element into vector at specified index
-        InsertElement : WithType LValue -> WithType LValue -> WithType LValue -> LExpr
+        InsertElement : WithType (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> LExpr
         ||| Shuffle two vectors according to mask
-        ShuffleVector : WithType LValue -> WithType LValue -> WithType LValue -> LExpr
+        ShuffleVector : WithType (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> LExpr
         ||| Extract element from vector at specified index
-        ExtractElement : WithType LValue -> WithType LValue -> LExpr
+        ExtractElement : WithType (LValue False)-> WithType (LValue False)-> LExpr
 
         ||| Aggregate operation opcodes for structs and arrays.
         ||| Models LLVM IR aggregate manipulation instructions like:
@@ -937,9 +936,9 @@ mutual
         ||| ```
 
         ||| Extract value from aggregate at specified index
-        ExtractValue : WithType LValue -> Nat -> LExpr
+        ExtractValue : WithType (LValue False)-> Nat -> LExpr
         ||| Insert value into aggregate at specified index
-        InsertValue : WithType LValue -> WithType LValue -> Nat -> LExpr
+        InsertValue : WithType (LValue False)-> WithType (LValue False)-> Nat -> LExpr
         ||| Type conversion operation opcodes.
         ||| Models LLVM IR conversion instructions like:
         ||| ```llvm
@@ -949,19 +948,19 @@ mutual
         ||| %result = addrspacecast i8* %ptr to i8 addrspace(1)*
         ||| ```
 
-        Trunc : Wrapping -> WithType LValue -> LType -> LExpr
-        ZExt : WithType LValue -> LType -> LExpr
-        SExt : WithType LValue -> LType -> LExpr
-        FPTrunc : FastMath -> WithType LValue -> LType -> LExpr
-        FPExt : FastMath -> WithType LValue -> LType -> LExpr
-        FPToUi : WithType LValue -> LType -> LExpr
-        FPToSi : WithType LValue -> LType -> LExpr
-        UiToFP : WithType LValue -> LType -> LExpr
-        SiToFP : WithType LValue -> LType -> LExpr
-        PtrToInt : WithType LValue -> LType -> LExpr
+        Trunc : Wrapping -> WithType (LValue False)-> LType -> LExpr
+        ZExt : WithType (LValue False)-> LType -> LExpr
+        SExt : WithType (LValue False)-> LType -> LExpr
+        FPTrunc : FastMath -> WithType (LValue False)-> LType -> LExpr
+        FPExt : FastMath -> WithType (LValue False)-> LType -> LExpr
+        FPToUi : WithType (LValue False)-> LType -> LExpr
+        FPToSi : WithType (LValue False)-> LType -> LExpr
+        UiToFP : WithType (LValue False)-> LType -> LExpr
+        SiToFP : WithType (LValue False)-> LType -> LExpr
+        PtrToInt : WithType (LValue False)-> LType -> LExpr
         -- TODO: IntToPtr : LExpr
-        BitCast : WithType LValue -> LType -> LExpr
-        AddrSpaceCast : AddressSpace -> WithType LValue -> LType -> LExpr
+        BitCast : WithType (LValue False)-> LType -> LExpr
+        AddrSpaceCast : AddressSpace -> WithType (LValue False)-> LType -> LExpr
         ||| Comparison operation opcodes.
         ||| Models LLVM IR comparison instructions like:
         ||| ```llvm
@@ -970,13 +969,17 @@ mutual
         ||| %result = fcmp true float %a, %b    ; always true
         ||| ```
 
-        ICmp : Comparison -> LType -> LValue -> LValue -> LExpr
-        ICmpSign : Comparison -> LType -> LValue -> LValue -> LExpr
-        FCmpOrd : FastMath -> Comparison -> LType -> LValue -> LValue -> LExpr
-        FCmpUnOrd : FastMath -> Comparison -> LType -> LValue -> LValue -> LExpr
-        FCmpFalse : LType -> LValue -> LValue -> LExpr
-        FCmpTrue : LType -> LValue -> LValue -> LExpr
-
+        ICmp : Comparison -> LType -> (LValue False)-> (LValue False)-> LExpr
+        ICmpSign : Comparison -> LType -> (LValue False)-> (LValue False)-> LExpr
+        FCmpOrd : FastMath -> Comparison -> LType -> (LValue False)-> (LValue False)-> LExpr
+        FCmpUnOrd : FastMath -> Comparison -> LType -> (LValue False)-> (LValue False)-> LExpr
+        FCmpFalse : LType -> (LValue False)-> (LValue False)-> LExpr
+        FCmpTrue : LType -> (LValue False)-> (LValue False)-> LExpr
+        ||| A special function not found within LLVM Assembly, although it does exist in the C API.
+        ||| Essientally this specifies a way to "abstract" the ending of a function
+        ||| It splits a basic block into two, end the first with the terminator of the function given the second block.
+        ||| E.g, `WithCont Br` becomes `Br bb.unique: bb.unique`
+        WithCont : (Label -> Terminator) -> LExpr
 
     ||| LLVM statements that can appear in basic blocks.
     ||| Models different forms of LLVM IR statements like:
@@ -999,8 +1002,6 @@ mutual
     public export 
     record BasicBlock where 
         constructor MkBasicBlock
-        ||| BasicBlock name (without label prefix)
-        name : String
         ||| List of statements in the block
         statements : List LStatement
         ||| Terminator instruction that ends the block
@@ -1027,65 +1028,112 @@ mutual
         MetadataNamed : String -> Metadata
         MetadataNode : Nat -> Metadata
         MetadataString : String -> Metadata
-        MetadataValue : WithType LValue -> Metadata
+        MetadataValue : WithType (LValue True) -> Metadata
         MetadataCustom : String -> Metadata
         MetadataSpecial : String -> List (String, String) -> Metadata
         -- [ ]: Distinguish between constant and non-constant
     public export 
     data LConstExpr : Type where 
-        LConstTrunc : LValue -> LType -> LConstExpr
-        LConstPtrToInt : LValue -> LType -> LConstExpr
-        LConstPtrToAddr : LValue -> LType -> LConstExpr
-        LConstIntToPtr : LValue -> LType -> LConstExpr
-        LConstBitcast : LValue -> LType -> LConstExpr
-        LConstAddrSpaceCast :  LValue -> LType -> LConstExpr
+        LConstTrunc : (LValue True) -> LType -> LConstExpr
+        LConstPtrToInt : (LValue True) -> LType -> LConstExpr
+        LConstPtrToAddr : (LValue True) -> LType -> LConstExpr
+        LConstIntToPtr : (LValue True) -> LType -> LConstExpr
+        LConstBitcast : (LValue True) -> LType -> LConstExpr
+        LConstAddrSpaceCast :  (LValue True) -> LType -> LConstExpr
         -- [ ]: Get element pointer
-        LConstExtractElement : LValue -> LValue -> LConstExpr
-        LConstInsertElement : LValue -> LValue -> LConstExpr
-        LConstShuffleVector : LValue -> LValue -> LConstExpr
-        LConstAdd : LValue -> LValue -> LConstExpr
-        LConstSub : LValue -> LValue -> LConstExpr
-        LConstXor : LValue -> LValue -> LConstExpr
+        LConstExtractElement : (LValue True) -> (LValue True) -> LConstExpr
+        LConstInsertElement : (LValue True) -> (LValue True) -> LConstExpr
+        LConstShuffleVector : (LValue True) -> (LValue True) -> LConstExpr
+        LConstAdd : (LValue True) -> (LValue True) -> LConstExpr
+        LConstSub : (LValue True) -> (LValue True) -> LConstExpr
+        LConstXor : (LValue True) -> (LValue True) -> LConstExpr
+    
     public export
-    data LValue : Type where 
+    data LValue : (isConst : Bool) -> Type where 
         ||| Integer constant value
-        LInt : Int -> LValue
+        LInt : Int -> (LValue True)
         ||| Floating-point constant (as string to preserve precision)
-        LFloat : String -> LValue
+        LFloat : String -> (LValue True)
         ||| Boolean constant (true/false)
-        LBool : Bool -> LValue 
+        LBool : Bool -> (LValue True) 
         ||| Null pointer constant
-        LNull : LValue
+        LNull : (LValue True)
         ||| Token constant for state tracking
-        LToken : LValue 
+        LToken : (LValue True) 
         ||| String literal constant
-        LString : String -> LValue
+        LString : String -> (LValue True)
         ||| Array constant with typed elements
-        LArray : List (WithType LValue) -> LValue
+        LArray : List (WithType (LValue True)) -> (LValue True)
         ||| Vector constant with typed elements
-        LVector : List (WithType LValue) -> LValue
+        LVector : List (WithType (LValue True)) -> (LValue True)
         ||| Structure constant with typed fields
-        LStruct : List (WithType LValue) -> LValue
+        LStruct : List (WithType (LValue True)) -> (LValue True)
         ||| Undefined value (undefined behavior if used)
-        LUndefined : LValue
+        LUndefined : (LValue True)
         ||| Poison value (more undefined than undefined)
-        LPoison : LValue
+        LPoison : (LValue True)
         ||| Zero initializer for any type
-        LZero : LValue
+        LZero : (LValue True)
         ||| Metadata constant
-        LMetadata : Metadata -> LValue
+        LMetadata : Metadata -> (LValue True)
         ||| Pointer to named global/function
-        LPtr : Name -> LValue
-        -- TODO: Basic block, dso-local, pointer auth, constant expression
-        LVar : Name -> LValue
-        LDsoLocalEquivalent : String -> LValue
-        LNoCFI : String -> LValue
-        LConstE : LConstExpr -> LValue
-        LComplex : LExpr -> LValue
+        LPtr : Name -> (LValue True)
+        LDsoLocalEquivalent : String -> (LValue True)
+        LNoCFI : String -> (LValue True)
+        LConstE : LConstExpr -> (LValue True)
+        LVar : Name -> LValue False
+        LComplex : LExpr -> LValue False
+        LConst : LValue True -> LValue False
         -- [ ]: PtrAuth 
-
-
-
+    public export 
+    toRuntime : {0 isConst : Bool} -> (val : LValue isConst) -> LValue False
+    toRuntime (LInt x) = LConst $ LInt x
+    toRuntime (LFloat x) = LConst $ LFloat x
+    toRuntime (LBool x) = LConst $ LBool x
+    toRuntime LNull = LConst $ LNull
+    toRuntime LToken = LConst $ LToken
+    toRuntime (LString x) = LConst $ LString x
+    toRuntime (LArray x) = LConst $ LArray x
+    toRuntime (LVector x) = LConst $ LVector x
+    toRuntime (LStruct x) = LConst $ LStruct x
+    toRuntime LUndefined = LConst $ LUndefined
+    toRuntime LPoison = LConst $ LPoison
+    toRuntime LZero = LConst $ LZero
+    toRuntime (LMetadata x) = LConst $ LMetadata x
+    toRuntime (LPtr x) = LConst $ LPtr x
+    toRuntime (LDsoLocalEquivalent x) = LConst $ LDsoLocalEquivalent x
+    toRuntime (LNoCFI x) = LConst $ LNoCFI x
+    toRuntime (LConstE x) = LConst $ LConstE x
+    toRuntime (LVar x) = LVar x
+    toRuntime (LComplex x) = LComplex x
+    toRuntime (LConst x) = LConst x
+    public export
+    fromConst : {isConst : Bool} -> LValue True -> LValue isConst
+    fromConst {isConst=True} x = x
+    fromConst {isConst=False} x = LConst x
+    public export 
+    toRuntime' : {0 isConst : Bool} -> (val : WithType (LValue isConst)) -> WithType (LValue False)
+    toRuntime' (MkWithType ty val) = MkWithType ty $ toRuntime val
+    public export
+    fromConst' : {isConst : Bool} -> WithType (LValue True) -> WithType (LValue isConst)
+    fromConst' {isConst=True} x = x
+    fromConst' {isConst=False} (MkWithType ty x) = MkWithType ty $ LConst x
+    public export
+    {0 isConst : Bool} -> Cast (LValue isConst) (LValue False) where 
+      cast = toRuntime 
+    public export
+    {0 isConst : Bool} -> Cast (WithType (LValue isConst)) (WithType (LValue False)) where 
+      cast = toRuntime'
+    public export
+    {isConst : Bool} -> Cast (LValue True) (LValue isConst) where 
+      cast = fromConst
+    public export
+    {isConst : Bool} -> Cast (WithType (LValue True)) (WithType (LValue isConst)) where 
+      cast = fromConst'
+    %inline
+    public export 
+    ALValue : Type
+    ALValue = {isConst : Bool} -> LValue isConst
     public export 
     record Annotation where 
         constructor MkAnnotation 

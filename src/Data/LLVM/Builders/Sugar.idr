@@ -29,18 +29,18 @@ export
 implementation FromString Label where 
     fromString = NamedLabel
 export
-implementation Num LValue where 
+{t : Bool} -> Num (LValue t) where 
     (+) = ?noNumAdd
     (*) = ?noNumMul
-    fromInteger = Core.LInt . cast
+    fromInteger x = cast $ Core.LInt $ cast x
 export
 implementation Num LType where 
     (+) = ?noNumAdd2
     (*) = ?noNumMul2
     fromInteger = LType.LInt . cast
 export 
-implementation FromString LValue where 
-    fromString = Core.LString
+{t : Bool} -> FromString (LValue t) where 
+    fromString x = cast $ Core.LString x
 export prefix 18 ?*
 export infixl 0 $<-
 export prefix 11 $<< 
@@ -72,7 +72,7 @@ public export
 ||| for `ptrExpr name` that makes pointer operations more readable.
 |||
 ||| @ name The name to create a pointer expression for
-(?*) : Name -> LValue
+(?*) : Name -> ALValue 
 (?*) name = ptrExpr name
 
 
@@ -100,26 +100,26 @@ public export
 
 
 public export 
-(?%) : String -> LValue
+(?%) : String -> LValue False
 (?%) name = Core.LVar $ local name
 
 
 
 public export 
-(?@) : String -> LValue
+(?@) : String -> LValue False
 (?@) name = Core.LVar $ global name
 
 
 public export 
-(?^) : String -> LValue 
+(?^) : String -> LValue False
 (?^) name = Core.LVar $ Parameter name
 
 
 
 
 public export 
-(##) : Int -> LValue 
-(##) i = Core.LInt i
+(##) : Int -> ALValue
+(##) i = cast $ Core.LInt i
 
 
 public export 
@@ -128,13 +128,12 @@ public export
 
 
 public export 
-(!:) : String -> (List LStatement, Terminator) -> BasicBlock 
-(!:) name (stmts, term) = MkBasicBlock name stmts term
+(!:) : String -> (List LStatement, Terminator) -> (String, BasicBlock) 
+(!:) name (stmts, term) = (name, MkBasicBlock stmts term)
 
 public export 
 (!^) : String -> LType -> Argument
 (!^) name ty = MkArgument ty neutral (Just name)
-
 
 public export
 (:?) : Type -> LType 
@@ -197,11 +196,11 @@ public export
 (&?) : Setter a (Maybe b) => a -> b -> a
 (&?) x y = setting (<|> (the (Maybe b) $ Just y)) x
 public export 
-(@=) : String -> WithType LValue -> LClause
+(@=) : String -> WithType (LValue True) -> LClause
 (@=) name (MkWithType ty v) = GlobalDefC $ globalDef name {init = Just v} ty
 
 public export 
-(@<) : String -> WithType LValue -> LClause
+(@<) : String -> WithType (LValue True) -> LClause
 (@<) name (MkWithType ty v) = GlobalDefC $ globalDef name {init = Just v} {isConst = True} ty
 
 public export 

@@ -7,8 +7,8 @@ import Data.LLVM.IR.Program
 
 export
 ||| Create an integer constant.
-mkInt : Int -> LValue
-mkInt i = Core.LInt i
+mkInt : Int -> ALValue
+mkInt i = fromConst $ Core.LInt i
 
 export
 ||| Create an i1 (boolean) type.

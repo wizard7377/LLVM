@@ -40,7 +40,7 @@ globalDef :
     {default Nothing externallyInitialized : Maybe Bool} ->
     {default False isConst : Bool} ->
     (ty : LType) ->
-    {default Nothing init : Maybe LValue} ->
+    {default Nothing init : Maybe (LValue ?)} ->
     {default neutral tags : Annotation} ->
     GVarDef
 globalDef name {symbolInfo} {threadLocality} {addressInfo} {addressSpace} {externallyInitialized} {isConst} ty {init} {tags} =

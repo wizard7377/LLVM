@@ -10,14 +10,16 @@ import public Control.Monad.State
 import public Control.Monad.Either 
 import public Control.Monad.RWS
 import public Data.SortedMap
+import Data.Table
 public export 
 record ATState where 
     constructor MkATState
     exprContext : List LStatement 
+    blockContext : Table BasicBlock
     generatedId : Int 
 
 defaultATState : ATState
-defaultATState = MkATState [] 0
+defaultATState = MkATState [] [] 0
 public export
 ATM : Type -> Type 
 ATM = State ATState
@@ -48,6 +50,8 @@ public export
 Monoid VString where
     neutral = MkVString ""
 
+addExprContext : LStatement -> ATM ()
+addExprContext l = modify ({ exprContext $= (++ [l]) })
 %default covering
 
 ||| Intercalate a list of monoid values with a separator.

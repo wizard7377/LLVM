@@ -36,7 +36,7 @@ modules =
     Data.LLVM.Logic.Casting,
     Data.LLVM.Logic.Types,
     Data.LLVM.IR.Core,
-    Data.LLVM.IR.Table,
+    Data.Table,
     Data.LLVM.IR.Alias,
     Data.LLVM.IR.Util,
     Data.LLVM.IR.Program,

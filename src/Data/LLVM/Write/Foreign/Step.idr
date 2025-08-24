@@ -8,6 +8,7 @@ import Data.LLVM.CC
 import public Control.Monad.State
 import public Control.Monad.Either 
 import public Data.LLVM.Write.Types
+import Data.Table
 import System
 import Data.String
 import Data.LLVM.Write.Foreign.Monad
@@ -174,8 +175,8 @@ Encode FCM LStatement CPtr where
             pure res
 
 public export
-Encode FCM BasicBlock CPtr where
-    encode (MkBasicBlock name statements term) = step ("BasicBlock: " ++ name) $ do 
+Encode FCM (String, BasicBlock) CPtr where
+    encode (name, MkBasicBlock statements term) = step ("BasicBlock: " ++ name) $ do 
         
         putMsg 15 ("aapending block to function")
         block <- getBlock name 

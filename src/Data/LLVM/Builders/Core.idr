@@ -39,8 +39,8 @@ public export
 ||| @ expr The expression to be typed
 withType : 
     (ty : LType) ->
-    (expr : LValue) ->
-    WithType LValue
+    (expr : (LValue t)) ->
+    WithType (LValue t)
 withType ty expr = MkWithType ty expr
 
 export
@@ -50,8 +50,8 @@ export
 ||| In LLVM IR, booleans are represented as i1 (1-bit integers).
 |||
 ||| @ b The boolean value (True or False)
-mkBool : Bool -> LValue
-mkBool b = Core.LBool b
+mkBool : Bool -> ALValue
+mkBool b = fromConst $ Core.LBool b
 
 export
 ||| Create a string constant.
@@ -60,8 +60,8 @@ export
 ||| The string will be null-terminated in the generated LLVM IR.
 |||
 ||| @ s The string value to create as a constant
-mkString : String -> LValue
-mkString s = Core.LString s
+mkString : String -> ALValue
+mkString s = fromConst $ Core.LString s
 
 export
 ||| Create a null pointer constant.
@@ -69,8 +69,8 @@ export
 ||| Creates an LLVM null pointer constant, representing a pointer
 ||| with value zero (null). Used for pointer initialization and
 ||| null pointer checks.
-mkNull : LValue
-mkNull = Core.LNull
+mkNull : ALValue
+mkNull = fromConst $ Core.LNull
 
 export
 ||| Create an undefined constant.
@@ -78,8 +78,8 @@ export
 ||| Creates an LLVM undefined value constant, representing an
 ||| unspecified value. Useful for optimization and when the
 ||| specific value doesn't matter.
-mkUndefined : LValue
-mkUndefined = Core.LUndefined
+mkUndefined : ALValue
+mkUndefined = fromConst $ Core.LUndefined
 
 export
 ||| Create a floating point constant.
@@ -89,8 +89,8 @@ export
 ||| can parse.
 |||
 ||| @ f The string representation of the floating point value
-mkFloat : String -> LValue
-mkFloat f = Core.LFloat f
+mkFloat : String -> ALValue
+mkFloat f = fromConst $ Core.LFloat f
 
 export
 ||| Create an array constant.
@@ -99,8 +99,8 @@ export
 ||| All elements must have compatible types for the array type.
 |||
 ||| @ elems List of typed constant elements for the array
-mkArray : List (WithType LValue) -> LValue
-mkArray elems = Core.LArray elems
+mkArray : List (WithType (LValue ?)) -> ALValue
+mkArray elems = fromConst $ Core.LArray elems
 
 export
 ||| Create a struct constant.
@@ -109,8 +109,8 @@ export
 ||| The fields are ordered and their types must match the struct definition.
 |||
 ||| @ fields List of typed constant fields for the struct
-mkStruct : List (WithType LValue) -> LValue
-mkStruct fields = Core.LStruct fields
+mkStruct : List (WithType (LValue ?)) -> ALValue
+mkStruct fields = fromConst $ Core.LStruct fields
 
 export
 ||| Create a vector constant.
@@ -119,8 +119,8 @@ export
 ||| All elements must have the same type and the count must match the vector type.
 |||
 ||| @ elems List of typed constant elements for the vector
-mkVector : List (WithType LValue) -> LValue
-mkVector elems = Core.LVector elems
+mkVector : List (WithType (LValue ?)) -> ALValue
+mkVector elems = fromConst $ Core.LVector elems
 
 
 export
@@ -131,8 +131,8 @@ export
 ||| distinguishes between constants and expressions syntactically.
 |||
 ||| @ c The constant to convert to an expression
-constExpr : LValue -> LValue
-constExpr c =  c
+constExpr : LValue True -> ALValue
+constExpr c = fromConst $ c
 
 
 export
@@ -167,8 +167,8 @@ export
 ||| This is useful for taking addresses of variables and functions.
 |||
 ||| @ name The name of the entity to create a pointer to
-ptrExpr : Name -> LValue
-ptrExpr name =  (Core.LPtr name)
+ptrExpr : Name -> ALValue
+ptrExpr name = fromConst $ (Core.LPtr name)
 
 export
 ||| Create a local variable pointer expression.
@@ -178,7 +178,7 @@ export
 ||| with pointer expression generation.
 |||
 ||| @ name The string name of the local variable to point to
-localPtr : String -> LValue
+localPtr : String -> ALValue
 localPtr name = ptrExpr (Local $ id name)
 
 
@@ -190,7 +190,7 @@ export
 ||| with pointer expression generation.
 |||
 ||| @ name The string name of the global variable to point to
-globalPtr : String -> LValue
+globalPtr : String -> ALValue
 globalPtr name = ptrExpr (Global name)
 
 
@@ -204,8 +204,8 @@ export
 ||| points in the code that can be referenced.
 |||
 ||| @ name The string name of the label
-block : {default "entry" name : String} -> {default [] statements : List LStatement} -> Terminator -> BasicBlock
-block {name} {statements} term = MkBasicBlock name statements term
+block : {default [] statements : List LStatement} -> Terminator -> BasicBlock
+block {statements} term = MkBasicBlock statements term
 
 
 
@@ -257,23 +257,23 @@ symbolInfo {lnk} {prm} {vis} {sto} = MkSymbolInfo lnk prm vis sto
 
 export
 ||| Create a poison constant.
-mkPoison : LValue
-mkPoison = Core.LPoison
+mkPoison : ALValue
+mkPoison = fromConst $ Core.LPoison
 
 export
 ||| Create a zero constant.
-mkZero : LValue
-mkZero = Core.LZero
+mkZero : ALValue
+mkZero = fromConst $ Core.LZero
 
 export
 ||| Create a token constant.
-mkToken : LValue
-mkToken = Core.LToken
+mkToken : ALValue
+mkToken = fromConst $ Core.LToken
 
 export
 ||| Create a metadata constant.
-mkMetadata : Metadata -> LValue
-mkMetadata md = Core.LMetadata md
+mkMetadata : Metadata -> ALValue
+mkMetadata md = fromConst $ Core.LMetadata md
 
 export
 ||| Create a metadata tuple.
@@ -283,17 +283,17 @@ metadataTuple elems = MetadataTuple elems
 -- 7. Missing helper builders for expressions and names
 export
 ||| Create a variable expression from a name.
-varExpr : Name -> LValue
+varExpr : Name -> (LValue ?)
 varExpr name = Core.LVar name
 
 export
 ||| Create a variable expression from a local name.
-localVar : String -> LValue
+localVar : String -> (LValue ?)
 localVar name = Core.LVar (Local $ id name)
 
 export
 ||| Create a variable expression from a global name.
-globalVar : String -> LValue
+globalVar : String -> (LValue ?)
 globalVar name = Core.LVar (Global name)
 
 
@@ -304,7 +304,7 @@ metadataString str = MetadataString str
 
 export
 ||| Create a metadata value.
-metadataValue : WithType LValue -> Metadata
+metadataValue : WithType (LValue ?) -> Metadata
 metadataValue value = MetadataValue value
 
 export

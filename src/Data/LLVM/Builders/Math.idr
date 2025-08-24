@@ -25,111 +25,120 @@ export
 ||| @ lhs The left-hand side operand
 ||| @ rhs The right-hand side operand
 icmp :
+	{t0, t1 : Bool} ->
     (pred : Comparison) ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-icmp pred ty lhs rhs = (ICmp pred) ty lhs rhs
+icmp pred ty lhs rhs = (ICmp pred) ty (toRuntime (toRuntime lhs)) (toRuntime (toRuntime rhs))
 
 
 export
 ||| Create a floating point comparison operation.
 fcmp :
+	{t0, t1 : Bool} ->
     (ordered : Bool) ->
     {default [] fastMath : FastMath} ->
     (pred : Comparison) ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-fcmp True {fastMath} pred ty lhs rhs = (FCmpOrd fastMath pred) ty lhs rhs
-fcmp False {fastMath} pred ty lhs rhs = (FCmpUnOrd fastMath pred) ty lhs rhs
+fcmp True {fastMath} pred ty lhs rhs = (FCmpOrd fastMath pred) ty (toRuntime lhs) (toRuntime rhs)
+fcmp False {fastMath} pred ty lhs rhs = (FCmpUnOrd fastMath pred) ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create division operation (unsigned).
 udiv :
+	{t0, t1 : Bool} ->
     {default False exact : Bool} ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-udiv {exact = False} ty lhs rhs = UDiv ty lhs rhs
-udiv {exact = True} ty lhs rhs = UDivExact ty lhs rhs
+udiv {exact = False} ty lhs rhs = UDiv ty (toRuntime lhs) (toRuntime rhs)
+udiv {exact = True} ty lhs rhs = UDivExact ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create division operation (signed).
 sdiv :
+	{t0, t1 : Bool} ->
     {default False exact : Bool} ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-sdiv {exact = False} ty lhs rhs = SDiv ty lhs rhs  
-sdiv {exact = True} ty lhs rhs = SDivExact ty lhs rhs
+sdiv {exact = False} ty lhs rhs = SDiv ty (toRuntime lhs) (toRuntime rhs)  
+sdiv {exact = True} ty lhs rhs = SDivExact ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create floating point division operation.
 fdiv :
+	{t0, t1 : Bool} ->
     {default [] fastMath : FastMath} ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-fdiv {fastMath} ty lhs rhs = (FDiv fastMath) ty lhs rhs
+fdiv {fastMath} ty lhs rhs = (FDiv fastMath) ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create remainder operation (unsigned).
-urem : LType -> LValue -> LValue -> LExpr
-urem ty lhs rhs = URem ty lhs rhs
+urem : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+urem ty lhs rhs = URem ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create remainder operation (signed).
-srem : LType -> LValue -> LValue -> LExpr  
-srem ty lhs rhs = SRem ty lhs rhs
+srem : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr  
+srem ty lhs rhs = SRem ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create floating point remainder operation.
 frem :
+	{t0, t1 : Bool} ->
     {default [] fastMath : FastMath} ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-frem {fastMath} ty lhs rhs = (FRem fastMath) ty lhs rhs
+frem {fastMath} ty lhs rhs = (FRem fastMath) ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create shift left operation.
 shl :
+	{t0, t1 : Bool} ->
     {default Nothing wrap : Maybe Wrapping} ->
     (ty : LType) ->
-    (value : LValue) ->
-    (amount : LValue) ->
+    (value : (LValue t0)) ->
+    (amount : (LValue t1)) ->
     LExpr
-shl {wrap = Nothing} ty value amount = Shl ty value amount
-shl {wrap = Just w} ty value amount = (ShlWrap w) ty value amount
+shl {wrap = Nothing} ty value amount = Shl ty (toRuntime value) (toRuntime amount)
+shl {wrap = Just w} ty value amount = (ShlWrap w) ty (toRuntime value) (toRuntime amount)
 
 export
 ||| Create logical shift right operation.
 lshr :
+	{t0, t1 : Bool} ->
     {default False exact : Bool} ->
     (ty : LType) ->
-    (value : LValue) ->
-    (amount : LValue) ->
+    (value : (LValue t0)) ->
+    (amount : (LValue t1)) ->
     LExpr
-lshr {exact = False} ty value amount = LShr ty value amount
-lshr {exact = True} ty value amount = LShrExact ty value amount
+lshr {exact = False} ty value amount = LShr ty (toRuntime value) (toRuntime amount)
+lshr {exact = True} ty value amount = LShrExact ty (toRuntime value) (toRuntime amount)
 
 export
 ||| Create arithmetic shift right operation.
 ashr :
+	{t0, t1 : Bool} ->
     {default False exact : Bool} ->
     (ty : LType) ->
-    (value : LValue) ->
-    (amount : LValue) ->
+    (value : (LValue t0)) ->
+    (amount : (LValue t1)) ->
     LExpr
-ashr {exact = False} ty value amount = AShr ty value amount
-ashr {exact = True} ty value amount = AShrExact ty value amount
+ashr {exact = False} ty value amount = AShr ty (toRuntime value) (toRuntime amount)
+ashr {exact = True} ty value amount = AShrExact ty (toRuntime value) (toRuntime amount)
 
 export
 ||| Create bitwise AND operation.
@@ -140,8 +149,8 @@ export
 ||| @ ty The integer type of both operands (must be the same)
 ||| @ lhs The left-hand side operand
 ||| @ rhs The right-hand side operand
-and : LType -> LValue -> LValue -> LExpr
-and ty lhs rhs = And ty lhs rhs
+and : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+and ty lhs rhs = And ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create bitwise OR operation.
@@ -155,13 +164,14 @@ export
 ||| @ lhs The left-hand side operand
 ||| @ rhs The right-hand side operand
 or :
+	{t0, t1 : Bool} ->
     {default False disjoint : Bool} ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-or {disjoint = False} ty lhs rhs = Or ty lhs rhs
-or {disjoint = True} ty lhs rhs = DisjointOr ty lhs rhs
+or {disjoint = False} ty lhs rhs = Or ty (toRuntime lhs) (toRuntime rhs)
+or {disjoint = True} ty lhs rhs = DisjointOr ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create bitwise XOR operation.
@@ -172,8 +182,8 @@ export
 ||| @ ty The integer type of both operands (must be the same)
 ||| @ lhs The left-hand side operand
 ||| @ rhs The right-hand side operand
-xor : LType -> LValue -> LValue -> LExpr
-xor ty lhs rhs = Xor ty lhs rhs
+xor : {t0, t1 : Bool} ->  LType -> (LValue t0) -> (LValue t1) -> LExpr
+xor ty lhs rhs = Xor ty (toRuntime lhs) (toRuntime rhs)
 
 
 export
@@ -185,8 +195,8 @@ export
 ||| @ ty The integer type of both operands (must be the same)
 ||| @ lhs The left-hand side operand
 ||| @ rhs The right-hand side operand
-add : LType -> LValue -> LValue -> LExpr
-add ty lhs rhs = Add ty lhs rhs
+add : {t0, t1 : Bool} ->  LType -> (LValue t0) -> (LValue t1) -> LExpr
+add ty lhs rhs = Add ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create a subtract operation.
@@ -197,8 +207,8 @@ export
 ||| @ ty The integer type of both operands (must be the same)
 ||| @ lhs The left-hand side operand (minuend)
 ||| @ rhs The right-hand side operand (subtrahend)
-sub : LType -> LValue -> LValue -> LExpr
-sub ty lhs rhs = Sub ty lhs rhs
+sub : {t0, t1 : Bool} ->  LType -> (LValue t0) -> (LValue t1) -> LExpr
+sub ty lhs rhs = Sub ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create a multiply operation.
@@ -209,19 +219,20 @@ export
 ||| @ ty The integer type of both operands (must be the same)
 ||| @ lhs The left-hand side operand
 ||| @ rhs The right-hand side operand
-mul : LType -> LValue -> LValue -> LExpr
-mul ty lhs rhs = Mul ty lhs rhs
+mul : {t0, t1 : Bool} ->  LType -> (LValue t0) -> (LValue t1) -> LExpr
+mul ty lhs rhs = Mul ty (toRuntime lhs) (toRuntime rhs)
 
 
 export
 ||| Create a truncate operation.
 trunc :
+	{t0 : Bool} ->
     {default Nothing wrap : Maybe Wrapping} ->
-    (from : WithType LValue) ->
+    (from : WithType (LValue t0)) ->
     (to : LType) ->
     LExpr
-trunc {wrap = Nothing} from to = (Trunc NoSignedUnsigned) from to
-trunc {wrap = Just w} from to = (Trunc w) from to
+trunc {wrap = Nothing} from to = (Trunc NoSignedUnsigned)  (toRuntime' from) to
+trunc {wrap = Just w} from to = (Trunc w)  (toRuntime' from) to
 
 export
 ||| Create a zero extend operation.
@@ -231,8 +242,8 @@ export
 |||
 ||| @ from The typed source value with smaller bit width
 ||| @ to The target type with larger bit width
-zext : (from : WithType LValue) -> (to : LType) -> LExpr
-zext from to = ZExt from to
+zext : {t : Bool} -> (from : WithType (LValue t)) -> (to : LType) -> LExpr
+zext from to = ZExt  (toRuntime' from) to
 
 export
 ||| Create a sign extend operation.
@@ -242,8 +253,8 @@ export
 |||
 ||| @ from The typed source value with smaller bit width
 ||| @ to The target type with larger bit width
-sext : (from : WithType LValue) -> (to : LType) -> LExpr
-sext from to = SExt from to
+sext : {t : Bool} -> (from : WithType (LValue t)) -> (to : LType) -> LExpr
+sext from to = SExt  (toRuntime' from) to
 
 export
 ||| Create a bitcast operation.
@@ -254,26 +265,28 @@ export
 |||
 ||| @ from The typed source value to reinterpret
 ||| @ to The target type to reinterpret as
-bitcast : (from : WithType LValue) -> (to : LType) -> LExpr
-bitcast from to = BitCast from to
+bitcast : {t : Bool} -> (from : WithType (LValue t)) -> (to : LType) -> LExpr
+bitcast from to = BitCast  (toRuntime' from) to
 
 export
 ||| Create a floating point truncate operation.
 fptrunc :
+	{t0 : Bool} ->
     {default [] fastMath : FastMath} ->
-    (from : WithType LValue) ->
+    (from : WithType (LValue t0)) ->
     (to : LType) ->
     LExpr
-fptrunc {fastMath} from to = (FPTrunc fastMath) from to
+fptrunc {fastMath} from to = (FPTrunc fastMath)  (toRuntime' from) to
 
 export
 ||| Create a floating point extend operation.
 fpext :
+    {t0 : Bool} ->
     {default [] fastMath : FastMath} ->
-    (from : WithType LValue) ->
+    (from : WithType (LValue t0)) ->
     (to : LType) ->
     LExpr
-fpext {fastMath} from to = (FPExt fastMath) from to
+fpext {fastMath} from to = (FPExt fastMath)  (toRuntime' from) to
 
 
 -- Additional missing builders that were identified in the audit:
@@ -282,127 +295,134 @@ fpext {fastMath} from to = (FPExt fastMath) from to
 export
 ||| Create addition with wrapping flags.
 addWrap :
+	{t0, t1 : Bool} ->
     (wrap : Wrapping) ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-addWrap wrap ty lhs rhs = (AddWrap wrap) ty lhs rhs
+addWrap wrap ty lhs rhs = (AddWrap wrap) ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create subtraction with wrapping flags.
 subWrap :
+	{t0, t1 : Bool} ->
     (wrap : Wrapping) ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-subWrap wrap ty lhs rhs = (SubWrap wrap) ty lhs rhs
+subWrap wrap ty lhs rhs = (SubWrap wrap) ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create multiplication with wrapping flags.
 mulWrap :
+	{t0, t1 : Bool} ->
     (wrap : Wrapping) ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-mulWrap wrap ty lhs rhs = (MulWrap wrap) ty lhs rhs
+mulWrap wrap ty lhs rhs = (MulWrap wrap) ty (toRuntime lhs) (toRuntime rhs)
 
 -- 2. Missing enhanced shift operations
 export
 ||| Create shift left with wrapping flags.
 shlWrap :
+	{t0, t1 : Bool} ->
     (wrap : Wrapping) ->
     (ty : LType) ->
-    (value : LValue) ->
-    (amount : LValue) ->
+    (value : (LValue t0)) ->
+    (amount : (LValue t1)) ->
     LExpr
-shlWrap wrap ty value amount = (ShlWrap wrap) ty value amount
+shlWrap wrap ty value amount = (ShlWrap wrap) ty (toRuntime value) (toRuntime amount)
 
 -- 3. Missing enhanced comparison builders with specific predicates
 export
 ||| Integer comparison: equal.
-icmpEq : LType -> LValue -> LValue -> LExpr
-icmpEq = icmp CEq
+icmpEq : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+icmpEq t x y = icmp CEq t x y
 
 export
 ||| Integer comparison: not equal.
-icmpNe : LType -> LValue -> LValue -> LExpr
-icmpNe = icmp CNe
+icmpNe : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+icmpNe t x y = icmp CNe t x y
 
 export
 ||| Integer comparison: unsigned less than.
-icmpULt : LType -> LValue -> LValue -> LExpr
-icmpULt = icmp CULt
+icmpULt : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+icmpULt t x y = icmp CULt t x y
 
 export
 ||| Integer comparison: signed less than.
-icmpSLt : LType -> LValue -> LValue -> LExpr
-icmpSLt = icmp CSLt
+icmpSLt : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+icmpSLt t x y = icmp CSLt t x y
 
 export
 ||| Integer comparison: unsigned greater than.
-icmpUGt : LType -> LValue -> LValue -> LExpr
-icmpUGt = icmp CUGt
+icmpUGt : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+icmpUGt t x y = icmp CUGt t x y
 
 export
 ||| Integer comparison: signed greater than.
-icmpSGt : LType -> LValue -> LValue -> LExpr
-icmpSGt = icmp CSGt
+icmpSGt : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+icmpSGt t x y = icmp CSGt t x y
 
 export
 ||| Integer comparison: unsigned less than or equal.
-icmpULe : LType -> LValue -> LValue -> LExpr
-icmpULe = icmp CULe
+icmpULe : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+icmpULe t x y = icmp CULe t x y
 
 export
 ||| Integer comparison: signed less than or equal.
-icmpSLe : LType -> LValue -> LValue -> LExpr
-icmpSLe = icmp CSLe
+icmpSLe : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+icmpSLe t x y = icmp CSLe t x y
 
 export
 ||| Integer comparison: unsigned greater than or equal.
-icmpUGe : LType -> LValue -> LValue -> LExpr
-icmpUGe = icmp CUGe
+icmpUGe : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+icmpUGe t x y = icmp CUGe t x y
 
 export
 ||| Integer comparison: signed greater than or equal.
-icmpSGe : LType -> LValue -> LValue -> LExpr
-icmpSGe = icmp CSGe
+icmpSGe : {t0, t1 : Bool} -> LType -> (LValue t0) -> (LValue t1) -> LExpr
+icmpSGe t x y = icmp CSGe t x y
 
 
 export
 ||| Create a floating point negation operation.
-fneg : LType -> LValue -> LExpr
+fneg : LType -> (LValue ?) -> LExpr
 fneg ty operand = FNeg ty operand
 
 export
 ||| Create floating point addition with fast math flags.
 fadd :
+	{t0, t1 : Bool} ->
     {default [] fastMath : FastMath} ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-fadd {fastMath} ty lhs rhs = (FAdd fastMath) ty lhs rhs
+fadd {fastMath} ty lhs rhs = (FAdd fastMath) ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create floating point subtraction with fast math flags.
 fsub :
+	{t0, t1 : Bool} ->
     {default [] fastMath : FastMath} ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-fsub {fastMath} ty lhs rhs = (FSub fastMath) ty lhs rhs
+fsub {fastMath} ty lhs rhs = (FSub fastMath) ty (toRuntime lhs) (toRuntime rhs)
 
 export
 ||| Create floating point multiplication with fast math flags.
 fmul :
+	{t0, t1 : Bool} ->
     {default [] fastMath : FastMath} ->
     (ty : LType) ->
-    (lhs : LValue) ->
-    (rhs : LValue) ->
+    (lhs : (LValue t0)) ->
+    (rhs : (LValue t1)) ->
     LExpr
-fmul {fastMath} ty lhs rhs = (FMul fastMath) ty lhs rhs
+fmul {fastMath} ty lhs rhs = (FMul fastMath) ty (toRuntime lhs) (toRuntime rhs)

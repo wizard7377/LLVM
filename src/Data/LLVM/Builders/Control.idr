@@ -10,6 +10,7 @@ import Data.Walk
 import Data.LLVM.IR.Util
 import Data.LLVM.Builders.Core
 import Data.LLVM.Builders.Ops
+import Data.Table
 
 export
 ||| Create a function definition with comprehensive configuration options.
@@ -52,11 +53,11 @@ functionDef :
     {default Nothing comdat : Maybe Name} ->
     {default Nothing alignment : Maybe Int} ->
     {default Nothing gc : Maybe String} ->
-    {default Nothing fprefix : Maybe LValue} ->
-    {default Nothing prologue : Maybe LValue} ->
-    {default Nothing personality : Maybe LValue} ->
+    {default Nothing fprefix : Maybe (LValue True)} ->
+    {default Nothing prologue : Maybe (LValue True)} ->
+    {default Nothing personality : Maybe (LValue True)} ->
     {default [] metadata : List Metadata} ->
-    (body : List BasicBlock) ->
+    (body : Table BasicBlock) ->
     {default neutral tags : Annotation} ->
     FunctionDef
 functionDef name {symbolInfo} {callingConvention} {returnAttrs} retType args {addressInfo} {addressSpace} {fnAttributes} {section} {partition} {comdat} {alignment} {gc} {fprefix} {prologue} {personality} {metadata} body {tags} =
@@ -112,8 +113,8 @@ functionDec :
     {default Nothing addressInfo : Maybe AddressInfo} ->
     {default Nothing alignment : Maybe Int} ->
     {default Nothing gc : Maybe String} ->
-    {default Nothing fprefix : Maybe LValue} ->
-    {default Nothing prologue : Maybe LValue} ->
+    {default Nothing fprefix : Maybe (LValue True)} ->
+    {default Nothing prologue : Maybe (LValue True)} ->
     {default neutral tags : Annotation} ->
     FunctionDec
 functionDec name {symbolInfo} {callingConvention} {returnAttrs} retType args {addressInfo} {alignment} {gc} {fprefix} {prologue} {tags} =
@@ -138,8 +139,8 @@ export
 |||
 ||| @ ty The type of the value being returned
 ||| @ expr The expression representing the value to return
-ret : LType -> LValue -> Terminator
-ret ty expr = (id (Ret ty expr)) 
+ret : LType -> (LValue _) -> Terminator
+ret ty expr = (id (Ret ty $ toRuntime expr)) 
 
 export
 ||| Create a void return statement.
@@ -159,8 +160,8 @@ export
 ||| @ cond Boolean expression to test (must be i1 type)
 ||| @ trueLabel Expression representing the label to jump to if condition is true
 ||| @ falseLabel Expression representing the label to jump to if condition is false
-condBr : LValue -> Label -> Label -> Terminator
-condBr cond trueLabel falseLabel = (id (CondBr cond trueLabel falseLabel)) 
+condBr : (LValue _) -> Label -> Label -> Terminator
+condBr cond trueLabel falseLabel = (id (CondBr (toRuntime cond) trueLabel falseLabel)) 
 
 export
 ||| Create an unconditional branch statement.
@@ -183,10 +184,10 @@ export
 ||| @ address Expression that computes the target address at runtime
 ||| @ possibleDests List of possible destination labels for static analysis
 indirectBr :
-    (address : LValue) ->
-    (possibleDests : List LValue) ->
+    (address : (LValue _)) ->
+    (possibleDests : List (LValue _)) ->
     Terminator
-indirectBr address dests = (id (IndirectBr address dests)) 
+indirectBr address dests = (id (IndirectBr (toRuntime address) (toRuntime <$> dests))) 
 
 export
 ||| Create an invoke instruction (function call with exception handling).
@@ -243,10 +244,10 @@ export
 load :
     {default False volatile : Bool} ->
     (ty : LType) ->
-    (ptr : LValue) ->
+    (ptr : (LValue _)) ->
     {default Nothing align : Maybe Nat} ->
     LExpr
-load {volatile} ty ptr {align} = (LoadRegular volatile ty ptr align False False False False Nothing Nothing Nothing False)
+load {volatile} ty ptr {align} = (LoadRegular volatile ty (toRuntime ptr) align False False False False Nothing Nothing Nothing False)
 
 export
 ||| Create a simple store operation.
@@ -260,37 +261,37 @@ export
 ||| @ align Optional alignment requirement for the store
 store :
     {default False volatile : Bool} ->
-    (value : WithType LValue) ->
-    (ptr : LValue) ->
+    (value : WithType (LValue _)) ->
+    (ptr : (LValue _)) ->
     {default Nothing align : Maybe Nat} ->
     LExpr
-store {volatile} value ptr {align} = (StoreRegular volatile value ptr align False False)
+store {volatile} value ptr {align} = (StoreRegular volatile(toRuntime' value) (toRuntime ptr) align False False)
 
 export
 ||| Create an atomic load operation.
 loadAtomic :
     {default False volatile : Bool} ->
     (ty : LType) ->
-    (ptr : LValue) ->
+    (ptr : (LValue _)) ->
     {default Nothing scope : Maybe String} ->
     {default Nothing ordering : Maybe AtomicOrder} ->
     {default Nothing align : Maybe Nat} ->
     LExpr
 loadAtomic {volatile} ty ptr {scope} {ordering} {align} = 
-    (LoadAtomic volatile ty ptr scope ordering align False False)
+    (LoadAtomic volatile ty (toRuntime ptr) scope ordering align False False)
 
 export
 ||| Create an atomic store operation.
 storeAtomic :
     {default False volatile : Bool} ->
-    (value : WithType LValue) ->
-    (ptr : LValue) ->
+    (value : WithType (LValue _)) ->
+    (ptr : (LValue _)) ->
     {default Nothing scope : Maybe String} ->
     {default Nothing ordering : Maybe AtomicOrder} ->
     {default Nothing align : Maybe Nat} ->
     LExpr
 storeAtomic {volatile} value ptr {scope} {ordering} {align} = 
-    (StoreAtomic volatile value ptr scope ordering align False)
+    (StoreAtomic volatile(toRuntime' value) (toRuntime ptr) scope ordering align False)
 
 export
 ||| Create a switch statement with default case and branches.
@@ -305,11 +306,11 @@ export
 ||| @ cases List of case branches with values and target labels
 mkSwitch :
     (ty : LType) ->
-    (value : LValue) ->
-    (defaultLabel : Name) ->
+    (value : (LValue _)) ->
+    (defaultLabel : Label) ->
     (cases : List CaseBranch) ->
     Terminator
-mkSwitch ty value defaultLabel cases = (id (Switch ty value defaultLabel cases))
+mkSwitch ty value defaultLabel cases = (id (Switch ty (toRuntime value) defaultLabel cases))
 
 export
 ||| Create a case branch for switch statements.
@@ -323,10 +324,10 @@ export
 ||| @ label The target label to jump to when this case matches
 caseBranch : 
     (tpe : LType) ->
-    (value : LValue) ->
+    (value : (LValue True)) ->
     (label : Label) -> 
     CaseBranch
-caseBranch tpe value label = MkCaseBranch tpe value label
+caseBranch tpe value label = MkCaseBranch tpe ( value) label
 
 
 export
@@ -369,12 +370,12 @@ fnCall :
     {default [] returnAttrs : List Attribute} ->
     {default Nothing addressSpace : Maybe AddressSpace} ->
     (tpe : LType) ->
-    (fnval : LValue) ->
-    (args : List (WithType LValue)) ->
+    (fnval : (LValue _)) ->
+    (args : List (WithType (LValue _))) ->
     {default [] fnAttrs : List Attribute} ->
     FnCall
 fnCall {tail} {fastMath} {cc} {returnAttrs} {addressSpace} tpe fnval args {fnAttrs} =
-    MkFnCall tail fastMath cc returnAttrs addressSpace tpe fnval args fnAttrs
+    MkFnCall tail fastMath cc returnAttrs addressSpace tpe (toRuntime fnval) (toRuntime' <$> args) fnAttrs
 
 mutual
     export
@@ -389,8 +390,8 @@ mutual
     ||| @ args List of typed arguments to pass to the function
     simpleFnCall : 
         (tpe : LType) ->
-        (fnval : LValue) ->
-        (args : List (WithType LValue)) ->
+        (fnval : (LValue _)) ->
+        (args : List (WithType (LValue _))) ->
         FnCall
     simpleFnCall tpe fnval args = fnCall tpe fnval args
 
@@ -402,9 +403,9 @@ mutual
 
     export
     ||| Create a simple function call operation.
-    simpleCall : LType -> LValue -> List (WithType LValue) -> LExpr
+    simpleCall : {t0, t1 : Bool} -> LType -> (LValue t0) -> List (WithType (LValue t1)) -> LExpr
     simpleCall ty fn args = call (simpleFnCall ty fn args)
-
+-- TODO: Finish making all of these not `_`
 
 
 
@@ -418,11 +419,12 @@ export
 ||| @ element The typed scalar element to insert
 ||| @ index The typed index expression specifying the insertion position
 insertElement :
-    (vector : WithType LValue) ->
-    (element : WithType LValue) ->
-    (index : WithType LValue) ->
+    {t0, t1, t2 : Bool} ->
+    (vector : WithType (LValue t0)) ->
+    (element : WithType (LValue t1)) ->
+    (index : WithType (LValue t2)) ->
     LExpr
-insertElement vector element index = (InsertElement vector element index)
+insertElement vector element index = (InsertElement (cast vector) (cast element) (cast index))
 
 export
 ||| Create an extract element operation.
@@ -433,10 +435,10 @@ export
 ||| @ vector The typed source vector to extract from
 ||| @ index The typed index expression specifying the extraction position
 extractElement :
-    (vector : WithType LValue) ->
-    (index : WithType LValue) ->
+    (vector : WithType (LValue _)) ->
+    (index : WithType (LValue _)) ->
     LExpr
-extractElement vector index = (ExtractElement vector index)
+extractElement vector index = (ExtractElement (cast vector) (cast index))
 
 export
 ||| Create a shuffle vector operation.
@@ -449,11 +451,11 @@ export
 ||| @ vec2 The second typed input vector
 ||| @ mask The typed mask vector specifying the shuffle pattern
 shuffleVector :
-    (vec1 : WithType LValue) ->
-    (vec2 : WithType LValue) ->
-    (mask : WithType LValue) ->
+    (vec1 : WithType (LValue _)) ->
+    (vec2 : WithType (LValue _)) ->
+    (mask : WithType (LValue _)) ->
     LExpr
-shuffleVector vec1 vec2 mask = (ShuffleVector vec1 vec2 mask)
+shuffleVector vec1 vec2 mask = (ShuffleVector (cast vec1) (cast vec2) (cast mask))
 
 export
 ||| Create an extract value operation.
@@ -464,10 +466,10 @@ export
 ||| @ aggregate The typed aggregate value to extract from
 ||| @ index The constant index specifying which field/element to extract
 extractValue :
-    (aggregate : WithType LValue) ->
+    (aggregate : WithType (LValue _)) ->
     (index : Nat) ->
     LExpr
-extractValue aggregate index = (ExtractValue aggregate index)
+extractValue aggregate index = (ExtractValue (cast aggregate) index)
 
 export
 ||| Create an insert value operation.
@@ -479,11 +481,11 @@ export
 ||| @ element The typed value to insert
 ||| @ index The constant index specifying where to insert the value
 insertValue :
-    (aggregate : WithType LValue) ->
-    (element : WithType LValue) ->
+    (aggregate : WithType (LValue _)) ->
+    (element : WithType (LValue _)) ->
     (index : Nat) ->
     LExpr
-insertValue aggregate element index = (InsertValue aggregate element index)
+insertValue aggregate element index = (InsertValue (cast aggregate) (cast element) index)
 
 export
 ||| Create a PHI node.
@@ -496,9 +498,12 @@ export
 ||| @ incomingValues List of (value, label) pairs for each predecessor block
 phi :
     (ty : LType) ->
-    (incomingValues : List (LValue, Label)) ->
+    (incomingValues : List ((LValue _), Label)) ->
     LExpr
-phi ty incoming = (Phi ty incoming)
+phi ty incoming = (Phi ty $ each <$> incoming)
+  where 
+    each : (LValue _, Label) -> (LValue False, Label) 
+    each (v, l) = (cast v, l)
 
 export
 ||| Create a select operation.
@@ -513,11 +518,11 @@ export
 ||| @ falseValue The typed value to select if condition is false
 select :
     {default [] fastMath : FastMath} ->
-    (condition : WithType LValue) ->
-    (trueValue : WithType LValue) ->
-    (falseValue : WithType LValue) ->
+    (condition : WithType (LValue _)) ->
+    (trueValue : WithType (LValue _)) ->
+    (falseValue : WithType (LValue _)) ->
     LExpr
-select {fastMath} condition trueValue falseValue = (Select fastMath condition trueValue falseValue)
+select {fastMath} condition trueValue falseValue = (Select fastMath (toRuntime' condition) (toRuntime' trueValue) (toRuntime' falseValue))
 
 export
 ||| Create a freeze operation.
@@ -527,8 +532,8 @@ export
 ||| in LLVM IR optimization.
 |||
 ||| @ value The typed value to freeze
-freeze : (value : WithType LValue) -> LExpr
-freeze value = (Freeze value)
+freeze : (value : WithType (LValue _)) -> LExpr
+freeze value = (Freeze(toRuntime' value))
 
 export
 ||| Create an invoke call with configurable options.
@@ -550,13 +555,13 @@ invokeCall :
     {default [] returnAttrs : List Attribute} ->
     {default Nothing addressSpace : Maybe AddressSpace} ->
     (tpe : LType) ->
-    (fnval : LValue) ->
-    (args : List LValue) ->
+    (fnval : (LValue _)) ->
+    (args : List (LValue _)) ->
     (normal : Label) ->
     (unwind : Label) ->
     InvokeCall
 invokeCall {cc} {returnAttrs} {addressSpace} tpe fnval args normal unwind =
-    MkInvokeCall cc returnAttrs addressSpace tpe fnval args normal unwind
+    MkInvokeCall cc returnAttrs addressSpace tpe (toRuntime fnval) (toRuntime <$> args) normal unwind
 
 -- Example usage of the builder functions
 
@@ -564,23 +569,23 @@ invokeCall {cc} {returnAttrs} {addressSpace} tpe fnval args normal unwind =
 -- 4. Missing advanced terminator builders
 export
 ||| Create a resume instruction for exception propagation.
-resume : LType -> LValue -> Terminator
-resume ty value =  (id (Resume ty value)) 
+resume : LType -> (LValue _) -> Terminator
+resume ty value =  (id (Resume ty (toRuntime value))) 
 
 export
 ||| Create a catch return instruction.
-catchRet : LValue -> Label -> Terminator
-catchRet value label =  (id (CatchRet value label)) 
+catchRet : (LValue _) -> Label -> Terminator
+catchRet value label =  (id (CatchRet (toRuntime value) label)) 
 
 export
 ||| Create a cleanup return to caller.
-cleanupRetCaller : LValue -> Terminator
-cleanupRetCaller value =  (id (CleanupRetCaller value)) 
+cleanupRetCaller : (LValue _) -> Terminator
+cleanupRetCaller value =  (id (CleanupRetCaller (toRuntime value))) 
 
 export
 ||| Create a cleanup return to specific label.
-cleanupRet : LValue -> Label -> Terminator
-cleanupRet value label =  (id (CleanupRet value label)) 
+cleanupRet : (LValue _) -> Label -> Terminator
+cleanupRet value label =  (id (CleanupRet (toRuntime value) label)) 
 
 export
 ||| Create a call branch instruction.
@@ -600,23 +605,23 @@ landingPadCleanup ty clauses = (LandingPadCleanup ty clauses)
 
 export
 ||| Create a catch pad instruction.
-catchPad : Name -> LValue -> LExpr
-catchPad name value = (CatchPad name value)
+catchPad : Name -> (LValue _) -> LExpr
+catchPad name value = (CatchPad name (toRuntime value))
 
 export
 ||| Create a cleanup pad instruction.
-cleanupPad : Name -> LValue -> LExpr
-cleanupPad name value = (CleanupPad name value)
+cleanupPad : Name -> (LValue _) -> LExpr
+cleanupPad name value = (CleanupPad name (toRuntime value))
 
 export
 ||| Create a catch clause.
-catching : LType -> LValue -> CatchClause
-catching ty value = Catching ty value
+catching : LType -> (LValue _) -> CatchClause
+catching ty value = Catching ty (toRuntime value)
 
 export
 ||| Create a filter clause.
-filtering : LType -> LValue -> CatchClause
-filtering ty value = Filtering ty value
+filtering : LType -> (LValue _) -> CatchClause
+filtering ty value = Filtering ty (toRuntime value)
 
 export
 ||| Create a catch switch instruction.
@@ -636,13 +641,13 @@ brCall :
     {default [] returnAttrs : List Attribute} ->
     {default Nothing addressSpace : Maybe AddressSpace} ->
     (tpe : LType) ->
-    (fnval : LValue) ->
-    (args : List LValue) ->
+    (fnval : (LValue _)) ->
+    (args : List (LValue _)) ->
     (fallthrough : Label) ->
     (indirect : List Label) ->
     BrCall
 brCall {cc} {returnAttrs} {addressSpace} tpe fnval args fallthrough indirect =
-    MkBrCall cc returnAttrs addressSpace tpe fnval args fallthrough indirect
+    MkBrCall cc returnAttrs addressSpace tpe (toRuntime fnval) (toRuntime <$> args) fallthrough indirect
 
 
 

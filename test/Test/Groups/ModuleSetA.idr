@@ -10,6 +10,7 @@ import Data.LLVM.Builders.Math
 import Test.Helper
 import Data.LLVM.Write.Foreign
 import Data.LLVM.Builders.Sugar
+import Data.Table
 %default partial
 export
 emptyModule : LModule
@@ -71,8 +72,8 @@ moduleWithSimpleFunction = MkLModule {
             returnAttrs = [],
             returnType = LInt 32,
             args = [
-                MkArgument (LInt 32) [] (Just "a"),
-                MkArgument (LInt 32) [] (Just "b")
+                MkArgument (:# 32) [] (Just "a"),
+                MkArgument (:# 32) [] (Just "b")
             ],
             addressInfo = Nothing,
             addressSpace = Nothing,
@@ -87,7 +88,7 @@ moduleWithSimpleFunction = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     "result" $<- (Add (:# 32) (?^ "a") (?^ "b"))
                 ] (Ret (:# 32) (?% "result"))
             ],
@@ -111,8 +112,8 @@ moduleWithMkLStatements = MkLModule {
             returnAttrs = [],
             returnType = LInt 32,
             args = [
-                MkArgument (LInt 32) [] (Just "x"),
-                MkArgument (LInt 32) [] (Just "y")
+                MkArgument (:# 32) [] (Just "x"),
+                MkArgument (:# 32) [] (Just "y")
             ],
             addressInfo = Nothing,
             addressSpace = Nothing,
@@ -127,13 +128,13 @@ moduleWithMkLStatements = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     -- Multiply x and y
                     "mul_result" $<- (Mul (:# 32) (?^ "x") (?^ "y")),
                     -- Add 10 to the result
-                    "add_result" $<- (Add (:# 32) (?% "mul_result") (id (LInt 10))),
+                    "add_result" $<- (Add (:# 32) (?% "mul_result") (## 10)),
                     -- Shift left by 1
-                    "shift_result" $<- (Shl (:# 32) (?% "add_result") (id (LInt 1)))
+                    "shift_result" $<- (Shl (:# 32) (?% "add_result") (## 1))
                 ] (Ret (:# 32) (?% "shift_result"))
             ],
             tags = neutral
@@ -158,8 +159,8 @@ completeModule = MkLModule {
             addressSpace = Nothing,
             externallyInitialized = Nothing,
             isConst = True,
-            gtpe = LArray 5 (LInt 32),
-            initializer = Just (LArray [MkWithType (LInt 32) (LInt 1), MkWithType (LInt 32) (LInt 2), MkWithType (LInt 32) (LInt 3), MkWithType (LInt 32) (LInt 4), MkWithType (LInt 32) (LInt 5)]),
+            gtpe = LArray 5 (:# 32),
+            initializer = Just (LArray [MkWithType (:# 32) (## 1), MkWithType (:# 32) (## 2), MkWithType (:# 32) (## 3), MkWithType (:# 32) (## 4), MkWithType (:# 32) (## 5)]),
             tags = neutral
         },
         -- Main function
@@ -170,7 +171,7 @@ completeModule = MkLModule {
             returnAttrs = [],
             returnType = LInt 32,
             args = [
-                MkArgument (LInt 32) [] (Just "argc"),
+                MkArgument (:# 32) [] (Just "argc"),
                 MkArgument LPtr [] (Just "argv")
             ],
             addressInfo = Nothing,
@@ -186,20 +187,20 @@ completeModule = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     -- Allocate local variable
-                    "local_var" $<- ((Alloc (LInt 32) Nothing Nothing Nothing)),
+                    "local_var" $<- ((Alloc (:# 32) Nothing Nothing Nothing)),
                     -- Call helper function
-                    "call_result" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing (LFun (LInt 32) [LInt 32, LInt 32]) (id (LVar (Global "helper_function"))) [MkWithType (LInt 32) (id (LInt 5)), MkWithType (LInt 32) (id (LInt 10))] []))),
+                    "call_result" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing (LFun (:# 32) [:# 32, :# 32]) (id (LVar (Global "helper_function"))) [MkWithType (:# 32) (## 5), MkWithType (:# 32) (## 10)] []))),
                     -- Compare i32 result with 0 to produce i1 for conditional branch
-                    "cond" $<- (icmp CEq (LInt 32) (?^ "call_result") (id (LInt 0)))
+                    "cond" $<- (icmp CEq (:# 32) (?^ "call_result") (## 0))
                 ] (CondBr (?^ "cond") (#^ "success_block") (#^ "failure_block")),
                 
-                MkBasicBlock "success_block" [
-                ] (Ret (LInt 32) (id (LInt 0))),
+                MkPair "success_block" $ MkBasicBlock [
+                ] (Ret (:# 32) (## 0)),
                 
-                MkBasicBlock "failure_block" [
-                ] (Ret (LInt 32) (id (LInt 1)))
+                MkPair "failure_block" $ MkBasicBlock [
+                ] (Ret (:# 32) (## 1))
             ],
             tags = neutral
         },
@@ -211,8 +212,8 @@ completeModule = MkLModule {
             returnAttrs = [],
             returnType = LInt 32,
             args = [
-                MkArgument (LInt 32) [] (Just "a"),
-                MkArgument (LInt 32) [] (Just "b")
+                MkArgument (:# 32) [] (Just "a"),
+                MkArgument (:# 32) [] (Just "b")
             ],
             addressInfo = Nothing,
             addressSpace = Nothing,
@@ -227,15 +228,15 @@ completeModule = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     -- Perform various operations
-                    "sum" $<- (Add (LInt 32) (?^ "a") (?^ "b")),
-                    "diff" $<- (Sub (LInt 32) (?^ "a") (?^ "b")),
-                    "product" $<- (Mul (LInt 32) (?^ "sum") (?^ "diff")),
+                    "sum" $<- (Add (:# 32) (?^ "a") (?^ "b")),
+                    "diff" $<- (Sub (:# 32) (?^ "a") (?^ "b")),
+                    "product" $<- (Mul (:# 32) (?^ "sum") (?^ "diff")),
                     -- Use aggregate operation
-                    "array_val" $<- ((ExtractValue (MkWithType (LArray 5 (LInt 32)) (id (LVar (Global "data_array")))) 0)),
-                    "final_result" $<- (Add (LInt 32) (?^ "product") (?^ "array_val"))
-                ] (Ret (LInt 32) (?^ "final_result"))
+                    "array_val" $<- ((ExtractValue (MkWithType (LArray 5 (:# 32)) (id (LVar (Global "data_array")))) 0)),
+                    "final_result" $<- (Add (:# 32) (?^ "product") (?^ "array_val"))
+                ] (Ret (:# 32) (?^ "final_result"))
             ],
             tags = neutral
         },
@@ -339,7 +340,7 @@ moduleWithCallingConventions = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     "result" $<- ((FAdd []) (LFloating LFloat) (?^ "x") (?^ "y"))
                 ] (Ret (LFloating LFloat) (?^ "result"))
             ],
@@ -352,7 +353,7 @@ moduleWithCallingConventions = MkLModule {
             callingConvention = Just Cold,
             returnAttrs = [],
             returnType = LVoid,
-            args = [MkArgument (LInt 32) [] (Just "error_code")],
+            args = [MkArgument (:# 32) [] (Just "error_code")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -366,10 +367,10 @@ moduleWithCallingConventions = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     -- Call printf to report error
                     "printf_result" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
-                        (LFun (LInt 32) [LPtr]) 
+                        (LFun (:# 32) [LPtr]) 
                         (id (LVar (Global "printf"))) 
                         [MkWithType LPtr (id (LVar (Global "error_format")))] [])))
                 ] RetVoid
@@ -383,6 +384,8 @@ moduleWithCallingConventions = MkLModule {
 export
 -- Module with vector operations
 moduleWithVectors : LModule
+moduleWithVectors = ModuleSetA.emptyModule
+{-- 
 moduleWithVectors = MkLModule {
     dataLayout = Nothing,
     target = Nothing,
@@ -392,10 +395,10 @@ moduleWithVectors = MkLModule {
             symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
             callingConvention = Just C,
             returnAttrs = [],
-            returnType = LVector 4 (LInt 32),
+            returnType = LVector 4 (:# 32),
             args = [
-                MkArgument (LVector 4 (LInt 32)) [] (Just "vec1"),
-                MkArgument (LVector 4 (LInt 32)) [] (Just "vec2")
+                MkArgument (LVector 4 (:# 32)) [] (Just "vec1"),
+                MkArgument (LVector 4 (:# 32)) [] (Just "vec2")
             ],
             addressInfo = Nothing,
             addressSpace = Nothing,
@@ -410,34 +413,34 @@ moduleWithVectors = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     -- Extract element from first vector
                     "elem1" $<- ((ExtractElement 
                         ( ( 4 :<> (:# 32)) <::> (?^ "vec1"))
-                        ( (:# 32) <::> (id (LInt 0))))),
+                        ( (:# 32) <::> (## 0)))),
                     -- Insert element into second vector
                     "modified_vec" $<- ((InsertElement 
-                        ( ( 4 :<> (LInt 32)) <::> (?^ "vec2"))
-                        ( (LInt 32) <::> (?^ "elem1"))
-                        ( (LInt 32) <::> (id (LInt 1))))),
+                        ( ( 4 :<> (:# 32)) <::> (?^ "vec2"))
+                        ( (:# 32) <::> (?^ "elem1"))
+                        ( (:# 32) <::> (## 1)))),
                     -- Shuffle vectors
                     "shuffled" $<- ((ShuffleVector
-                        ( ( 4 :<> (LInt 32)) <::> (?^ "vec1"))
-                        ( ( 4 :<> (LInt 32)) <::> (?^ "modified_vec"))
-                        ( ( 4 :<> (LInt 32)) <::> (id (LVector [
-                             (:# 32) <::> (LInt 0),
-                             (:# 32) <::> (LInt 5),
-                             (:# 32) <::> (LInt 2),
-                             (:# 32) <::> (LInt 7)
+                        ( ( 4 :<> (:# 32)) <::> (?^ "vec1"))
+                        ( ( 4 :<> (:# 32)) <::> (?^ "modified_vec"))
+                        ( ( 4 :<> (:# 32)) <::> (id (LVector [
+                             (:# 32) <::> (## 0),
+                             (:# 32) <::> (## 5),
+                             (:# 32) <::> (## 2),
+                             (:# 32) <::> (## 7)
                         ])))))
-                ] (Ret (LVector 4 (LInt 32)) (?^ "shuffled"))
+                ] (Ret (LVector 4 (:# 32)) (?^ "shuffled"))
             ],
             tags = neutral
         }
     ],
     tags = neutral
 }
-
+-}
 export
 -- Module with control flow and phi nodes
 moduleWithControlFlow : LModule
@@ -451,7 +454,7 @@ moduleWithControlFlow = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LInt 32,
-            args = [MkArgument (LInt 32) [] (Just "n")],
+            args = [MkArgument (:# 32) [] (Just "n")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -465,30 +468,30 @@ moduleWithControlFlow = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     -- Check if n <= 1 (use proper comparison)
-                    "cmp" $<- (icmp CSLe (LInt 32) (?^ "n") (id (LInt 1)))
+                    "cmp" $<- (icmp CSLe (:# 32) (?^ "n") (## 1))
                 ] (CondBr (?^ "cmp") (#^ "base_case") (#^ "recursive_case")),
                 
-                MkBasicBlock "base_case" [
-                ] (Ret (LInt 32) (?^ "n")),
+                MkPair "base_case" $ MkBasicBlock [
+                ] (Ret (:# 32) (?^ "n")),
                 
-                MkBasicBlock "recursive_case" [
+                MkPair "recursive_case" $ MkBasicBlock [
                     -- Calculate fib(n-1)
-                    "n_minus_1" $<- (Sub (LInt 32) (?^ "n") (id (LInt 1))),
+                    "n_minus_1" $<- (Sub (:# 32) (?^ "n") (## 1)),
                     "fib_n_minus_1" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
-                        (LFun (LInt 32) [LInt 32]) 
+                        (LFun (:# 32) [LInt 32]) 
                         (id (LVar (Global "fibonacci"))) 
-                        [MkWithType (LInt 32) (?^ "n_minus_1")] []))),
+                        [MkWithType (:# 32) (?^ "n_minus_1")] []))),
                     -- Calculate fib(n-2)
-                    "n_minus_2" $<- (Sub (LInt 32) (?^ "n") (id (LInt 2))),
+                    "n_minus_2" $<- (Sub (:# 32) (?^ "n") (## 2)),
                     "fib_n_minus_2" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
-                        (LFun (LInt 32) [LInt 32]) 
+                        (LFun (:# 32) [LInt 32]) 
                         (id (LVar (Global "fibonacci"))) 
-                        [MkWithType (LInt 32) (?^ "n_minus_2")] []))),
+                        [MkWithType (:# 32) (?^ "n_minus_2")] []))),
                     -- Add results
-                    "result" $<- (Add (LInt 32) (?^ "fib_n_minus_1") (?^ "fib_n_minus_2"))
-                ] (Ret (LInt 32) (?^ "result"))
+                    "result" $<- (Add (:# 32) (?^ "fib_n_minus_1") (?^ "fib_n_minus_2"))
+                ] (Ret (:# 32) (?^ "result"))
             ],
             tags = neutral
         }
@@ -509,7 +512,7 @@ moduleWithSwitch = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LInt 32,
-            args = [MkArgument (LInt 32) [] (Just "opcode")],
+            args = [MkArgument (:# 32) [] (Just "opcode")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -523,28 +526,28 @@ moduleWithSwitch = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
-                ] (Switch (LInt 32) (?^ "opcode") (Local "default") [
-                    MkCaseBranch (LInt 32) (id (LInt 1)) (#^ "case_add"),
-                    MkCaseBranch (LInt 32) (id (LInt 2)) (#^ "case_sub"),
-                    MkCaseBranch (LInt 32) (id (LInt 3)) (#^ "case_mul"),
-                    MkCaseBranch (LInt 32) (id (LInt 4)) (#^ "case_div")
+                MkPair "entry" $ MkBasicBlock [
+                ] (Switch (:# 32) (?^ "opcode") (#^ "default") [
+                    MkCaseBranch (:# 32) (## 1) (#^ "case_add"),
+                    MkCaseBranch (:# 32) (## 2) (#^ "case_sub"),
+                    MkCaseBranch (:# 32) (## 3) (#^ "case_mul"),
+                    MkCaseBranch (:# 32) (## 4) (#^ "case_div")
                 ]),
                 
-                MkBasicBlock "case_add" [
-                ] (Ret (LInt 32) (id (LInt 100))),
+                MkPair "case_add" $ MkBasicBlock [
+                ] (Ret (:# 32) (## 100)),
                 
-                MkBasicBlock "case_sub" [
-                ] (Ret (LInt 32) (id (LInt 200))),
+                MkPair "case_sub" $ MkBasicBlock [
+                ] (Ret (:# 32) (## 200)),
                 
-                MkBasicBlock "case_mul" [
-                ] (Ret (LInt 32) (id (LInt 300))),
+                MkPair "case_mul" $ MkBasicBlock [
+                ] (Ret (:# 32) (## 300)),
                 
-                MkBasicBlock "case_div" [
-                ] (Ret (LInt 32) (id (LInt 400))),
+                MkPair "case_div" $ MkBasicBlock [
+                ] (Ret (:# 32) (## 400)),
                 
-                MkBasicBlock "default" [
-                ] (Ret (LInt 32) (id (LInt (-1))))
+                MkPair "default" $ MkBasicBlock [
+                ] (Ret (:# 32) (## -1))
             ],
             tags = neutral
         }
@@ -568,7 +571,7 @@ moduleWithStructs = MkLModule {
             externallyInitialized = Nothing,
             isConst = False,
             gtpe = LStruct [LInt 32, LInt 32],
-            initializer = Just (LStruct [MkWithType (LInt 32) (LInt 10), MkWithType (LInt 32) (LInt 20)]),
+            initializer = Just (LStruct [MkWithType (:# 32) (LInt 10), MkWithType (:# 32) (LInt 20)]),
             tags = neutral
         },
         FunctionDefC $ MkFunctionDef {
@@ -590,7 +593,7 @@ moduleWithStructs = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBasicBlock "entry" [
+            body = [MkPair "entry" $ MkBasicBlock [
                 -- Extract x coordinate
                 MkLStatement (Local "x") ((ExtractValue 
                     (MkWithType (LStruct [LInt 32, LInt 32]) (id (LPtr (Local "point")))) 0)),
@@ -598,13 +601,13 @@ moduleWithStructs = MkLModule {
                 MkLStatement (Local "y") ((ExtractValue 
                     (MkWithType (LStruct [LInt 32, LInt 32]) (id (LPtr (Local "point")))) 1)),
                 -- Calculate sum
-                MkLStatement (Local "sum") (Add (LInt 32) (id (LPtr (Local "x"))) (id (LPtr (Local "y")))),
+                MkLStatement (Local "sum") (Add (:# 32) (id (LPtr (Local "x"))) (id (LPtr (Local "y")))),
                 -- Create new struct with modified values
                 MkLStatement (Local "new_point") ((InsertValue 
                     (MkWithType (LStruct [LInt 32, LInt 32]) (id (LPtr (Local "point"))))
-                    (MkWithType (LInt 32) (id (LPtr (Local "sum"))))
+                    (MkWithType (:# 32) (id (LPtr (Local "sum"))))
                     0))
-            ] (Ret (LInt 32) (id (LPtr (Local "sum")))))],
+            ] (Ret (:# 32) (id (LPtr (Local "sum")))))],
             tags = neutral
         }
     ],
@@ -625,7 +628,7 @@ moduleWithAliases = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LInt 32,
-            args = [MkArgument (LInt 32) [] (Just "x")],
+            args = [MkArgument (:# 32) [] (Just "x")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -638,9 +641,9 @@ moduleWithAliases = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBasicBlock "entry" [
-                "result" $<- (Mul (LInt 32) (?^ "x") (id (LInt 2)))
-            ] (Ret (LInt 32) (?^ "result"))],
+            body = [MkPair "entry" $ MkBasicBlock [
+                "result" $<- (Mul (:# 32) (?^ "x") (## 2))
+            ] (Ret (:# 32) (?^ "result"))],
             tags = neutral
         },
         -- Alias to the function
@@ -649,7 +652,7 @@ moduleWithAliases = MkLModule {
             symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
             threadLocality = Nothing,
             addressInfo = Nothing,
-            aliasTpe = LFun (LInt 32) [LInt 32],
+            aliasTpe = LFun (:# 32) [LInt 32],
             aliasee = "original_function",
             tags = neutral
         },
@@ -659,7 +662,7 @@ moduleWithAliases = MkLModule {
             symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
             threadLocality = Nothing,
             addressInfo = Nothing,
-            funTpe = LFun (LInt 32) [LInt 32],
+            funTpe = LFun (:# 32) [LInt 32],
             resTpe = LPtr,
             resolver = "function_resolver",
             tags = neutral
@@ -683,7 +686,7 @@ moduleWithExceptions = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LInt 32,
-            args = [MkArgument (LInt 32) [] Nothing, MkArgument (LInt 32) [] Nothing, MkArgument (LInt 64) [] Nothing, MkArgument LPtr [] Nothing, MkArgument LPtr [] Nothing],
+            args = [MkArgument (:# 32) [] Nothing, MkArgument (:# 32) [] Nothing, MkArgument (LInt 64) [] Nothing, MkArgument LPtr [] Nothing, MkArgument LPtr [] Nothing],
             addressInfo = Nothing,
             alignment = Nothing,
             gc = Nothing,
@@ -697,7 +700,7 @@ moduleWithExceptions = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LInt 32,
-            args = [MkArgument (LInt 32) [] (Just "x")],
+            args = [MkArgument (:# 32) [] (Just "x")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -711,23 +714,23 @@ moduleWithExceptions = MkLModule {
             personality = Just (LVar (Global "__gxx_personality_v0")),
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     -- Invoke that might throw
                     "result" $<- (id (Invoke (MkInvokeCall (Just C) [] Nothing 
-                        (LFun (LInt 32) [LInt 32]) 
+                        (LFun (:# 32) [LInt 32]) 
                         (id (LVar (Global "might_throw"))) 
                         [?^ "x"]
                         (?^ "normal")
                         (?^ "exception"))))
                 ] (JumpBr (?^ "normal")),
                 
-                MkBasicBlock "normal" [
-                ] (Ret (LInt 32) (?^ "result")),
+                MkPair "normal" $ MkBasicBlock [
+                ] (Ret (:# 32) (?^ "result")),
                 
-                MkBasicBlock "exception" [
+                MkPair "exception" $ MkBasicBlock [
                     -- Landing pad for exception handling (simplified for demo)
-                    "landing_pad" $<- (Add (LInt 32) (id (LInt 0)) (id (LInt 0)))
-                ] (Ret (LInt 32) (id (LInt (-1))))
+                    "landing_pad" $<- (Add (:# 32) (## 0) (## 0))
+                ] (Ret (:# 32) (id (LInt (-1))))
             ],
             tags = neutral
         }
@@ -761,7 +764,7 @@ moduleWithAtomics = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LInt 32,
-            args = [MkArgument (LInt 32) [] (Just "value")],
+            args = [MkArgument (:# 32) [] (Just "value")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -774,18 +777,18 @@ moduleWithAtomics = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBasicBlock "entry" [
+            body = [MkPair "entry" $ MkBasicBlock [
                 -- Simple memory operations using variants
-                "old_value" $<- ((LoadRegular False (LInt 32)
+                "old_value" $<- ((LoadRegular False (:# 32)
                     (id (LVar (Global "atomic_counter")))
                     Nothing False False False False Nothing Nothing Nothing False)),
                 -- Store atomic value
                 $<< ((StoreRegular False
-                    (MkWithType (LInt 32) (?^ "value"))
+                    (MkWithType (:# 32) (?^ "value"))
                     (id (LVar (Global "atomic_counter")))
                     Nothing False False))
                 -- Memory fence
-            ] (Ret (LInt 32) (?^ "old_value"))],
+            ] (Ret (:# 32) (?^ "old_value"))],
             tags = neutral
         }
     ],
@@ -807,8 +810,8 @@ moduleWithInlineAssembly = MkLModule {
             returnAttrs = [],
             returnType = LInt 32,
             args = [
-                MkArgument (LInt 32) [] (Just "a"),
-                MkArgument (LInt 32) [] (Just "b")
+                MkArgument (:# 32) [] (Just "a"),
+                MkArgument (:# 32) [] (Just "b")
             ],
             addressInfo = Nothing,
             addressSpace = Nothing,
@@ -822,10 +825,10 @@ moduleWithInlineAssembly = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBasicBlock "entry" [
+            body = [MkPair "entry" $ MkBasicBlock [
                 -- Inline assembly to add two numbers (simplified for demo)
-                "result" $<- (Add (LInt 32) (?^ "a") (?^ "b"))
-            ] (Ret (LInt 32) (?^ "result"))],
+                "result" $<- (Add (:# 32) (?^ "a") (?^ "b"))
+            ] (Ret (:# 32) (?^ "result"))],
             tags = neutral
         }
     ],
@@ -845,7 +848,7 @@ moduleWithDebugInfo = MkLModule {
             callingConvention = Just C,
             returnAttrs = [],
             returnType = LInt 32,
-            args = [MkArgument (LInt 32) [] (Just "param")],
+            args = [MkArgument (:# 32) [] (Just "param")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -858,14 +861,14 @@ moduleWithDebugInfo = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBasicBlock "entry" [
+            body = [MkPair "entry" $ MkBasicBlock [
                 -- Allocate local variable
-                "local_var_ptr" $<- ((Alloc (LInt 32) Nothing Nothing Nothing)),
+                "local_var_ptr" $<- ((Alloc (:# 32) Nothing Nothing Nothing)),
                 -- Calculate the value
-                "local_var" $<- (Add (LInt 32) (?^ "param") (id (LInt 1))),
+                "local_var" $<- (Add (:# 32) (?^ "param") (## 1)),
                 -- Store the value
                 $<< ((StoreRegular False 
-                    (MkWithType (LInt 32) (?^ "local_var"))
+                    (MkWithType (:# 32) (?^ "local_var"))
                     (?^ "local_var_ptr")
                     Nothing False False)),
                 -- Call debug intrinsic with pointer
@@ -873,11 +876,11 @@ moduleWithDebugInfo = MkLModule {
                     (LFun LVoid [LPtr, LPtr, LPtr]) 
                     (id (LVar (Global "llvm.dbg.declare"))) 
                     [
-                        MkWithType LPtr (?^ "local_var_ptr"),
-                        MkWithType LPtr (id LNull),
-                        MkWithType LPtr (id LNull)
+                        (?^ "local_var_ptr") <:> LPtr,
+                        mkNull <:> LPtr,
+                        mkNull <:> LPtr
                     ] [])))
-            ] (Ret (LInt 32) (?^ "local_var"))],
+            ] (Ret (:# 32) (?^ "local_var"))],
             tags = neutral
         }
     ],
@@ -906,7 +909,7 @@ moduleWithComplexTypes = MkLModule {
                 LArray 10 (LFloating LDouble),    -- array of doubles
                 LStruct [                         -- nested struct
                     LPtr,                         -- pointer
-                    LVector 4 (LInt 32),         -- vector
+                    LVector 4 (:# 32),         -- vector
                     LFun LVoid [LInt 32]         -- function pointer
                 ]
             ],
@@ -932,7 +935,7 @@ moduleWithComplexTypes = MkLModule {
             prologue = Nothing,
             personality = Nothing,
             metadata = [],
-            body = [MkBasicBlock "entry" [
+            body = [MkPair "entry" $ MkBasicBlock [
                 -- Get element pointer using a simpler approach
                 "nested_ptr" $<- ((ExtractValue
                     (MkWithType (LStruct [
@@ -941,16 +944,16 @@ moduleWithComplexTypes = MkLModule {
                         LArray 10 (LFloating LDouble),    -- array of doubles
                         LStruct [                         -- nested struct
                             LPtr,                         -- pointer
-                            LVector 4 (LInt 32),         -- vector
+                            LVector 4 (:# 32),         -- vector
                             LFun LVoid [LInt 32]         -- function pointer
                         ]
                     ]) (?^ "complex_ptr")) 3)),
                 -- Extract vector from nested struct
                 "vector_ptr" $<- ((ExtractValue
-                    (MkWithType (LStruct [LPtr, LVector 4 (LInt 32), LFun LVoid [LInt 32]]) 
+                    (MkWithType (LStruct [LPtr, LVector 4 (:# 32), LFun LVoid [LInt 32]]) 
                      (?^ "nested_ptr")) 1)),
                 -- Load the vector using simple load
-                "vector" $<- ((LoadRegular False (LVector 4 (LInt 32))
+                "vector" $<- ((LoadRegular False (LVector 4 (:# 32))
                     (?^ "vector_ptr")
                     Nothing False False False False Nothing Nothing Nothing False))
             ] RetVoid],

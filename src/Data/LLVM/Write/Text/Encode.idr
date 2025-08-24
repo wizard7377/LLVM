@@ -9,6 +9,7 @@ module Data.LLVM.Write.Text.Encode
 import Data.LLVM.IR
 import Data.LLVM.Class
 import Data.Walk
+import Data.Table
 import public Data.LLVM.Write.Types
 import public Data.LLVM.Write.Text.Types
 --%default covering
@@ -179,7 +180,7 @@ mutual
           tagEncode : (String, Metadata) -> ATM VString
           tagEncode (s, m) = (pure $ "!" <++> go s) <+> encode m
     export
-    Encode ATM LValue VString where
+    {t : Bool} -> Encode ATM (LValue t) VString where
         encode (Core.LInt n) = pure $ go $ show n
         encode (Core.LFloat s) = pure $ go s
         encode (Core.LBool b) = pure $ if b then "true" else "false"
@@ -822,11 +823,17 @@ Encode ATM LStatement VString where
     
 public export
 Encode ATM BasicBlock VString where
-    encode (MkBasicBlock name statements term) = do
-        nameStr <- (<++> ":") <$> encode name
+    encode (MkBasicBlock statements term) = do
         statementsStr <- encode @{tabbed} statements
         termStr : VString <- encode term
-        pure $ nameStr <+> statementsStr <++> "\n" <++> termStr <++> "\n"
+        pure $ statementsStr <++> "\n" <++> termStr <++> "\n"
+
+public export
+Encode ATM (String, BasicBlock) VString where
+    encode (n, b) = do
+      let n' = go n
+      b' <- encode b
+      pure (n' <++> ":\n" <+> b')
 public export
 Encode ATM Argument VString where
     encode (MkArgument tpe attrs (Just name)) = do

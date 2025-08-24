@@ -195,7 +195,7 @@ mutual
             liftFCM $ LLVMMDStringInContext !inCon custom (cast $ length custom)
     
     export
-    Encode FCM (WithType LValue) CPtr where
+    {t : Bool} -> Encode FCM (WithType (LValue t)) CPtr where
       encode (MkWithType ty v) = step "Make with type" $ do 
         ty' <- encode' ty
         case v of 
