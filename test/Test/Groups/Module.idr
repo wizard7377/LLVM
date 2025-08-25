@@ -11,6 +11,7 @@ import Test.Helper
 import Data.LLVM.Write.Foreign
 import Test.Groups.ModuleSetA
 import Test.Groups.ModuleSetB
+import Test.Groups.ModuleSetC
 %hide Data.LLVM.Builders.Core.emptyModule
 
 export
@@ -253,6 +254,7 @@ moduleTests = do
     -}
     debugCompile "moduleWithMkLStatementsLifted" moduleWithMkLStatementsLifted
     debugCompile "moduleWithSwitchLifted" moduleWithSwitchLifted
+    debugCompile "moduleWithIntrinsics" moduleWithIntrinsics
     putStr """
         \n\n\n
         === Starting Foriegn Compile Tests ===

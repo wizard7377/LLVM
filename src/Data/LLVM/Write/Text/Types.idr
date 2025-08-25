@@ -29,9 +29,17 @@ runATM m = snd $ runState defaultATState m
 ||| Semigroup for VString with space separation.
 |||
 ||| The semigroup operation automatically inserts spaces between
-||| concatenated VString values, which is useful for LLVM IR formatting.
+||| Semigroup instance for VString that intelligently handles spacing.
+|||
+||| Concatenates two VString values with a space between them, but only if both
+||| strings are non-empty. This prevents extra spaces when concatenating empty
+||| strings with non-empty ones, which improves formatting of LLVM IR output.
+||| 
+||| For concatenation without any spacing, use the <++> operator instead.
 public export
 Semigroup VString where
+    (<+>) (MkVString "") (MkVString b) = MkVString b
+    (<+>) (MkVString a) (MkVString "") = MkVString a  
     (<+>) (MkVString a) (MkVString b) = MkVString (a ++ " " ++ b)
 
 public export
@@ -132,14 +140,16 @@ public export
 seperated : {a : Type} -> Encode ATM a VString => VString -> List a -> ATM VString
 seperated sep vs = pure $ intercalate sep (map (runATM . encode) vs)
 ||| Join a list of encodable values with space separation
+||| Filters out empty encoded values to prevent extra spaces
 public export
 spaced : {a : Type} -> Encode ATM a VString => List a -> ATM VString
-spaced vs = pure $ intercalate " " (map (runATM . encode) vs)
+spaced vs = pure $ intercalate " " (filter (\s => let MkVString str = s in str /= "") (map (runATM . encode) vs))
 
 ||| Join a list of VString values with space separation
+||| Filters out empty VStrings to prevent extra spaces
 public export 
 spaced' : List VString -> VString
-spaced' vs = intercalate " " vs
+spaced' vs = intercalate " " (filter (\(MkVString s) => s /= "") vs)
 
 ||| ATM encoding for monoid types
 |||
@@ -151,11 +161,12 @@ public export
 ||| Encode ATM lists with comma separation (named instance)
 |||
 ||| Provides comma-separated encoding of lists, useful for function arguments
-||| and other comma-delimited LLVM IR constructs.
+||| and other comma-delimited LLVM IR constructs. Filters out empty strings
+||| to prevent extra commas and improve formatting.
 public export
 [each] {a : Type} -> Encode ATM a VString => Encode ATM (List a) VString where 
     encode [] = pure ""
-    encode xs = pure $ intercalate ", " (map (runATM . encode) xs)
+    encode xs = pure $ intercalate ", " (filter (\s => let MkVString str = s in str /= "") (map (runATM . encode) xs))
 
 ||| Encode ATM lists with no separation (named instance)
 |||
@@ -168,7 +179,7 @@ public export
 public export
 [spacing] {a : Type} -> Encode ATM a VString => Encode ATM (List a) VString where 
     encode [] = pure ""
-    encode xs = pure $ intercalate " " (map (runATM . encode) xs)
+    encode xs = pure $ intercalate " " (filter (\s => let MkVString str = s in str /= "") (map (runATM . encode) xs))
 ||| Encode ATM lists with newline separation (named instance)
 |||
 ||| Each list element appears on its own line.
@@ -282,8 +293,9 @@ encodeIf = writeIf encode
 
 export
 ||| Helper function to work with VString directly in spaced format
+||| Filters out empty VStrings to prevent extra spaces
 spacedVString : List VString -> VString
-spacedVString = intercalate " "
+spacedVString vs = intercalate " " (filter (\(MkVString s) => s /= "") vs)
 export
 ||| Helper to sequence monadic encodings and join with spaces
 spacedM : List (ATM VString) -> ATM VString  

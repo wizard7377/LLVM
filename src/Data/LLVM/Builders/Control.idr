@@ -131,6 +131,14 @@ functionDec name {symbolInfo} {callingConvention} {returnAttrs} retType args {ad
         fprefix
         prologue
         tags
+
+export 
+intrinsicDec : 
+    (name : IntrinsicName) ->
+    (retType : LType) -> 
+    (args : List Argument) ->
+    IntrinsicDec
+intrinsicDec name retType args = MkIntrinsicDec name retType args
 export
 ||| Create a return statement.
 |||
