@@ -90,3 +90,7 @@ encodeFCMTest {b} name value = encodeIOTest FCM {e = FCError} {b = b} name value
 public export
 encodeFCMTest' : EncodeIO FCError FCM LModule CPtr => String -> LModule -> IO ()
 encodeFCMTest' = encodeFCMTest {b = CPtr}
+
+public export 
+tempModule : LModule
+tempModule = emptyModule

@@ -204,6 +204,7 @@ mutual
             pure $ "metadata" <+> mStr
         encode (Core.LPtr name) = pure "ptr" <+> encode name
         encode (Core.LVar name) = encode name
+        encode (Core.LConst x) = encode x
         encode _ = ?ltermres
 export 
 Encode ATM GVarDef VString where
