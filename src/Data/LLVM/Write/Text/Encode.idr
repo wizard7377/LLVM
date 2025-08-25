@@ -19,7 +19,10 @@ wrapName : String -> VString
 wrapName name = MkVString $ unescape name
 Encode ATM Label VString where
     encode (NamedLabel name) = pure $ "%" <++> go name
-    encode (LiftedLabel block) = ?ebl
+    encode (LiftedLabel block) = do 
+        uid <- getUid'
+        addBlockContext (uid, block)
+        pure $ "%" <++> go uid
 export 
 Encode ATM Linkage VString where
     encode Private = pure "private"
@@ -205,6 +208,13 @@ mutual
         encode (Core.LPtr name) = pure "ptr" <+> encode name
         encode (Core.LVar name) = encode name
         encode (Core.LConst x) = encode x
+        encode (Core.LComplex v) = do 
+            uid <- getUid
+            addContext (uid $<- v)
+            r <- encode $ (LVar uid)
+            pure r
+
+        
         encode _ = ?ltermres
 export 
 Encode ATM GVarDef VString where
@@ -809,32 +819,42 @@ Encode ATM LExpr VString where
         aStr <- encode a
         bStr <- encode b
         pure $ "fcmp true " <+> tpeStr <+> aStr <+> ", " <+> bStr
+
     encode _ = ?enle
+    -- TODO: With continuation
 
 
 export
 Encode ATM LStatement VString where
     -- TODO: Metadata
-    encode (MkLStatement Nothing expr _) = encode expr
-    encode (MkLStatement (Just reg) expr _) = do
-        regStr <- encode reg
-        exprStr <- encode expr
-        pure $ regStr <+> "=" <+> exprStr
+    encode (MkLStatement dest expr meta) = do 
+        exprStr : VString <- encode expr
+        ctx <- popContext
+        ctx' : List VString <- traverse encode ctx
+        let ctx2 = intercalate "\n\t" ctx'
+        case dest of 
+            Nothing => pure exprStr
+            (Just reg) => do
+                regStr <- encode reg
+                pure $ ctx2 <+> "\n\t" <+> regStr <+> "=" <+> exprStr
         
-    
-public export
-Encode ATM BasicBlock VString where
-    encode (MkBasicBlock statements term) = do
-        statementsStr <- encode @{tabbed} statements
-        termStr : VString <- encode term
-        pure $ statementsStr <++> "\n" <++> termStr <++> "\n"
+mutual    
+    public export
+    Encode ATM BasicBlock VString where
+        encode (MkBasicBlock statements term) = do
+            statementsStr <- encode @{tabbed} statements
+            termStr : VString <- encode term
+            bctx <- popBlockContext
+            bctx' : List VString <- traverse encode bctx
+            let bctx2 = intercalate "\n\t" bctx'
+            pure $ statementsStr <++> "\n" <++> termStr <++> "\n" <++> bctx2
 
-public export
-Encode ATM (String, BasicBlock) VString where
-    encode (n, b) = do
-      let n' = go n
-      b' <- encode b
-      pure (n' <++> ":\n" <+> b')
+    public export
+    Encode ATM (String, BasicBlock) VString where
+        encode (n, b) = do
+        let n' = go n
+        b' <- encode b
+        pure (n' <++> ":\n" <+> b')
 public export
 Encode ATM Argument VString where
     encode (MkArgument tpe attrs (Just name)) = do

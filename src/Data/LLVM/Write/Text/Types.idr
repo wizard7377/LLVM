@@ -49,9 +49,12 @@ public export
 public export
 Monoid VString where
     neutral = MkVString ""
-
+export
 addExprContext : LStatement -> ATM ()
 addExprContext l = modify ({ exprContext $= (++ [l]) })
+export 
+addBlockContext : Entry BasicBlock -> ATM ()
+addBlockContext b = modify ({ blockContext $= (++ [b]) })
 %default covering
 
 ||| Intercalate a list of monoid values with a separator.
@@ -230,21 +233,42 @@ Encode ATM Nat VString where
 
 
 
-
+export
 addContext : LStatement -> ATM ()
 addContext stmt = modify ({exprContext $= (stmt ::)})
-
+export
 popContext : ATM (List LStatement)
 popContext = do
     st <- get 
     modify ({exprContext := []})
     pure st.exprContext
+export 
+popBlockContext : ATM (Table BasicBlock)
+popBlockContext = do
+    st <- get 
+    modify ({blockContext := []})
+    pure st.blockContext
 
+export
 getUnique : ATM Int 
 getUnique = do
     st <- get 
     modify ({generatedId $= (+ 1)})
     pure st.generatedId
+
+export
+uniqueId : Int -> String
+uniqueId n = ( ("\"___UNIQUE_IDRIS_" ++ show n ++ "___\""))
+export
+getUid : ATM Name 
+getUid = do
+    n <- getUnique
+    pure $ Local $ uniqueId n
+export
+getUid' : ATM String 
+getUid' = do
+    n <- getUnique
+    pure $ uniqueId n
 export
 Semigroup a => Semigroup (ATM a) where 
     x <+> y = (<+>) <$> x <*> y

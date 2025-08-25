@@ -142,6 +142,47 @@ moduleWithMkLStatements = MkLModule {
     ],
     tags = neutral
 }
+export
+moduleWithMkLStatementsLifted : LModule
+moduleWithMkLStatementsLifted = MkLModule {
+    
+    dataLayout = Nothing,
+    target = Nothing,
+    text = [
+        FunctionDefC $ MkFunctionDef {
+            name = "main",
+            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
+            callingConvention = Just C,
+            returnAttrs = [],
+            returnType = LInt 32,
+            args = [
+                MkArgument (:# 32) [] (Just "x"),
+                MkArgument (:# 32) [] (Just "y")
+            ],
+            addressInfo = Nothing,
+            addressSpace = Nothing,
+            fnAttributes = [],
+            section = Nothing,
+            partition = Nothing,
+            comdat = Nothing,
+            alignment = Nothing,
+            gc = Nothing,
+            fprefix = Nothing,
+            prologue = Nothing,
+            personality = Nothing,
+            metadata = [],
+            body = [
+                MkPair "entry" $ MkBasicBlock [
+                    "add_result" $<- (Add (:# 32) (#! (Mul (:# 32) (?^ "x") (?^ "y"))) (## 10)),
+                    -- Shift left by 1
+                    "shift_result" $<- (Shl (:# 32) (?% "add_result") (## 1))
+                ] (Ret (:# 32) (?% "shift_result"))
+            ],
+            tags = neutral
+        }
+    ],
+    tags = neutral
+}
 
 export
 completeModule : LModule
@@ -548,6 +589,48 @@ moduleWithSwitch = MkLModule {
                 
                 MkPair "default" $ MkBasicBlock [
                 ] (Ret (:# 32) (## -1))
+            ],
+            tags = neutral
+        }
+    ],
+    tags = neutral
+}
+
+-- TODO: Add to tests
+export
+-- Module with switch statements and multiple cases
+moduleWithSwitchLifted : LModule
+moduleWithSwitchLifted = MkLModule {
+    dataLayout = Nothing,
+    target = Nothing,
+    text = [
+        FunctionDefC $ MkFunctionDef {
+            name = "handle_opcode",
+            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
+            callingConvention = Just C,
+            returnAttrs = [],
+            returnType = LInt 32,
+            args = [MkArgument (:# 32) [] (Just "opcode")],
+            addressInfo = Nothing,
+            addressSpace = Nothing,
+            fnAttributes = [],
+            section = Nothing,
+            partition = Nothing,
+            comdat = Nothing,
+            alignment = Nothing,
+            gc = Nothing,
+            fprefix = Nothing,
+            prologue = Nothing,
+            personality = Nothing,
+            metadata = [],
+            body = [
+                MkPair "entry" $ MkBasicBlock [
+                ] (Switch (:# 32) (?^ "opcode") (!# ([] !> (Ret (:# 32) (## -1)))) [
+                    MkCaseBranch (:# 32) (## 1) (!# ([] !> (Ret (:# 32) (## 100)))),
+                    MkCaseBranch (:# 32) (## 2) (!# ([] !> (Ret (:# 32) (## 200)))),
+                    MkCaseBranch (:# 32) (## 3) (!# ([] !> (Ret (:# 32) (## 300)))),
+                    MkCaseBranch (:# 32) (## 4) (!# ([] !> (Ret (:# 32) (## 400))))
+                ])
             ],
             tags = neutral
         }
