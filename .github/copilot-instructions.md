@@ -21,7 +21,7 @@ This is an Idris2 library providing complete LLVM IR functionality through a typ
 The library provides extensive syntactic sugar with specific operator meanings:
 - **`?`** prefix: Creates variables (`?^ "var"` for variable reference)
 - **`#`** prefix: Creates constant values (`## 42` for integer literal, `#^ "label"` for label reference)
-- **`$`** infix: Creates statements (`"name" $<- instruction`)
+- **`$`** infix: Creates statements (`"name" <<- instruction`)
 - **`:`** infix: Creates types (`:# 32` for i32 type, `4 :<> (:# 32)` for vector type)
 - **`^`** suffix: Creates metadata/annotations
 - **`&`** prefix: Creates modifiers
@@ -61,8 +61,8 @@ functionWithInstructions = MkFunction {
   args = [MkArgument (:# 32) [] (Just "x"), MkArgument (:# 32) [] (Just "y")],
   body = [
     MkPair "entry" $ MkBasicBlock [
-      "sum" $<- (Add (:# 32) (?^ "x") (?^ "y")),
-      "cmp" $<- (ICmp CEq (:# 32) (?^ "sum") ( (## 42)))
+      "sum" <<- (Add (:# 32) (?^ "x") (?^ "y")),
+      "cmp" <<- (ICmp CEq (:# 32) (?^ "sum") ( (## 42)))
     ] (Ret (:# 32) (?^ "sum"))
   ]
 }
@@ -72,8 +72,8 @@ functionWithInstructions = MkFunction {
 ```idris
 -- Vector type construction and operations
 vectorExample = [
-  "vec" $<- (InsertElement ((4 :<> (:# 32)) <::> undef) ((:# 32) <::> ( (## 1))) ((:# 32) <::> ( (## 0)))),
-  "elem" $<- (ExtractElement ((4 :<> (:# 32)) <::> (?^ "vec")) ((:# 32) <::> ( (## 2))))
+  "vec" <<- (InsertElement ((4 :<> (:# 32)) <::> undef) ((:# 32) <::> ( (## 1))) ((:# 32) <::> ( (## 0)))),
+  "elem" <<- (ExtractElement ((4 :<> (:# 32)) <::> (?^ "vec")) ((:# 32) <::> ( (## 2))))
 ]
 ```
 
@@ -147,7 +147,7 @@ Compile a = EitherT CompilationError IO a
 Extensive use of builder combinators for type-safe IR construction:
 ```idris
 myFunction = functionDef "main" LVoid [] $ MkBasicBlock [
-  "result" $<- (Add (:# 32) (?^ "x") (?^ "y")),
+  "result" <<- (Add (:# 32) (?^ "x") (?^ "y")),
   ret (:# 32) (?^ "result")
 ]
 ```

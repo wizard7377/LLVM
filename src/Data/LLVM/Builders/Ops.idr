@@ -107,10 +107,10 @@ public export
 mkModule : 
     {default Nothing dataLayout : Maybe String} ->
     {default Nothing target : Maybe String} ->
-    {default [] text : List LClause} ->
+    (text : List LClause) ->
     {default neutral tags : Annotation} ->
     LModule
-mkModule {dataLayout} {target} {text} {tags} = MkLModule dataLayout target text tags
+mkModule {dataLayout} {target} text {tags} = MkLModule dataLayout target text tags
 
 public export
 ||| Create a simple LLVM module with text clauses.
@@ -121,4 +121,4 @@ public export
 |||
 ||| @ clauses List of top-level clauses (functions, globals, etc.) for the module
 simpleModule : List LClause -> LModule
-simpleModule clauses = mkModule {text = clauses}
+simpleModule clauses = mkModule clauses

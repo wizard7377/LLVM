@@ -64,4 +64,4 @@ foriegnDec :
     {default [] args : List Argument} ->
     {default LVoid resType : LType} ->
     LClause
-foriegnDec name {args} {resType} = FunctionDecC $ functionDec name resType args
+foriegnDec name {args} {resType} = functionDec name resType args

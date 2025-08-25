@@ -75,4 +75,9 @@ repl: install
 
 
 
-
+holes: $(srcFiles)
+	@rg --regexp='\?[_\w]+' --context=1 --glob '*.idr'
+	@echo ""
+	@echo "Number of holes"
+	@echo ""
+	@rg --regexp='\?[_\w]+' --context=1 --glob '*.idr' --count

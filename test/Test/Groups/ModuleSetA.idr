@@ -89,7 +89,7 @@ moduleWithSimpleFunction = MkLModule {
             metadata = [],
             body = [
                 MkPair "entry" $ MkBasicBlock [
-                    "result" $<- (Add (:# 32) (?^ "a") (?^ "b"))
+                    "result" <<- (Add (:# 32) (?^ "a") (?^ "b"))
                 ] (Ret (:# 32) (?% "result"))
             ],
             tags = neutral
@@ -130,11 +130,11 @@ moduleWithMkLStatements = MkLModule {
             body = [
                 MkPair "entry" $ MkBasicBlock [
                     -- Multiply x and y
-                    "mul_result" $<- (Mul (:# 32) (?^ "x") (?^ "y")),
+                    "mul_result" <<- (Mul (:# 32) (?^ "x") (?^ "y")),
                     -- Add 10 to the result
-                    "add_result" $<- (Add (:# 32) (?% "mul_result") (## 10)),
+                    "add_result" <<- (Add (:# 32) (?% "mul_result") (## 10)),
                     -- Shift left by 1
-                    "shift_result" $<- (Shl (:# 32) (?% "add_result") (## 1))
+                    "shift_result" <<- (Shl (:# 32) (?% "add_result") (## 1))
                 ] (Ret (:# 32) (?% "shift_result"))
             ],
             tags = neutral
@@ -173,9 +173,9 @@ moduleWithMkLStatementsLifted = MkLModule {
             metadata = [],
             body = [
                 MkPair "entry" $ MkBasicBlock [
-                    "add_result" $<- (Add (:# 32) (#! (Mul (:# 32) (?^ "x") (?^ "y"))) (## 10)),
+                    "add_result" <<- (Add (:# 32) (#! (Mul (:# 32) (?^ "x") (?^ "y"))) (## 10)),
                     -- Shift left by 1
-                    "shift_result" $<- (Shl (:# 32) (?% "add_result") (## 1))
+                    "shift_result" <<- (Shl (:# 32) (?% "add_result") (## 1))
                 ] (Ret (:# 32) (?% "shift_result"))
             ],
             tags = neutral
@@ -230,11 +230,11 @@ completeModule = MkLModule {
             body = [
                 MkPair "entry" $ MkBasicBlock [
                     -- Allocate local variable
-                    "local_var" $<- ((Alloc (:# 32) Nothing Nothing Nothing)),
+                    "local_var" <<- ((Alloc (:# 32) Nothing Nothing Nothing)),
                     -- Call helper function
-                    "call_result" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing (LFun (:# 32) [:# 32, :# 32]) (id (LVar (Global "helper_function"))) [MkWithType (:# 32) (## 5), MkWithType (:# 32) (## 10)] []))),
+                    "call_result" <<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing (LFun (:# 32) [:# 32, :# 32]) (id (LVar (Global "helper_function"))) [MkWithType (:# 32) (## 5), MkWithType (:# 32) (## 10)] []))),
                     -- Compare i32 result with 0 to produce i1 for conditional branch
-                    "cond" $<- (icmp CEq (:# 32) (?^ "call_result") (## 0))
+                    "cond" <<- (icmp CEq (:# 32) (?^ "call_result") (## 0))
                 ] (CondBr (?^ "cond") (#^ "success_block") (#^ "failure_block")),
                 
                 MkPair "success_block" $ MkBasicBlock [
@@ -271,12 +271,12 @@ completeModule = MkLModule {
             body = [
                 MkPair "entry" $ MkBasicBlock [
                     -- Perform various operations
-                    "sum" $<- (Add (:# 32) (?^ "a") (?^ "b")),
-                    "diff" $<- (Sub (:# 32) (?^ "a") (?^ "b")),
-                    "product" $<- (Mul (:# 32) (?^ "sum") (?^ "diff")),
+                    "sum" <<- (Add (:# 32) (?^ "a") (?^ "b")),
+                    "diff" <<- (Sub (:# 32) (?^ "a") (?^ "b")),
+                    "product" <<- (Mul (:# 32) (?^ "sum") (?^ "diff")),
                     -- Use aggregate operation
-                    "array_val" $<- ((ExtractValue (MkWithType (LArray 5 (:# 32)) (id (LVar (Global "data_array")))) 0)),
-                    "final_result" $<- (Add (:# 32) (?^ "product") (?^ "array_val"))
+                    "array_val" <<- ((ExtractValue (MkWithType (LArray 5 (:# 32)) (id (LVar (Global "data_array")))) 0)),
+                    "final_result" <<- (Add (:# 32) (?^ "product") (?^ "array_val"))
                 ] (Ret (:# 32) (?^ "final_result"))
             ],
             tags = neutral
@@ -382,7 +382,7 @@ moduleWithCallingConventions = MkLModule {
             metadata = [],
             body = [
                 MkPair "entry" $ MkBasicBlock [
-                    "result" $<- ((FAdd []) (LFloating LFloat) (?^ "x") (?^ "y"))
+                    "result" <<- ((FAdd []) (LFloating LFloat) (?^ "x") (?^ "y"))
                 ] (Ret (LFloating LFloat) (?^ "result"))
             ],
             tags = neutral
@@ -410,7 +410,7 @@ moduleWithCallingConventions = MkLModule {
             body = [
                 MkPair "entry" $ MkBasicBlock [
                     -- Call printf to report error
-                    "printf_result" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                    "printf_result" <<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (:# 32) [LPtr]) 
                         (id (LVar (Global "printf"))) 
                         [MkWithType LPtr (id (LVar (Global "error_format")))] [])))
@@ -456,16 +456,16 @@ moduleWithVectors = MkLModule {
             body = [
                 MkPair "entry" $ MkBasicBlock [
                     -- Extract element from first vector
-                    "elem1" $<- ((ExtractElement 
+                    "elem1" <<- ((ExtractElement 
                         ( ( 4 :<> (:# 32)) <::> (?^ "vec1"))
                         ( (:# 32) <::> (## 0)))),
                     -- Insert element into second vector
-                    "modified_vec" $<- ((InsertElement 
+                    "modified_vec" <<- ((InsertElement 
                         ( ( 4 :<> (:# 32)) <::> (?^ "vec2"))
                         ( (:# 32) <::> (?^ "elem1"))
                         ( (:# 32) <::> (## 1)))),
                     -- Shuffle vectors
-                    "shuffled" $<- ((ShuffleVector
+                    "shuffled" <<- ((ShuffleVector
                         ( ( 4 :<> (:# 32)) <::> (?^ "vec1"))
                         ( ( 4 :<> (:# 32)) <::> (?^ "modified_vec"))
                         ( ( 4 :<> (:# 32)) <::> (id (LVector [
@@ -511,7 +511,7 @@ moduleWithControlFlow = MkLModule {
             body = [
                 MkPair "entry" $ MkBasicBlock [
                     -- Check if n <= 1 (use proper comparison)
-                    "cmp" $<- (icmp CSLe (:# 32) (?^ "n") (## 1))
+                    "cmp" <<- (icmp CSLe (:# 32) (?^ "n") (## 1))
                 ] (CondBr (?^ "cmp") (#^ "base_case") (#^ "recursive_case")),
                 
                 MkPair "base_case" $ MkBasicBlock [
@@ -519,19 +519,19 @@ moduleWithControlFlow = MkLModule {
                 
                 MkPair "recursive_case" $ MkBasicBlock [
                     -- Calculate fib(n-1)
-                    "n_minus_1" $<- (Sub (:# 32) (?^ "n") (## 1)),
-                    "fib_n_minus_1" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                    "n_minus_1" <<- (Sub (:# 32) (?^ "n") (## 1)),
+                    "fib_n_minus_1" <<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (:# 32) [LInt 32]) 
                         (id (LVar (Global "fibonacci"))) 
                         [MkWithType (:# 32) (?^ "n_minus_1")] []))),
                     -- Calculate fib(n-2)
-                    "n_minus_2" $<- (Sub (:# 32) (?^ "n") (## 2)),
-                    "fib_n_minus_2" $<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                    "n_minus_2" <<- (Sub (:# 32) (?^ "n") (## 2)),
+                    "fib_n_minus_2" <<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (:# 32) [LInt 32]) 
                         (id (LVar (Global "fibonacci"))) 
                         [MkWithType (:# 32) (?^ "n_minus_2")] []))),
                     -- Add results
-                    "result" $<- (Add (:# 32) (?^ "fib_n_minus_1") (?^ "fib_n_minus_2"))
+                    "result" <<- (Add (:# 32) (?^ "fib_n_minus_1") (?^ "fib_n_minus_2"))
                 ] (Ret (:# 32) (?^ "result"))
             ],
             tags = neutral
@@ -539,510 +539,14 @@ moduleWithControlFlow = MkLModule {
     ],
     tags = neutral
 }
-
-export
--- Module with switch statements and multiple cases
-moduleWithSwitch : LModule
-moduleWithSwitch = MkLModule {
-    dataLayout = Nothing,
-    target = Nothing,
-    text = [
-        FunctionDefC $ MkFunctionDef {
-            name = "handle_opcode",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            callingConvention = Just C,
-            returnAttrs = [],
-            returnType = LInt 32,
-            args = [MkArgument (:# 32) [] (Just "opcode")],
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            fnAttributes = [],
-            section = Nothing,
-            partition = Nothing,
-            comdat = Nothing,
-            alignment = Nothing,
-            gc = Nothing,
-            fprefix = Nothing,
-            prologue = Nothing,
-            personality = Nothing,
-            metadata = [],
-            body = [
-                MkPair "entry" $ MkBasicBlock [
-                ] (Switch (:# 32) (?^ "opcode") (#^ "default") [
-                    MkCaseBranch (:# 32) (## 1) (#^ "case_add"),
-                    MkCaseBranch (:# 32) (## 2) (#^ "case_sub"),
-                    MkCaseBranch (:# 32) (## 3) (#^ "case_mul"),
-                    MkCaseBranch (:# 32) (## 4) (#^ "case_div")
-                ]),
-                
-                MkPair "case_add" $ MkBasicBlock [
-                ] (Ret (:# 32) (## 100)),
-                
-                MkPair "case_sub" $ MkBasicBlock [
-                ] (Ret (:# 32) (## 200)),
-                
-                MkPair "case_mul" $ MkBasicBlock [
-                ] (Ret (:# 32) (## 300)),
-                
-                MkPair "case_div" $ MkBasicBlock [
-                ] (Ret (:# 32) (## 400)),
-                
-                MkPair "default" $ MkBasicBlock [
-                ] (Ret (:# 32) (## -1))
-            ],
-            tags = neutral
-        }
-    ],
-    tags = neutral
-}
-
--- TODO: Add to tests
-export
--- Module with switch statements and multiple cases
-moduleWithSwitchLifted : LModule
-moduleWithSwitchLifted = MkLModule {
-    dataLayout = Nothing,
-    target = Nothing,
-    text = [
-        FunctionDefC $ MkFunctionDef {
-            name = "handle_opcode",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            callingConvention = Just C,
-            returnAttrs = [],
-            returnType = LInt 32,
-            args = [MkArgument (:# 32) [] (Just "opcode")],
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            fnAttributes = [],
-            section = Nothing,
-            partition = Nothing,
-            comdat = Nothing,
-            alignment = Nothing,
-            gc = Nothing,
-            fprefix = Nothing,
-            prologue = Nothing,
-            personality = Nothing,
-            metadata = [],
-            body = [
-                MkPair "entry" $ MkBasicBlock [
-                ] (Switch (:# 32) (?^ "opcode") (!# ([] !> (Ret (:# 32) (## -1)))) [
-                    MkCaseBranch (:# 32) (## 1) (!# ([] !> (Ret (:# 32) (## 100)))),
-                    MkCaseBranch (:# 32) (## 2) (!# ([] !> (Ret (:# 32) (## 200)))),
-                    MkCaseBranch (:# 32) (## 3) (!# ([] !> (Ret (:# 32) (## 300)))),
-                    MkCaseBranch (:# 32) (## 4) (!# ([] !> (Ret (:# 32) (## 400))))
-                ])
-            ],
-            tags = neutral
-        }
-    ],
-    tags = neutral
-}
-{- 
--- Module with struct operations and complex types
-moduleWithStructs : LModule
-moduleWithStructs = MkLModule {
-    dataLayout = Nothing,
-    target = Nothing,
-    text = [
-        -- Global struct
-        GlobalDefC $ MkGVarDef {
-            name = "global_point",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            threadLocality = Nothing,
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            externallyInitialized = Nothing,
-            isConst = False,
-            gtpe = LStruct [LInt 32, LInt 32],
-            initializer = Just (LStruct [MkWithType (:# 32) (LInt 10), MkWithType (:# 32) (LInt 20)]),
-            tags = neutral
-        },
-        FunctionDefC $ MkFunctionDef {
-            name = "struct_operations",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            callingConvention = Just C,
-            returnAttrs = [],
-            returnType = LInt 32,
-            args = [MkArgument (LStruct [LInt 32, LInt 32]) [] (Just "point")],
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            fnAttributes = [],
-            section = Nothing,
-            partition = Nothing,
-            comdat = Nothing,
-            alignment = Nothing,
-            gc = Nothing,
-            fprefix = Nothing,
-            prologue = Nothing,
-            personality = Nothing,
-            metadata = [],
-            body = [MkPair "entry" $ MkBasicBlock [
-                -- Extract x coordinate
-                MkLStatement (Local "x") ((ExtractValue 
-                    (MkWithType (LStruct [LInt 32, LInt 32]) (id (LPtr (Local "point")))) 0)),
-                -- Extract y coordinate
-                MkLStatement (Local "y") ((ExtractValue 
-                    (MkWithType (LStruct [LInt 32, LInt 32]) (id (LPtr (Local "point")))) 1)),
-                -- Calculate sum
-                MkLStatement (Local "sum") (Add (:# 32) (id (LPtr (Local "x"))) (id (LPtr (Local "y")))),
-                -- Create new struct with modified values
-                MkLStatement (Local "new_point") ((InsertValue 
-                    (MkWithType (LStruct [LInt 32, LInt 32]) (id (LPtr (Local "point"))))
-                    (MkWithType (:# 32) (id (LPtr (Local "sum"))))
-                    0))
-            ] (Ret (:# 32) (id (LPtr (Local "sum")))))],
-            tags = neutral
-        }
-    ],
-    tags = neutral
-}
--}
--- Module with aliases and IFuncs
-export
-moduleWithAliases : LModule
-moduleWithAliases = MkLModule {
-    dataLayout = Nothing,
-    target = Nothing,
-    text = [
-        -- Function to be aliased
-        FunctionDefC $ MkFunctionDef {
-            name = "original_function",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            callingConvention = Just C,
-            returnAttrs = [],
-            returnType = LInt 32,
-            args = [MkArgument (:# 32) [] (Just "x")],
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            fnAttributes = [],
-            section = Nothing,
-            partition = Nothing,
-            comdat = Nothing,
-            alignment = Nothing,
-            gc = Nothing,
-            fprefix = Nothing,
-            prologue = Nothing,
-            personality = Nothing,
-            metadata = [],
-            body = [MkPair "entry" $ MkBasicBlock [
-                "result" $<- (Mul (:# 32) (?^ "x") (## 2))
-            ] (Ret (:# 32) (?^ "result"))],
-            tags = neutral
-        },
-        -- Alias to the function
-        AliasC $ MkAlias {
-            name = "function_alias",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            threadLocality = Nothing,
-            addressInfo = Nothing,
-            aliasTpe = LFun (:# 32) [LInt 32],
-            aliasee = "original_function",
-            tags = neutral
-        },
-        -- IFunc with resolver
-        IFuncC $ MkIFunc {
-            name = "dynamic_function",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            threadLocality = Nothing,
-            addressInfo = Nothing,
-            funTpe = LFun (:# 32) [LInt 32],
-            resTpe = LPtr,
-            resolver = "function_resolver",
-            tags = neutral
-        }
-    ],
-    tags = neutral
-}
-
-{- 
-export
--- Module with exception handling and personality functions
-moduleWithExceptions : LModule
-moduleWithExceptions = MkLModule {
-    dataLayout = Just "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128",
-    target = Just "x86_64-unknown-linux-gnu",
-    text = [
-        -- Declare exception handling personality function
-        FunctionDecC $ MkFunctionDec {
-            name = "__gxx_personality_v0",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            callingConvention = Just C,
-            returnAttrs = [],
-            returnType = LInt 32,
-            args = [MkArgument (:# 32) [] Nothing, MkArgument (:# 32) [] Nothing, MkArgument (LInt 64) [] Nothing, MkArgument LPtr [] Nothing, MkArgument LPtr [] Nothing],
-            addressInfo = Nothing,
-            alignment = Nothing,
-            gc = Nothing,
-            fprefix = Nothing,
-            prologue = Nothing,
-            tags = neutral
-        },
-        FunctionDefC $ MkFunctionDef {
-            name = "exception_test",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            callingConvention = Just C,
-            returnAttrs = [],
-            returnType = LInt 32,
-            args = [MkArgument (:# 32) [] (Just "x")],
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            fnAttributes = [],
-            section = Nothing,
-            partition = Nothing,
-            comdat = Nothing,
-            alignment = Nothing,
-            gc = Nothing,
-            fprefix = Nothing,
-            prologue = Nothing,
-            personality = Just (LVar (Global "__gxx_personality_v0")),
-            metadata = [],
-            body = [
-                MkPair "entry" $ MkBasicBlock [
-                    -- Invoke that might throw
-                    "result" $<- (id (Invoke (MkInvokeCall (Just C) [] Nothing 
-                        (LFun (:# 32) [LInt 32]) 
-                        (id (LVar (Global "might_throw"))) 
-                        [?^ "x"]
-                        (?^ "normal")
-                        (?^ "exception"))))
-                ] (JumpBr (?^ "normal")),
-                
-                MkPair "normal" $ MkBasicBlock [
-                ] (Ret (:# 32) (?^ "result")),
-                
-                MkPair "exception" $ MkBasicBlock [
-                    -- Landing pad for exception handling (simplified for demo)
-                    "landing_pad" $<- (Add (:# 32) (## 0) (## 0))
-                ] (Ret (:# 32) (id (LInt (-1))))
-            ],
-            tags = neutral
-        }
-    ],
-    tags = neutral
-}
--}
-export
--- Module with atomic operations and memory ordering
-moduleWithAtomics : LModule
-moduleWithAtomics = MkLModule {
-    dataLayout = Nothing,
-    target = Nothing,
-    text = [
-        -- Global atomic counter
-        GlobalDefC $ MkGVarDef {
-            name = "atomic_counter",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            threadLocality = Nothing,
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            externallyInitialized = Nothing,
-            isConst = False,
-            gtpe = LInt 32,
-            initializer = Just (LInt 0),
-            tags = neutral
-        },
-        FunctionDefC $ MkFunctionDef {
-            name = "atomic_operations",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            callingConvention = Just C,
-            returnAttrs = [],
-            returnType = LInt 32,
-            args = [MkArgument (:# 32) [] (Just "value")],
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            fnAttributes = [],
-            section = Nothing,
-            partition = Nothing,
-            comdat = Nothing,
-            alignment = Nothing,
-            gc = Nothing,
-            fprefix = Nothing,
-            prologue = Nothing,
-            personality = Nothing,
-            metadata = [],
-            body = [MkPair "entry" $ MkBasicBlock [
-                -- Simple memory operations using variants
-                "old_value" $<- ((LoadRegular False (:# 32)
-                    (id (LVar (Global "atomic_counter")))
-                    Nothing False False False False Nothing Nothing Nothing False)),
-                -- Store atomic value
-                $<< ((StoreRegular False
-                    (MkWithType (:# 32) (?^ "value"))
-                    (id (LVar (Global "atomic_counter")))
-                    Nothing False False))
-                -- Memory fence
-            ] (Ret (:# 32) (?^ "old_value"))],
-            tags = neutral
-        }
-    ],
-    tags = neutral
-}
-
-
-export
--- Module with inline assembly
-moduleWithInlineAssembly : LModule
-moduleWithInlineAssembly = MkLModule {
-    dataLayout = Nothing,
-    target = Just "x86_64-unknown-linux-gnu",
-    text = [
-        FunctionDefC $ MkFunctionDef {
-            name = "inline_asm_test",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            callingConvention = Just C,
-            returnAttrs = [],
-            returnType = LInt 32,
-            args = [
-                MkArgument (:# 32) [] (Just "a"),
-                MkArgument (:# 32) [] (Just "b")
-            ],
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            fnAttributes = [],
-            section = Nothing,
-            partition = Nothing,
-            comdat = Nothing,
-            alignment = Nothing,
-            gc = Nothing,
-            fprefix = Nothing,
-            prologue = Nothing,
-            personality = Nothing,
-            metadata = [],
-            body = [MkPair "entry" $ MkBasicBlock [
-                -- Inline assembly to add two numbers (simplified for demo)
-                "result" $<- (Add (:# 32) (?^ "a") (?^ "b"))
-            ] (Ret (:# 32) (?^ "result"))],
-            tags = neutral
-        }
-    ],
-    tags = neutral
-}
-
-export
--- Module with debug information and metadata
-moduleWithDebugInfo : LModule
-moduleWithDebugInfo = MkLModule {
-    dataLayout = Nothing,
-    target = Nothing,
-    text = [
-        FunctionDefC $ MkFunctionDef {
-            name = "debug_function",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            callingConvention = Just C,
-            returnAttrs = [],
-            returnType = LInt 32,
-            args = [MkArgument (:# 32) [] (Just "param")],
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            fnAttributes = [],
-            section = Nothing,
-            partition = Nothing,
-            comdat = Nothing,
-            alignment = Nothing,
-            gc = Nothing,
-            fprefix = Nothing,
-            prologue = Nothing,
-            personality = Nothing,
-            metadata = [],
-            body = [MkPair "entry" $ MkBasicBlock [
-                -- Allocate local variable
-                "local_var_ptr" $<- ((Alloc (:# 32) Nothing Nothing Nothing)),
-                -- Calculate the value
-                "local_var" $<- (Add (:# 32) (?^ "param") (## 1)),
-                -- Store the value
-                $<< ((StoreRegular False 
-                    (MkWithType (:# 32) (?^ "local_var"))
-                    (?^ "local_var_ptr")
-                    Nothing False False)),
-                -- Call debug intrinsic with pointer
-                $<< ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
-                    (LFun LVoid [LPtr, LPtr, LPtr]) 
-                    (id (LVar (Global "llvm.dbg.declare"))) 
-                    [
-                        (?^ "local_var_ptr") <:> LPtr,
-                        mkNull <:> LPtr,
-                        mkNull <:> LPtr
-                    ] [])))
-            ] (Ret (:# 32) (?^ "local_var"))],
-            tags = neutral
-        }
-    ],
-    tags = neutral
-}
-
-export
--- Module with complex nested structures and packed types
-moduleWithComplexTypes : LModule
-moduleWithComplexTypes = MkLModule {
-    dataLayout = Just "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128",
-    target = Nothing,
-    text = [
-        -- Complex nested struct type
-        GlobalDefC $ MkGVarDef {
-            name = "complex_struct",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            threadLocality = Nothing,
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            externallyInitialized = Nothing,
-            isConst = False,
-            gtpe = LStruct [
-                LInt 8,  -- flags
-                LPackedStruct [LInt 16, LInt 16],  -- packed coordinates
-                LArray 10 (LFloating LDouble),    -- array of doubles
-                LStruct [                         -- nested struct
-                    LPtr,                         -- pointer
-                    LVector 4 (:# 32),         -- vector
-                    LFun LVoid [LInt 32]         -- function pointer
-                ]
-            ],
-            initializer = Nothing,
-            tags = neutral
-        },
-        FunctionDefC $ MkFunctionDef {
-            name = "process_complex_type",
-            symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
-            callingConvention = Just C,
-            returnAttrs = [],
-            returnType = LVoid,
-            args = [MkArgument LPtr [] (Just "complex_ptr")],
-            addressInfo = Nothing,
-            addressSpace = Nothing,
-            fnAttributes = [],
-            section = Nothing,
-            partition = Nothing,
-            comdat = Nothing,
-            alignment = Nothing,
-            gc = Nothing,
-            fprefix = Nothing,
-            prologue = Nothing,
-            personality = Nothing,
-            metadata = [],
-            body = [MkPair "entry" $ MkBasicBlock [
-                -- Get element pointer using a simpler approach
-                "nested_ptr" $<- ((ExtractValue
-                    (MkWithType (LStruct [
-                        LInt 8,  -- flags
-                        LPackedStruct [LInt 16, LInt 16],  -- packed coordinates
-                        LArray 10 (LFloating LDouble),    -- array of doubles
-                        LStruct [                         -- nested struct
-                            LPtr,                         -- pointer
-                            LVector 4 (:# 32),         -- vector
-                            LFun LVoid [LInt 32]         -- function pointer
-                        ]
-                    ]) (?^ "complex_ptr")) 3)),
-                -- Extract vector from nested struct
-                "vector_ptr" $<- ((ExtractValue
-                    (MkWithType (LStruct [LPtr, LVector 4 (:# 32), LFun LVoid [LInt 32]]) 
-                     (?^ "nested_ptr")) 1)),
-                -- Load the vector using simple load
-                "vector" $<- ((LoadRegular False (LVector 4 (:# 32))
-                    (?^ "vector_ptr")
-                    Nothing False False False False Nothing Nothing Nothing False))
-            ] RetVoid],
-            tags = neutral
-        }
-    ],
-    tags = neutral
-}
+export 
+moduleWithIntrinsics : LModule 
+moduleWithIntrinsics = 
+    mkModule [
+        (intrinsicDec ("memcpy" ?+ [LPtr, LPtr, :# 32]) LVoid [!^^ ptr, !^^ ptr, !^^ (:# 32), !^^ (:# 1)]),
+        (functionDef "main" LVoid (["dest" !^ ptr, "src" !^ ptr, "len" !^ (:# 32)]) ["entry" !: ([
+            -<< (CallIntrinsic ("memcpy" ?+ [LPtr, LPtr, :# 32]) LVoid ([(?^ "dest") <:> ptr, (?^ "src") <:> ptr, (?^ "len") <:> i32, (## 0) <:> i1]))
+        ], RetVoid)])
+        
+    ]
 

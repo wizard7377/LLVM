@@ -6,6 +6,7 @@ import Data.LLVM.Class
 import Test.Groups.Module
 import Test.Helper
 import Test.Groups.Encoding
+
 public export
 allTests : IO ()
 allTests = do

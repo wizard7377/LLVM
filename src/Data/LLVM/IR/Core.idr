@@ -239,60 +239,9 @@ Ord Register where
   compare (UnnamedRegister id1) (UnnamedRegister id2) = compare id1 id2
   compare (NamedRegister _) (UnnamedRegister _) = LT
   compare (UnnamedRegister _) (NamedRegister _) = GT
-||| LLVM identifier types for different kinds of names.
-|||
-||| LLVM uses different prefixes to distinguish between different types
-||| of identifiers in the IR. Each name type has a specific purpose and
-||| namespace within LLVM.
-public export
-data Name : Type where 
-  Temporary : Nat -> Name
-  Local : String -> Name 
-  Parameter : String -> Name
-  ||| Unnamed parameter 
-  Unnamed : Nat -> Name
-  Global : String -> Name
--- TODO: Allow for non-string idx
-public export 
-data Destination : Type where
-  ||| A destination for a branch instruction (basic block label)
-  Assign : Register -> Destination
-  Nothing : Destination
-  
 
-export
-implementation Eq Name where
-  (==) (Local n1) (Local n2) = n1 == n2
-  (==) (Global n1) (Global n2) = n1 == n2
-  (==) (Temporary id1) (Temporary id2) = id1 == id2
-  (==) (Parameter p1) (Parameter p2) = p1 == p2
-  (==) (Unnamed id1) (Unnamed id2) = id1 == id2
-  (==) _ _ = False
-export
-implementation Ord Name where
-  compare (Local x) (Local y) = compare x y
-  compare (Global x) (Global y) = compare x y
-  compare (Temporary x) (Temporary y) = compare x y
-  compare (Parameter x) (Parameter y) = compare x y
-  compare (Unnamed x) (Unnamed y) = compare x y
-  compare (Local _) _ = GT 
-  compare _ (Local _) = LT 
-  compare (Global _) _ = GT 
-  compare _ (Global _) = LT
-  compare (Temporary _) _ = GT
-  compare _ (Temporary _) = LT
-  compare (Parameter _) _ = GT
-  compare _ (Parameter _) = LT
-  compare (Unnamed _) _ = GT
-  compare _ (Unnamed _) = LT
 
-export 
-implementation Show Name where
-  show (Local n) = "local " ++ unescape n
-  show (Global n) = "global " ++ unescape n
-  show (Temporary id) = "temp " ++ show id
-  show (Parameter n) = "arg " ++ unescape n
-  show (Unnamed id) = "arg at " ++ show id
+
 ||| LLVM type system representation.
 |||
 ||| This namespace contains types for representing all LLVM IR types,
@@ -371,7 +320,7 @@ namespace LType
       ||| Metadata type
       LMetadata :  LType
       LTarget : String -> List LTargetArg -> LType 
-    
+
 ||| Wrapper for values with explicit type information.
 |||
 ||| Many LLVM IR constructs require both a value and its type.
@@ -386,6 +335,72 @@ record WithType a where
   ||| The actual value
   value : a
 
+public export 
+record IntrinsicName where 
+  constructor MkIntrinsicName
+  ||| The intrinsic function name (without the "llvm." prefix)
+  name : String
+  ||| Optional type parameters for the intrinsic
+  typeParams : List LType    
+||| LLVM identifier types for different kinds of names.
+|||
+||| LLVM uses different prefixes to distinguish between different types
+||| of identifiers in the IR. Each name type has a specific purpose and
+||| namespace within LLVM.
+public export
+data Name : Type where 
+  Temporary : Nat -> Name
+  Local : String -> Name 
+  Parameter : String -> Name
+  ||| Unnamed parameter 
+  Unnamed : Nat -> Name
+  Global : String -> Name
+  Intrinsic : IntrinsicName -> Name
+
+-- TODO: Allow for non-string idx
+public export 
+data Destination : Type where
+  ||| A destination for a branch instruction (basic block label)
+  Assign : Register -> Destination
+  Nothing : Destination
+  
+
+export
+implementation Eq Name where
+  (==) (Local n1) (Local n2) = n1 == n2
+  (==) (Global n1) (Global n2) = n1 == n2
+  (==) (Temporary id1) (Temporary id2) = id1 == id2
+  (==) (Parameter p1) (Parameter p2) = p1 == p2
+  (==) (Unnamed id1) (Unnamed id2) = id1 == id2
+  (==) (Intrinsic n1) (Intrinsic n2) = n1.name == n2.name -- TODO: Check type params
+  (==) _ _ = False
+
+
+tagOf : Name -> Int 
+tagOf (Local _) = 0
+tagOf (Global _) = 1
+tagOf (Temporary _) = 2
+tagOf (Parameter _) = 3
+tagOf (Unnamed _) = 4
+tagOf (Intrinsic _) = 5
+export
+implementation Ord Name where
+  compare (Local x) (Local y) = compare x y
+  compare (Global x) (Global y) = compare x y
+  compare (Temporary x) (Temporary y) = compare x y
+  compare (Parameter x) (Parameter y) = compare x y
+  compare (Unnamed x) (Unnamed y) = compare x y
+  compare (Intrinsic x) (Intrinsic y) = compare x.name y.name
+  compare x y = compare (tagOf x) (tagOf y)
+
+export 
+implementation Show Name where
+  show (Local n) = "local " ++ unescape n
+  show (Global n) = "global " ++ unescape n
+  show (Temporary id) = "temp " ++ show id
+  show (Parameter n) = "arg " ++ unescape n
+  show (Unnamed id) = "arg at " ++ show id
+  show (Intrinsic n) = "intrinsic llvm." ++ unescape n.name
 
 ||| Function and parameter attributes in LLVM IR.
 |||
@@ -980,7 +995,7 @@ mutual
         ||| It splits a basic block into two, end the first with the terminator of the function given the second block.
         ||| E.g, `WithCont Br` becomes `Br bb.unique: bb.unique`
         WithCont : (Label -> Terminator) -> LExpr
-
+        CallIntrinsic : IntrinsicName -> LType -> List (WithType (LValue False)) -> LExpr
     ||| LLVM statements that can appear in basic blocks.
     ||| Models different forms of LLVM IR statements like:
     ||| ```llvm

@@ -157,6 +157,16 @@ record FunctionDec where
   prologue: Maybe (LValue True)
   ||| Additional metadata tags
   tags: Annotation
+
+public export 
+record IntrinsicDec where 
+  constructor MkIntrinsicDec
+  ||| Intrinsic function name (e.g., "llvm.memcpy.p0i8.p0i8.i64")
+  name : IntrinsicName
+  ||| Return type of the intrinsic
+  retType : LType 
+  ||| List of arguments with their types and attributes
+  args : List Argument
 ||| Alias definition.
 ||| Models LLVM IR alias definitions like:
 ||| ```llvm
@@ -233,6 +243,7 @@ data LClause : Type where
   ||| Attribute group definition (attributes #N = {...})
   AttributeGroupC : AttributeGroupDef -> LClause
   TypeDefC : TypeDef -> LClause
+  IntrinsicDecC : IntrinsicDec -> LClause
   ||| Other top-level constructs (e.g., inline assembly, target info)
   OtherC : String -> LClause
 

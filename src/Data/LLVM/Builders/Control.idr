@@ -59,9 +59,9 @@ functionDef :
     {default [] metadata : List Metadata} ->
     (body : Table BasicBlock) ->
     {default neutral tags : Annotation} ->
-    FunctionDef
+    LClause
 functionDef name {symbolInfo} {callingConvention} {returnAttrs} retType args {addressInfo} {addressSpace} {fnAttributes} {section} {partition} {comdat} {alignment} {gc} {fprefix} {prologue} {personality} {metadata} body {tags} =
-    MkFunctionDef
+    FunctionDefC $ MkFunctionDef
         name
         symbolInfo
         callingConvention
@@ -116,9 +116,9 @@ functionDec :
     {default Nothing fprefix : Maybe (LValue True)} ->
     {default Nothing prologue : Maybe (LValue True)} ->
     {default neutral tags : Annotation} ->
-    FunctionDec
+    LClause
 functionDec name {symbolInfo} {callingConvention} {returnAttrs} retType args {addressInfo} {alignment} {gc} {fprefix} {prologue} {tags} =
-    MkFunctionDec
+    FunctionDecC $ MkFunctionDec
         name
         symbolInfo
         callingConvention
@@ -131,6 +131,14 @@ functionDec name {symbolInfo} {callingConvention} {returnAttrs} retType args {ad
         fprefix
         prologue
         tags
+
+export 
+intrinsicDec : 
+    (name : IntrinsicName) ->
+    (retType : LType) -> 
+    (args : List Argument) ->
+    LClause
+intrinsicDec name retType args = IntrinsicDecC $ MkIntrinsicDec name retType args
 export
 ||| Create a return statement.
 |||

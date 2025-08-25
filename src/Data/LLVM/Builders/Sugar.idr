@@ -42,15 +42,11 @@ export
 {t : Bool} -> FromString (LValue t) where 
     fromString x = cast $ Core.LString x
 export prefix 18 ?*
-export infixl 0 $<-
-export prefix 11 $<< 
 export infixr 11 !:
 export infixl 19 !^
 export prefix 18 :?
 export infix 11 <:>
 export infixr 11 <::>
-export infixr 1 :<>
-export infixr 1 :**
 export infixl 29 ^^ 
 export prefix 20 ^#
 export prefix 20 ^>
@@ -61,8 +57,18 @@ export infixl 11 &?
 
 export infixr 11 :->
 
-export prefix 0 ?%, ?@, ?^, ##, #^, :#, #!
-export infixl 98 @=, @:, @<, @>
+-- Prefixes and the like
+export prefix 1 ?%, ?@, ?^, ##, #^, :#, #!, !^^
+export infixr 2 :<>, :**
+export infixr 12 ?+
+-- Expressions
+export infixl 21 !<*>
+-- Statements 
+export infixl 70 <<-
+export prefix 71 -<< 
+-- Blocks 
+-- Top level and the like
+export infixl 98 @*, @=, @:, @<, @>
 export infixr 99 !>
 export prefix 100 !#, #!
 public export 
@@ -87,14 +93,14 @@ public export
 |||
 ||| @ target The target variable name to assign to
 ||| @ op The operation whose result to assign
-($<-) : Name -> LExpr -> LStatement
-($<-) target op = MkLStatement (Just target) op neutral
+(<<-) : Name -> LExpr -> LStatement
+(<<-) target op = MkLStatement (Just target) op neutral
 
 
 
 public export
-($<<) : LExpr -> LStatement
-($<<) v = MkLStatement Nothing v neutral
+(-<<) : LExpr -> LStatement
+(-<<) v = MkLStatement Nothing v neutral
 
 
 
@@ -114,6 +120,9 @@ public export
 (?^) : String -> LValue False
 (?^) name = Core.LVar $ Parameter name
 
+public export 
+(?+) : String -> List LType -> IntrinsicName
+(?+) a b = MkIntrinsicName a b
 
 
 
@@ -131,6 +140,7 @@ public export
 (!:) : String -> (List LStatement, Terminator) -> (String, BasicBlock) 
 (!:) name (stmts, term) = (name, MkBasicBlock stmts term)
 
+
 public export 
 (!#) : BasicBlock -> Label 
 (!#) bb = LiftedLabel bb
@@ -141,6 +151,9 @@ public export
 public export 
 (!^) : String -> LType -> Argument
 (!^) name ty = MkArgument ty neutral (Just name)
+public export 
+(!^^) : LType -> Argument
+(!^^) ty = MkArgument ty neutral Nothing
 public export 
 (!>) : List LStatement -> Terminator -> BasicBlock
 (!>) stmts term = MkBasicBlock stmts term
