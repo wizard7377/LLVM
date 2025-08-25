@@ -58,13 +58,13 @@ export infixl 11 &-
 export infixl 11 &=
 export infixl 11 &+
 export infixl 11 &?
-export infixl 100 @= 
-export infixl 100 @: 
-export infixl 100 @< 
-export infixl 100 @>
+
 export infixr 11 :->
 
-export prefix 0 ?%, ?@, ?^, ##, #^, :#
+export prefix 0 ?%, ?@, ?^, ##, #^, :#, #!
+export infixl 98 @=, @:, @<, @>
+export infixr 99 !>
+export prefix 100 !#, #!
 public export 
 ||| Convenient operator to create a pointer expression from a name.
 |||
@@ -132,9 +132,18 @@ public export
 (!:) name (stmts, term) = (name, MkBasicBlock stmts term)
 
 public export 
+(!#) : BasicBlock -> Label 
+(!#) bb = LiftedLabel bb
+
+public export 
+(#!) : LExpr -> LValue False 
+(#!) expr = LComplex expr
+public export 
 (!^) : String -> LType -> Argument
 (!^) name ty = MkArgument ty neutral (Just name)
-
+public export 
+(!>) : List LStatement -> Terminator -> BasicBlock
+(!>) stmts term = MkBasicBlock stmts term
 public export
 (:?) : Type -> LType 
 (:?) t = lowerTypeReflect t

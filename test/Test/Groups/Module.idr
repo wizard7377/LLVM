@@ -251,6 +251,8 @@ moduleTests = do
     -- Stress test module
     debugCompile "Module_Stress_Test" moduleStressTest
     -}
+    debugCompile "moduleWithMkLStatementsLifted" moduleWithMkLStatementsLifted
+    debugCompile "moduleWithSwitchLifted" moduleWithSwitchLifted
     putStr """
         \n\n\n
         === Starting Foriegn Compile Tests ===
