@@ -3,7 +3,7 @@ module Data.LLVM.Builders.Helper
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
 --import Data.LLVM.Write.Text.Encode
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
 import Data.List
@@ -13,7 +13,7 @@ import Data.LLVM.Builders.Core
 import Data.LLVM.Builders.Ops
 import Data.LLVM.Builders.Math
 import Data.LLVM.Builders.Control
-
+import Data.Table
 public export 
 lowerTypeReflect : (a : Type) -> LType 
 lowerTypeReflect a = case a of 
@@ -35,19 +35,6 @@ lowerTypeReflect a = case a of
 ||| @ xs The list to index
 indexed : List a -> List (a , Nat)
 indexed xs = zip xs [0 .. length xs]
-
-
--- Example of a simple function call
-export
-||| Example function call operation demonstrating simple function calling.
-|||
-||| This example creates a function call to an "add" function with two integer
-||| arguments, showcasing how to use the function call builders with typed arguments.
-exampleCall : LExpr
-exampleCall = simpleCall 
-  (LFun (LType.LInt 32) [LType.LInt 32, LType.LInt 32]) 
-  (globalPtr "add") 
-  [withType (LType.LInt 32) (constExpr (LTerm.LInt 5)), withType (LType.LInt 32) (constExpr (LTerm.LInt 10))]
 
 export 
 ||| Create a bytecode specification with main module and additional modules.
@@ -78,4 +65,3 @@ foriegnDec :
     {default LVoid resType : LType} ->
     LClause
 foriegnDec name {args} {resType} = FunctionDecC $ functionDec name resType args
-

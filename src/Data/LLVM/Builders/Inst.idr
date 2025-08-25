@@ -1,9 +1,9 @@
 module Data.LLVM.Builders.Inst
 
 import Data.LLVM.IR.Core
-
+import Data.Table
 import Data.LLVM.IR.Core
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Util
 
@@ -31,7 +31,7 @@ implementation Setter CaseBranch LType where
   setting f = { tpe $= f }
 
 public export 
-implementation Setter CaseBranch LValue where 
+implementation Setter CaseBranch (LValue True) where 
   setting f = { value $= f }
 
 public export 
@@ -56,11 +56,11 @@ implementation Setter InvokeCall LType where
   setting f = { tpe $= f }
 
 public export 
-implementation Setter InvokeCall LValue where 
+implementation Setter InvokeCall (LValue False) where 
   setting f = { fnval $= f }
 
 public export 
-implementation Setter InvokeCall (List LValue) where 
+implementation Setter InvokeCall (List (LValue False)) where 
   setting f = { args $= f }
 
 public export 
@@ -89,11 +89,11 @@ implementation Setter BrCall LType where
   setting f = { tpe $= f }
 
 public export 
-implementation Setter BrCall LValue where 
+implementation Setter BrCall (LValue False) where 
   setting f = { fnval $= f }
 
 public export 
-implementation Setter BrCall (List LValue) where 
+implementation Setter BrCall (List (LValue False)) where 
   setting f = { args $= f }
 
 public export 
@@ -130,11 +130,11 @@ implementation [FnCallType] Setter FnCall LType where
   setting f = { tpe $= f }
 
 public export 
-implementation [FnCallFnVal] Setter FnCall LValue where 
+implementation [FnCallFnVal] Setter FnCall (LValue False) where 
   setting f = { fnval $= f }
 
 public export 
-implementation Setter FnCall (List (WithType LValue)) where 
+implementation Setter FnCall (List (WithType (LValue False))) where 
   setting f = { args $= f }
 
 public export 
@@ -155,10 +155,6 @@ implementation Setter LStatement Annotation where
   setting f = { metadata $= f }
 
 -- Setters for BasicBlock
-public export 
-implementation Setter BasicBlock String where 
-  setting f = { name $= f }
-
 public export 
 implementation Setter BasicBlock (List LStatement) where 
   setting f = { statements $= f }
@@ -201,7 +197,7 @@ implementation [GVarDefType] Setter GVarDef LType where
   setting f = { gtpe $= f }
 
 public export 
-implementation Setter GVarDef (Maybe LValue) where 
+implementation Setter GVarDef (Maybe (LValue True)) where 
   setting f = { initializer $= f }
 
 public export 
@@ -266,15 +262,15 @@ implementation Setter FunctionDef (Maybe Int) where
   setting f = { alignment $= f }
 
 public export 
-implementation [FunctionDefPrefix] Setter FunctionDef (Maybe LValue) where 
+implementation [FunctionDefPrefix] Setter FunctionDef (Maybe (LValue True)) where 
   setting f = { fprefix $= f }
 
 public export 
-[PrologueSetter] Setter FunctionDef (Maybe LValue) where 
+[PrologueSetter] Setter FunctionDef (Maybe (LValue True)) where 
   setting f = { prologue $= f }
 
 public export 
-[PersonalitySetter] Setter FunctionDef (Maybe LValue) where 
+[PersonalitySetter] Setter FunctionDef (Maybe (LValue True)) where 
   setting f = { personality $= f }
 
 public export 
@@ -282,7 +278,7 @@ implementation Setter FunctionDef (List Metadata) where
   setting f = { metadata $= f }
 
 public export 
-implementation Setter FunctionDef (List BasicBlock) where 
+implementation Setter FunctionDef (Table BasicBlock) where 
   setting f = { body $= f }
 
 public export 
@@ -327,11 +323,11 @@ public export
   setting f = { gc $= f }
 
 public export 
-[FunctionDecPrefix] Setter FunctionDec (Maybe LValue) where 
+[FunctionDecPrefix] Setter FunctionDec (Maybe (LValue True)) where 
   setting f = { fprefix $= f }
 
 public export 
-[FunctionDecPrologue] Setter FunctionDec (Maybe LValue) where 
+[FunctionDecPrologue] Setter FunctionDec (Maybe (LValue True)) where 
   setting f = { prologue $= f }
 
 public export 

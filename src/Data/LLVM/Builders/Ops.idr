@@ -4,7 +4,7 @@ module Data.LLVM.Builders.Ops
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
 --import Data.LLVM.Write.Text.Encode
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.IR.Program
 import Data.LLVM.IR.Alias
 import Data.List
@@ -40,7 +40,7 @@ globalDef :
     {default Nothing externallyInitialized : Maybe Bool} ->
     {default False isConst : Bool} ->
     (ty : LType) ->
-    {default Nothing init : Maybe LValue} ->
+    {default Nothing init : Maybe (LValue ?)} ->
     {default neutral tags : Annotation} ->
     GVarDef
 globalDef name {symbolInfo} {threadLocality} {addressInfo} {addressSpace} {externallyInitialized} {isConst} ty {init} {tags} =

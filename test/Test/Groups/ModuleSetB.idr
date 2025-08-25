@@ -7,10 +7,25 @@ import Data.LLVM.Class
 import Data.LLVM.Builders.Math
 import Test.Helper
 import Data.LLVM.Write.Foreign
-
+import Data.Table
 
 %hide Data.LLVM.Builders.Core.emptyModule
-
+export
+moduleWithPhiAndSelect : LModule
+moduleWithPhiAndSelect = tempModule
+export
+moduleWithVectorAndAggregate : LModule
+moduleWithVectorAndAggregate = tempModule
+export
+moduleWithCastsAndComparisons : LModule
+moduleWithCastsAndComparisons = tempModule
+export
+moduleWithConversionsAndMemory : LModule
+moduleWithConversionsAndMemory = tempModule
+export
+moduleWithAllComparisons : LModule
+moduleWithAllComparisons = tempModule
+{- 
 export
 moduleWithPhiAndSelect : LModule
 moduleWithPhiAndSelect = MkLModule {
@@ -22,8 +37,8 @@ moduleWithPhiAndSelect = MkLModule {
             symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
             callingConvention = Just C,
             returnAttrs = [],
-            returnType = LInt 32,
-            args = [MkArgument (LInt 32) [] (Just "cond"), MkArgument (LInt 32) [] (Just "x"), MkArgument (LInt 32) [] (Just "y")],
+            returnType = (:# 32),
+            args = [MkArgument (:# 32) [] (Just "cond"), MkArgument (:# 32) [] (Just "x"), MkArgument (:# 32) [] (Just "y")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -37,19 +52,19 @@ moduleWithPhiAndSelect = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
-                    "cond_bool" $<- (icmp CNe (LInt 32) (?^ "cond") ( (LInt 0)))
+                MkPair "entry" $ MkBasicBlock [
+                    "cond_bool" $<- (icmp CNe (:# 32) (?^ "cond") ( (## 0)))
                 ] (CondBr (?^ "cond_bool") (#^ "bb_true") (#^ "bb_false")),
-                MkBasicBlock "bb_true" [
-                    "val_true" $<- (Add (LInt 32) (?^ "x") ( (LInt 1)))
+                MkPair "bb_true" $ MkBasicBlock [
+                    "val_true" $<- (Add (:# 32) (?^ "x") ( (## 1)))
                 ] (JumpBr (#^ "merge")),
-                MkBasicBlock "bb_false" [
-                    "val_false" $<- (Sub (LInt 32) (?^ "y") ( (LInt 1)))
+                MkPair "bb_false" $ MkBasicBlock [
+                    "val_false" $<- (Sub (:# 32) (?^ "y") ( (## 1)))
                 ] (JumpBr (#^ "merge")),
-                MkBasicBlock "merge" [
-                    "phi_result" $<- (Phi (LInt 32) [((?^ "val_true"), (#^ "bb_true")), ((?^ "val_false"), (#^ "bb_false"))]),
-                    "select_result" $<- (Select [] (MkWithType (LInt 32) (?^ "cond_bool")) (MkWithType (LInt 32) (?^ "val_true")) (MkWithType (LInt 32) (?^ "val_false")))
-                ] (Ret (LInt 32) (?^ "select_result"))
+                MkPair "merge" $ MkBasicBlock [
+                    "phi_result" $<- (Phi (:# 32) [((?^ "val_true"), (#^ "bb_true")), ((?^ "val_false"), (#^ "bb_false"))]),
+                    "select_result" $<- (Select [] (MkWithType (:# 32) (?^ "cond_bool")) (MkWithType (:# 32) (?^ "val_true")) (MkWithType (:# 32) (?^ "val_false")))
+                ] (Ret (:# 32) (?^ "select_result"))
             ],
             tags = neutral
         }
@@ -68,8 +83,8 @@ moduleWithVectorAndAggregate = MkLModule {
             symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
             callingConvention = Just C,
             returnAttrs = [],
-            returnType = LInt 32,
-            args = [MkArgument (LVector 4 (LInt 32)) [] (Just "vec"), MkArgument (LStruct [LInt 32, LInt 32]) [] (Just "s")],
+            returnType = (:# 32),
+            args = [MkArgument (LVector 4 (:# 32)) [] (Just "vec"), MkArgument (LStruct [(:# 32), (:# 32)]) [] (Just "s")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -83,18 +98,18 @@ moduleWithVectorAndAggregate = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     -- Extract element 2 from vector
-                    "elem2" $<- (ExtractElement ((4 :<> (:# 32)) <::> (?^ "vec")) ((:# 32) <::> ( (LInt 2)))),
+                    "elem2" $<- (ExtractElement ((4 :<> (:# 32)) <::> (?^ "vec")) ((:# 32) <::> ( (## 2)))),
                     -- Insert value into vector at index 1
-                    "vec2" $<- (InsertElement ((4 :<> (:# 32)) <::> (?^ "vec")) ((:# 32) <::> (?^ "elem2")) ((:# 32) <::> ( (LInt 1)))),
+                    "vec2" $<- (InsertElement ((4 :<> (:# 32)) <::> (?^ "vec")) ((:# 32) <::> (?^ "elem2")) ((:# 32) <::> ( (## 1)))),
                     -- Shuffle vector with itself
-                    "shuffled" $<- (ShuffleVector ((4 :<> (:# 32)) <::> (?^ "vec2")) ((4 :<> (:# 32)) <::> (?^ "vec2")) ((4 :<> (:# 32)) <::> ( (LVector [((:# 32) <::> (LInt 0)), ((:# 32) <::> (LInt 1)), ((:# 32) <::> (LInt 2)), ((:# 32) <::> (LInt 3))])))),
+                    "shuffled" $<- (ShuffleVector ((4 :<> (:# 32)) <::> (?^ "vec2")) ((4 :<> (:# 32)) <::> (?^ "vec2")) ((4 :<> (:# 32)) <::> ( (.<> [((:# 32) <::> (## 0)), ((:# 32) <::> (## 1)), ((:# 32) <::> (## 2)), ((:# 32) <::> (## 3))])))),
                     -- Extract value from struct
-                    "x_val" $<- (ExtractValue (MkWithType (LStruct [LInt 32, LInt 32]) (?^ "s")) 0),
+                    "x_val" $<- (ExtractValue (MkWithType (LStruct [(:# 32), (:# 32)]) (?^ "s")) 0),
                     -- Insert value into struct
-                    "s2" $<- (InsertValue (MkWithType (LStruct [LInt 32, LInt 32]) (?^ "s")) (MkWithType (LInt 32) (?^ "x_val")) 1)
-                ] (Ret (LInt 32) (?^ "x_val"))
+                    "s2" $<- (InsertValue (MkWithType (LStruct [(:# 32), (:# 32)]) (?^ "s")) (MkWithType (:# 32) (?^ "x_val")) 1)
+                ] (Ret (:# 32) (?^ "x_val"))
             ],
             tags = neutral
         }
@@ -113,8 +128,8 @@ moduleWithCastsAndComparisons = MkLModule {
             symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
             callingConvention = Just C,
             returnAttrs = [],
-            returnType = LInt 1,
-            args = [MkArgument (LInt 32) [] (Just "a"), MkArgument (LInt 32) [] (Just "b")],
+            returnType = (:# 1),
+            args = [MkArgument (:# 32) [] (Just "a"), MkArgument (:# 32) [] (Just "b")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -128,16 +143,16 @@ moduleWithCastsAndComparisons = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     -- Truncate a to i1
-                    "a_trunc" $<- (Trunc NoSigned (MkWithType (LInt 32) (?^ "a")) (LInt 1)),
+                    "a_trunc" $<- (Trunc NoSigned (MkWithType (:# 32) (?^ "a")) (:# 1)),
                     -- Zero extend b to i64
-                    "b_zext" $<- (ZExt (MkWithType (LInt 32) (?^ "b")) (LInt 64)),
+                    "b_zext" $<- (ZExt (MkWithType (:# 32) (?^ "b")) (:# 64)),
                     -- Compare a and b
-                    "cmp" $<- (ICmp CEq (LInt 32) (?^ "a") (?^ "b")),
+                    "cmp" $<- (ICmp CEq (:# 32) (?^ "a") (?^ "b")),
                     -- Bitcast a to i32 (no-op)
-                    "a_bitcast" $<- (BitCast (MkWithType (LInt 32) (?^ "a")) (LInt 32))
-                ] (Ret (LInt 1) (?^ "a_trunc"))
+                    "a_bitcast" $<- (BitCast (MkWithType (:# 32) (?^ "a")) (:# 32))
+                ] (Ret (:# 1) (?^ "a_trunc"))
             ],
             tags = neutral
         }
@@ -156,8 +171,8 @@ moduleWithConversionsAndMemory = MkLModule {
             symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
             callingConvention = Just C,
             returnAttrs = [],
-            returnType = LInt 64,
-            args = [MkArgument (LInt 32) [] (Just "a"), MkArgument (LInt 64) [] (Just "b")],
+            returnType = :# 64,
+            args = [MkArgument (:# 32) [] (Just "a"), MkArgument (:# 64) [] (Just "b")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -171,20 +186,20 @@ moduleWithConversionsAndMemory = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
+                MkPair "entry" $ MkBasicBlock [
                     -- Sign extend a to i64
-                    "a_sext" $<- (SExt (MkWithType (LInt 32) (?^ "a")) (LInt 64)),
+                    "a_sext" $<- (SExt (MkWithType (:# 32) (?^ "a")) (## 64)),
                     -- Truncate b to i32
-                    "b_trunc" $<- (Trunc NoSigned (MkWithType (LInt 64) (?^ "b")) (LInt 32)),
+                    "b_trunc" $<- (Trunc NoSigned (MkWithType (:# 64) (?^ "b")) (:# 32)),
                     -- Compare a and b (signed less than)
-                    "cmp" $<- (ICmp CSLt (LInt 32) (?^ "a") (?^ "b_trunc")),
+                    "cmp" $<- (ICmp CSLt (:# 32) (?^ "a") (?^ "b_trunc")),
                     -- Allocate i64 local
-                    "local_ptr" $<- (Alloc (LInt 64) Nothing (Just 8) Nothing),
+                    "local_ptr" $<- (Alloc (:# 64) Nothing (Just 8) Nothing),
                     -- Store a_sext to local_ptr
-                    $<< (StoreRegular False (MkWithType (LInt 64) (?^ "a_sext")) (?^ "local_ptr") (Just 8) False False),
+                    $<< (StoreRegular False (MkWithType (:# 64) (?^ "a_sext")) (?^ "local_ptr") (Just 8) False False),
                     -- Load from local_ptr
-                    "loaded" $<- (LoadRegular False (LInt 64) (?^ "local_ptr") (Just 8) False False False False Nothing Nothing Nothing False)
-                ] (Ret (LInt 64) (?^ "loaded"))
+                    "loaded" $<- (LoadRegular False (:# 64) (?^ "local_ptr") (Just 8) False False False False Nothing Nothing Nothing False)
+                ] (Ret (:# 64) (?^ "loaded"))
             ],
             tags = neutral
         }
@@ -203,8 +218,8 @@ moduleWithAllComparisons = MkLModule {
             symbolInfo = MkSymbolInfo (Just External) Nothing (Just Default) Nothing,
             callingConvention = Just C,
             returnAttrs = [],
-            returnType = LInt 32,
-            args = [MkArgument (LInt 32) [] (Just "x"), MkArgument (LInt 32) [] (Just "y")],
+            returnType = (:# 32),
+            args = [MkArgument (:# 32) [] (Just "x"), MkArgument (:# 32) [] (Just "y")],
             addressInfo = Nothing,
             addressSpace = Nothing,
             fnAttributes = [],
@@ -218,21 +233,22 @@ moduleWithAllComparisons = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [
-                MkBasicBlock "entry" [
-                    "eq" $<- (ICmp CEq (LInt 32) (?^ "x") (?^ "y")),
-                    "ne" $<- (ICmp CNe (LInt 32) (?^ "x") (?^ "y")),
-                    "ugt" $<- (ICmp CUGt (LInt 32) (?^ "x") (?^ "y")),
-                    "uge" $<- (ICmp CUGe (LInt 32) (?^ "x") (?^ "y")),
-                    "ult" $<- (ICmp CULt (LInt 32) (?^ "x") (?^ "y")),
-                    "ule" $<- (ICmp CULe (LInt 32) (?^ "x") (?^ "y")),
-                    "sgt" $<- (ICmp CSGt (LInt 32) (?^ "x") (?^ "y")),
-                    "sge" $<- (ICmp CSGe (LInt 32) (?^ "x") (?^ "y")),
-                    "slt" $<- (ICmp CSLt (LInt 32) (?^ "x") (?^ "y")),
-                    "sle" $<- (ICmp CSLe (LInt 32) (?^ "x") (?^ "y"))
-                ] (Ret (LInt 32) ( (LInt 0)))
+                MkPair "entry" $ MkBasicBlock [
+                    "eq" $<- (ICmp CEq (:# 32) (?^ "x") (?^ "y")),
+                    "ne" $<- (ICmp CNe (:# 32) (?^ "x") (?^ "y")),
+                    "ugt" $<- (ICmp CUGt (:# 32) (?^ "x") (?^ "y")),
+                    "uge" $<- (ICmp CUGe (:# 32) (?^ "x") (?^ "y")),
+                    "ult" $<- (ICmp CULt (:# 32) (?^ "x") (?^ "y")),
+                    "ule" $<- (ICmp CULe (:# 32) (?^ "x") (?^ "y")),
+                    "sgt" $<- (ICmp CSGt (:# 32) (?^ "x") (?^ "y")),
+                    "sge" $<- (ICmp CSGe (:# 32) (?^ "x") (?^ "y")),
+                    "slt" $<- (ICmp CSLt (:# 32) (?^ "x") (?^ "y")),
+                    "sle" $<- (ICmp CSLe (:# 32) (?^ "x") (?^ "y"))
+                ] (Ret (:# 32) ( (## 0)))
             ],
             tags = neutral
         }
     ],
     tags = neutral
 }
+-}

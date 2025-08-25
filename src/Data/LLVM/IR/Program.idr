@@ -6,8 +6,8 @@
 module Data.LLVM.IR.Program
 
 import Data.LLVM.IR.Core
-import Data.LLVM.IR.Ops
-
+import Data.LLVM.IR.Core
+import Data.Table
 ||| Global variable definition.
 ||| Models LLVM IR global variable definitions like:
 ||| ```llvm
@@ -35,7 +35,7 @@ record GVarDef where
   ||| The type of the global variable
   gtpe : LType.LType
   ||| Optional initializer value
-  initializer : Maybe LValue
+  initializer : Maybe (LValue True)
   ||| Metadata tags
   tags : Annotation
 
@@ -112,15 +112,15 @@ record FunctionDef where
   ||| Garbage collector name (gc "name")
   gc : Maybe String
   ||| Prefix data (prefix Constant)
-  fprefix: Maybe LValue
+  fprefix: Maybe (LValue True)
   ||| Prologue data (prologue Constant)
-  prologue: Maybe LValue
+  prologue: Maybe (LValue True)
   ||| Personality function (personality Constant)
-  personality : Maybe LValue
+  personality : Maybe (LValue True)
   ||| Attached metadata (!name !N)*
   metadata : List Metadata
   ||| Function body with basic blocks and instructions
-  body : List BasicBlock
+  body : Table BasicBlock
   ||| Additional metadata tags
   tags: Annotation
 ||| Function declaration without implementation.
@@ -152,9 +152,9 @@ record FunctionDec where
   ||| Garbage collector name (gc "name")
   gc : Maybe String 
   ||| Prefix data (prefix Constant)
-  fprefix: Maybe LValue 
+  fprefix: Maybe (LValue True) 
   ||| Prologue data (prologue Constant)
-  prologue: Maybe LValue
+  prologue: Maybe (LValue True)
   ||| Additional metadata tags
   tags: Annotation
 ||| Alias definition.
@@ -270,4 +270,4 @@ record Bytecode where
   constructor MkBytecode
   mainMod : Maybe String
   ||| List of LLVM modules in this bytecode unit
-  modules : List (String, LModule)
+  modules : Table LModule

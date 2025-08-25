@@ -12,6 +12,3 @@ optimizeLLVM {context} input = do
     (unless $ r == 0) (throwError $ OptimizeError out)
     pure input 
 
-export 
-[optimizeLLVMStage] Stage String String where
-    runStage {context} input = optimizeLLVM {context} input

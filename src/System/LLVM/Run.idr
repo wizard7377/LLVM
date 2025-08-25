@@ -13,7 +13,3 @@ runLLVM {context} input = do
     (unless $ r > 0) (throwError $ RunError out)
     pure input
 
-export
-[runLLVMStage] Stage String String where
-    runStage {context} input = runLLVM {context} input
-

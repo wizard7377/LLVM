@@ -37,7 +37,7 @@ install: array.so $(srcFiles) check-llvm
 
 test: install
 	@echo "Building and running LLVM tests..."
-	$(IDRIS) --build test.ipkg
+	$(IDRIS) $(OPTS) --build test.ipkg
 	@echo "Running test executable..."
 	$(DBG) ./build/exec/llvm-test
 

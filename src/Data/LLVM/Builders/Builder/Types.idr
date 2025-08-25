@@ -5,7 +5,7 @@ import Control.Monad.Either
 import Control.Monad.State
 import Data.SortedMap
 import Data.LLVM.IR.Core
-import Data.LLVM.IR.Ops
+import Data.LLVM.IR.Core
 import Data.LLVM.IR.Program
 mutual
     public export 

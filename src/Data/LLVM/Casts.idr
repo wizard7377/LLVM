@@ -40,14 +40,14 @@ public export
 Walk LType Argument where 
     go t = MkArgument t [] Nothing
 public export
-Walk Int LValue where 
-    go i =  (LTerm.LInt i)
+Walk Int (LValue True) where 
+    go i =  (Core.LInt i)
 public export
-Walk String LValue where 
-    go s =  (LTerm.LString s)
+Walk String (LValue True) where 
+    go s =  (Core.LString s)
 public export
-Walk Bool LValue where 
-    go b =  (LTerm.LBool b)
+Walk Bool (LValue True) where 
+    go b =  (Core.LBool b)
 
 public export 
 Walk a b => Walk b c => Walk a c where 
@@ -58,5 +58,5 @@ Walk LExpr LStatement where
     go op = MkLStatement Nothing op neutral
 
 public export 
-Walk Name LValue where 
-    go n = LTerm.LVar n
+Walk Name (LValue False) where 
+    go n = Core.LVar n

@@ -52,7 +52,7 @@ encodingTests = do
     -- encodeFCMTest "Special Name" (Special "specialvar")
     -- encodeFCMTest "Metadata Name" (MetadataN "metadata1")
     -- Test constants
-    encodeFCMTest "Integer Constant" (withType (LType.LInt 8) $ LTerm.LInt 42)
+    encodeFCMTest "Integer Constant" (withType (LType.LInt 8) $ Core.LInt 42)
     -- encodeFCMTest "Float Constant" (withType (LType.LFloating $ LFloat "3.14159"))
     encodeFCMTest "Bool Constant True" (withType (LType.LInt 1) $ LBool True)
     encodeFCMTest "Bool Constant False" (withType (LType.LInt 1) $ LBool False)

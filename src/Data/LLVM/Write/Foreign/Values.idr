@@ -64,7 +64,7 @@ Encode FCM CallingConvention CEnum where
     encode CxxFastTL = fcmPure $ (the CEnum (cast 17))   -- LLVMCXXFASTTLSCallConv
     -- Non-standard calling conventions mapped to custom values
     encode PreserveNone = fcmPure $ (the CEnum (cast 100))
-    encode Tail = fcmPure $ (the CEnum (cast 101))
+    encode TailCC = fcmPure $ (the CEnum (cast 101))
     encode SwiftTail = fcmPure $ (the CEnum (cast 102))
     encode CFGuardCheck = fcmPure $ (the CEnum (cast 103))
     encode (CustomCC n) = fcmPure $ (the CEnum (cast n))
@@ -195,7 +195,7 @@ mutual
             liftFCM $ LLVMMDStringInContext !inCon custom (cast $ length custom)
     
     export
-    Encode FCM (WithType LValue) CPtr where
+    {t : Bool} -> Encode FCM (WithType (LValue t)) CPtr where
       encode (MkWithType ty v) = step "Make with type" $ do 
         ty' <- encode' ty
         case v of 
@@ -206,22 +206,22 @@ mutual
               Global n => liftFCM $ LLVMGetNamedGlobal !inMod n  
               Parameter n => getScope name
               Unnamed n => ?ewte13
-          LTerm.LToken => ?ewte30
+          Core.LToken => ?ewte30
           LBool b => do 
             if b then liftFCM $ LLVMConstInt ty' 1 0 else liftFCM $ LLVMConstInt ty' 0 0
           LInt i => liftFCM $ LLVMConstInt ty' (cast i) 0
           LNull => liftFCM $ LLVMConstNull ty'
-          LTerm.LFloat f => liftFCM $ LLVMConstReal ty' ?ewte2
+          Core.LFloat f => liftFCM $ LLVMConstReal ty' ?ewte2
           
-          LTerm.LString s => liftFCM $ LLVMConstString s (cast $ length s + 1) 0
-          LTerm.LPoison => liftFCM $ LLVMGetPoison ty'
-          LTerm.LZero => liftFCM $ LLVMConstNull ty'
-          LTerm.LUndefined => liftFCM $ LLVMGetUndef ty'
-          LTerm.LMetadata md => do 
+          Core.LString s => liftFCM $ LLVMConstString s (cast $ length s + 1) 0
+          Core.LPoison => liftFCM $ LLVMGetPoison ty'
+          Core.LZero => liftFCM $ LLVMConstNull ty'
+          Core.LUndefined => liftFCM $ LLVMGetUndef ty'
+          Core.LMetadata md => do 
             md' <- encode md 
             liftFCM $ LLVMMetadataAsValue !inCon md'
-          LTerm.LPtr p => do 
-            p' <- encode $ MkWithType ty $ LTerm.LVar p 
+          Core.LPtr p => do 
+            p' <- encode $ MkWithType ty $ Core.LVar p 
             pure p' -- TODO: is this correct?
 
           
