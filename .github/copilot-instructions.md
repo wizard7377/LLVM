@@ -161,7 +161,6 @@ myFunction = functionDef "main" LVoid [] $ MkBasicBlock [
 - Hierarchical module structure mirrors LLVM concepts
 - Heavy use of re-exports for clean public interfaces  
 - Type classes for uniform encoding/serialization
-- Extensive use of elaborator scripts for code generation
 
 ## Development Notes
 
