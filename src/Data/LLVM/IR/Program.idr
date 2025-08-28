@@ -5,6 +5,7 @@
 ||| It provides the building blocks for constructing full LLVM modules.
 module Data.LLVM.IR.Program
 
+import Data.Buffer
 import Data.LLVM.IR.Core
 import Data.LLVM.IR.Core
 import Data.Table
@@ -273,6 +274,9 @@ record LModule where
 -- TODO: Comdats
 -- TODO: fin param attributes
 
+public export 
+Bitcode : Type 
+Bitcode = Buffer
 ||| LLVM Bytecode container.
 ||| Represents a collection of LLVM modules, typically used for
 ||| multi-module compilation units or linked programs.
@@ -282,3 +286,4 @@ record Bytecode where
   mainMod : Maybe String
   ||| List of LLVM modules in this bytecode unit
   modules : Table LModule
+  extrabitCode : Table Buffer

@@ -14,6 +14,7 @@ import Data.LLVM.Builders.Ops
 import Data.LLVM.Builders.Math
 import Data.LLVM.Builders.Control
 import Data.Table
+import public Data.Buffer
 public export 
 lowerTypeReflect : (a : Type) -> LType 
 lowerTypeReflect a = case a of 
@@ -45,9 +46,8 @@ export
 |||
 ||| @ mainMod Optional name of the main module
 ||| @ modules List of (name, module) pairs for all modules in the bytecode
-bytecode : {default Nothing mainMod : Maybe String} -> {default [] modules : List (String, LModule)} ->
-    Bytecode
-bytecode {mainMod} {modules} = MkBytecode mainMod modules
+bytecode : {default Nothing mainMod : Maybe String} -> {default [] modules : List (String, LModule)} -> {default [] bitcode : Table Buffer} -> Bytecode
+bytecode {mainMod} {modules} {bitcode} = MkBytecode mainMod modules bitcode
 
 export 
 ||| Create a foreign function declaration clause.

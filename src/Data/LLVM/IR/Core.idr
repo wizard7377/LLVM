@@ -995,7 +995,7 @@ mutual
         ||| It splits a basic block into two, end the first with the terminator of the function given the second block.
         ||| E.g, `WithCont Br` becomes `Br bb.unique: bb.unique`
         WithCont : (Label -> Terminator) -> LExpr
-        CallIntrinsic : IntrinsicName -> LType -> List (WithType (LValue False)) -> LExpr
+        GetElemenentPtr : GEP False -> LExpr
     ||| LLVM statements that can appear in basic blocks.
     ||| Models different forms of LLVM IR statements like:
     ||| ```llvm
@@ -1021,7 +1021,19 @@ mutual
         statements : List LStatement
         ||| Terminator instruction that ends the block
         terminator : Terminator
-        
+    public export 
+    data GEPRange : Type where 
+      GEPAll : GEPRange
+      GEPInbounds : GEPRange
+      GEPNUSW : GEPRange
+      GEPNUW : GEPRange
+    public export 
+    record GEP (isConst : Bool) where 
+        constructor MkGEP
+        bounds : GEPRange
+        base : LType
+        ptr : (LValue isConst)
+        indices : List (WithType (LValue True))
     ||| Type alias for basic block labels.
     |||
     ||| Labels are represented as expressions for flexibility in referencing
@@ -1059,6 +1071,9 @@ mutual
         LConstExtractElement : (LValue True) -> (LValue True) -> LConstExpr
         LConstInsertElement : (LValue True) -> (LValue True) -> LConstExpr
         LConstShuffleVector : (LValue True) -> (LValue True) -> LConstExpr
+        LConstExtractValue : (LValue True) -> Nat -> LConstExpr
+        LConstInsertValue : (LValue True) -> (LValue True) -> Nat -> LConstExpr
+        LConstGEP : GEP True -> LConstExpr
         LConstAdd : (LValue True) -> (LValue True) -> LConstExpr
         LConstSub : (LValue True) -> (LValue True) -> LConstExpr
         LConstXor : (LValue True) -> (LValue True) -> LConstExpr

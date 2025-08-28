@@ -1,72 +1,12 @@
-#+TODO TODO OTHER ACTIVE CANCEL | DONE
-* Items still in Development
+#+TITLE: TODO For LLVM
 
-There are a number of things still in development
+* Usage
 
-** TODO [#A] Development
+** Ease of Use
 
-*** TODO Finish writing Foreign C API
+** Usability
 
-Encoding
+* Internal
 
-*** TODO Builder monad
-**** TODO Add ~SymbolInfo~ support
 
-*** TODO Better Documentation :user:
-
-** TODO [#C] Certified, Terse Asssembly                               :util:
-
-An optional system for type checking and inference of assembly.
-E.g, perhaps ~add i32 x {4 8}~ could be failed
-
-** Internal Issues
-
-*** TODO [#A] Make the Foreign API Safer :safety:
-
-Currently, the foreign API in ~Data.LLVM.Write~ is quite unsafe.
-Namely, it relies quite a bit on void pointers (~CPtr~) to make it work
-
-**** TODO Add =Newtype= Class
-This would have ways to convert to and from ~AnyPtr~
-
-**** TODO [#A] Create ~autoPrim~ Elab Script :safety:
-
-This would do a couple things.
-Firstly, it would take in a list of declerations, e.g:
-#+BEGIN_BLOCK idris
-%runElab autoPrim `[
-myCFun : Boolean -> MyBox -> OtherBox
-]
-#+END_BLOCK
-
-If ~MyBox~ and ~OtherBox~ are ~Newtype~ then:
-1. Create a function decleration ~prim__myCFun : Int -> AnyPtr -> AnyPtr~
-2. Define it as foreign
-3. Declare ~myCFun~ with the given signature
-4. Define it as ~myCFun arg0 arg1 = box (myCFun (cast arg0) (unbox arg1))~
-
-***** TODO [#C] Neat Tricks :util:
-
-Apart from just converting to and from C pointers, a couple nicer things would be cool:
-1. The ability (as used above) to convert to and from numbers and booleans (probably just ~cast~)
-2. The ability to go to and from ~List a~ and ~Ptr a~
-
-** TODO [#B] General Issues
-
-There exist some larger scale issues
-
-*** TODO Ensure That the LLVM is covered :basic:
-
-Ensure that every feature that exists in either the LLVM C or LLVM IR is covered
-
-*** TODO Ensure That the LLVM is complete :basic:
-
-Ensure that every feature that exists in this library is actually a feature of LLVM
-
-*** TODO Interface Design :util:
-
-Ensure that the interface is as idiomatic as possible
-
-*** TODO [#B] Ensure that every construct has a smart constructor
-
-*** TODO [#B] Ensure that every commen construct has some operator sugar
+* Well Formedness

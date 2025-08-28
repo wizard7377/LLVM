@@ -87,20 +87,62 @@ context :
 context {passes} {mainModule} buildDir {tempDir} {extraIr} {extraBc} {extraObj} {output} = 
     MkStageContext passes mainModule buildDir tempDir extraIr extraBc extraObj output
 
-public export
-Stage : Type -> Type 
-Stage = (EitherT (List StageError) (RWST StageContext StageState StageWriter  IO))
+export
+data Stage : Type -> Type where 
+  MkStage : (EitherT (List StageError) (RWST StageContext StageWriter StageState IO)) a -> Stage a
 
-unStage : StageContext -> StageWriter -> StageState -> Stage a -> IO ((Either (List StageError) a), StageWriter, StageState)
-unStage r w s m = let 
-    r0 = runEitherT m
-    r1 = (unRWST r0 r w s)
-    in r1
+unStage : Stage a -> (EitherT (List StageError) (RWST StageContext StageWriter StageState  IO)) a
+unStage (MkStage m) = m
 public export
 runStage : {auto context : StageContext} -> {default defaultState state : StageState} -> Stage a -> IO (Either (List StageError) a)
-runStage {context} {state} m = let 
+runStage {context} {state} (MkStage m) = let 
     r0 = runEitherT m
-    r1 = (unRWST r0 context defaultWriter state)
+    r1 = (unRWST r0 context state defaultWriter)
     in do 
         (res, _, _) <- r1
         pure res
+
+export
+mkStage : (EitherT (List StageError) (RWST StageContext StageWriter StageState  IO)) a -> Stage a
+mkStage = MkStage
+
+  
+export 
+Functor Stage where 
+    map f (MkStage m) = MkStage (map f m)
+export
+Applicative Stage where 
+    pure x = MkStage (pure x)
+    (MkStage f) <*> (MkStage x) = MkStage (f <*> x)
+export
+Monad Stage where
+    (MkStage m) >>= f = mkStage (m >>= (unStage . f))
+
+export 
+HasIO Stage where 
+    liftIO io = MkStage (liftIO io)
+
+export 
+MonadReader StageContext Stage where 
+    ask = MkStage (ask)
+    local f (MkStage m) = MkStage (local f m)
+export
+MonadState StageState Stage where 
+    get = MkStage (lift get)
+    put s = MkStage (put s)
+export 
+MonadWriter StageWriter Stage where 
+    tell w = MkStage (tell w)
+    listen (MkStage m) = MkStage (listen m)
+    pass (MkStage m) = MkStage (pass m)
+export
+MonadError (List StageError) Stage where 
+    throwError err = MkStage (throwError err)
+    catchError (MkStage m) handler = MkStage (catchError m (unStage . handler))
+
+export 
+Alternative Stage where 
+    empty = MkStage (empty)
+    (MkStage x) <|> (MkStage y) = MkStage (x <|> y)
+
+

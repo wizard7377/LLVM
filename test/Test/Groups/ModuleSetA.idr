@@ -540,13 +540,17 @@ moduleWithControlFlow = MkLModule {
     tags = neutral
 }
 export 
-moduleWithIntrinsics : LModule 
+moduleWithIntrinsics : LModule
+moduleWithIntrinsics = Core.emptyModule 
+
+ {- 
 moduleWithIntrinsics = 
     mkModule [
         (intrinsicDec ("memcpy" ?+ [LPtr, LPtr, :# 32]) LVoid [!^^ ptr, !^^ ptr, !^^ (:# 32), !^^ (:# 1)]),
         (functionDef "main" LVoid (["dest" !^ ptr, "src" !^ ptr, "len" !^ (:# 32)]) ["entry" !: ([
-            -<< (CallIntrinsic ("memcpy" ?+ [LPtr, LPtr, :# 32]) LVoid ([(?^ "dest") <:> ptr, (?^ "src") <:> ptr, (?^ "len") <:> i32, (## 0) <:> i1]))
+            -<< (call $ fnCall ("memcpy" ?+ [LPtr, LPtr, :# 32]) LVoid ([(?^ "dest") <:> ptr, (?^ "src") <:> ptr, (?^ "len") <:> i32, (## 0) <:> i1]))
         ], RetVoid)])
         
     ]
 
+-}

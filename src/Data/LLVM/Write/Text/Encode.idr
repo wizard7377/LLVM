@@ -864,11 +864,6 @@ Encode ATM LExpr VString where
         aStr <- encode a
         bStr <- encode b
         pure $ "fcmp true" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (CallIntrinsic name retType args) = do 
-        name' <- encode name 
-        retType' <- encode retType 
-        args' <- encode @{each} args
-        pure $ "call" <+> retType' <+> name' <+> "(" <+> args' <+> ")"
     encode _ = ?enle
     -- TODO: With continuation
 
