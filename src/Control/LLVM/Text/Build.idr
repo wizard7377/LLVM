@@ -1,56 +1,33 @@
-module Control.LLVM.Text.Build 
+module Control.LLVM.Text.Build
 
-
-import Control.LLVM.Text.Common
-import Data.LLVM
-import System
-import Data.Table
-import Control.LLVM.Text.Compile
-import Control.LLVM.Text.Run
-import Control.LLVM.Text.Link
-import Control.LLVM.Text.Assembler
+import Control.LLVM.Stage
+import Control.LLVM.Code
+import Control.LLVM.Text.Convert
+import Control.LLVM.Text.Assemble
 import Control.LLVM.Text.Optimize
-intercalate : String -> List String -> String
-intercalate sep [] = ""
-intercalate sep [x] = x
-intercalate sep (x :: xs) = x ++ foldl (\acc => \y => acc ++ sep ++ y) "" xs
-export 
-binary : String -> Stage String
-binary {context} input = do
-    let cmd = "ld -o " <+> (context.buildDir <+> input) <+> " " <+> (context.buildDir <+> input <+> ".o") <+> " " <+> (intercalate " " context.extraObj)
-    (out, r) <- runCmd cmd
-    (unless $ r == 0) (throwError $ CompileError out)
-    pure input
-
-changeOutput : (context : Context) -> String -> Context
-changeOutput context newOutput = { output := newOutput } context
-export
-compile' : {auto context : Context} -> Bytecode -> Compile String
-compile' {context} input = do 
-    _ <- runCmd $ "mkdir -p " <+> (context.tempDir)
-    _ <- runCmd $ "mkdir -p " <+> (context.buildDir)
-    let inputs : List _ = input.modules
-    outputAsm : List String <-  traverse (\(out,mod) => assembleLLVM {context=(changeOutput context out)} mod) inputs
-    extraAsm : List String <-  traverse (\(out,mod) => assembleForeign {context=(changeOutput context out)} mod) context.extraIr
-    linkedBit : String <- linkLLVM {context} (outputAsm ++ extraAsm)
-    optimizedBit : String <- optimizeLLVM {context} linkedBit
-    compiled <- compileLLVM {context} optimizedBit
-    result <- binary {context} compiled
-    pure result
-export
-exec' : {auto context : Context} -> Bytecode -> Compile String
-exec' {context} input = do 
-    let inputs : List _ = input.modules
-    outputAsm : List String <-  traverse (\(out,mod) => assembleLLVM {context=(changeOutput context out)} mod) inputs
-    extraAsm : List String <-  traverse (\(out,mod) => assembleForeign {context=(changeOutput context out)} mod) context.extraIr
-    linkedBit : String <- linkLLVM {context} (outputAsm ++ extraAsm)
-    optimizedBit : String <- optimizeLLVM {context} linkedBit
-    result <- runLLVM {context} optimizedBit
-    pure result
+import Control.LLVM.Text.Link
+import Control.LLVM.Text.Combine
+import Control.LLVM.Text.Compile
 
 export
-compile : {auto context : Context} -> Bytecode -> IO (Either CompilationError String)
-compile = Either.runEitherT . compile'
-export 
-exec : {auto context : Context} -> Bytecode -> IO (Either CompilationError String)
-exec = Either.runEitherT . exec'
+compile : Bytecode -> Stage Code 
+compile bc = do 
+    context <- ask
+    let mods = bc.modules
+    mods' <- traverseStage (\(_, x) => convert x) mods
+    modsBc <- traverseStage assemble mods'
+    let extraBc = snd <$> bc.extrabitCode
+    let extraBc' = bufferToCode <$> extraBc
+    bcAll <- combine (extraBc' <+> modsBc)
+    bcOpt <- optimize bcAll
+    bcObj <- 
+        if context.skipNative then 
+            compileObj bcOpt
+        else 
+            ?noskip
+    linked <- link bcObj
+    let mainFile = context.output
+    res <- liftIO $ codeToFile linked mainFile
+    pure linked
+    
+    

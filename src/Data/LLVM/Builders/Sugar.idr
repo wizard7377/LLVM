@@ -71,6 +71,7 @@ export prefix 71 -<<
 export infixl 98 @*, @=, @:, @<, @>
 export infixr 99 !>
 export prefix 100 !#, #!
+
 public export 
 ||| Convenient operator to create a pointer expression from a name.
 |||
@@ -138,7 +139,6 @@ public export
 public export 
 (!:) : String -> (List LStatement, Terminator) -> (String, BasicBlock) 
 (!:) name (stmts, term) = (name, MkBasicBlock stmts term)
-
 
 public export 
 (!#) : BasicBlock -> Label 

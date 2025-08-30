@@ -4,7 +4,7 @@ import Data.List
 import Data.String
 import Data.LLVM.Class
 import System.File.ReadWrite
-import System.LLVM
+import Control.LLVM
 import Data.LLVM.Builders
 import Data.LLVM.IR.Program
 import Data.LLVM.Write

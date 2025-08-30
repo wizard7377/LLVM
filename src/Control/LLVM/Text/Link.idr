@@ -1,25 +1,16 @@
-module Control.LLVM.Text.Link
-import Control.LLVM.Text.Common
-import Data.LLVM.IR.Program
-import System
+module Control.LLVM.Text.Link 
 import Control.LLVM.Stage
-intercalate : String -> List String -> String
-intercalate sep [] = ""
-intercalate sep [x] = x
-intercalate sep (x :: xs) = x ++ foldl (\acc => \y => acc ++ sep ++ y) "" xs
+import Control.LLVM.Code
+
+
 export
-linkLLVM : List String -> Stage String
-linkLLVM inputs = do
-    showMsg $ "Linking modules: " ++ (intercalate ", " inputs)
-    let inputs' = (map (\i => context.tempDir <+> i <+> ".bc") inputs) ++ context.extraBc
-    let output' = context.tempDir <+> context.output <+> ".bc"
-    let cmd : String = 
-        case context.mainModule of
-            Just mainMod' => "llvm-link -o " <+> (context.buildDir <+> context.output <+> ".bc") <+> " --override " <+> mainMod' <+> " " <+> (intercalate " " inputs')
-            Nothing => "llvm-link -o " <+>  (context.buildDir <+> context.output <+> ".bc") <+> " " <+> (intercalate " " inputs')
-    (out, r) <- runCmd cmd
-    if r == 0 
-        then pure context.output 
-        else throwError $ LinkError out
-
-
+link : Code -> Stage Code
+link c = do
+    context <- ask
+    f <- asFile c 
+    o <- newFile 
+    let cmd = "ld -o " ++ o ++ " " ++ f
+    (sout, r) <- runCmd cmd
+    (unless $ r == 0) (throwError [OtherError "link error"])
+    let out' = fileToCode o
+    pure out'

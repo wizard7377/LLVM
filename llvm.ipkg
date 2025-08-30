@@ -17,7 +17,20 @@ authors = "Asher Frost"
 
 -- modules to install
 modules = 
+    Control.LLVM,
     Control.Runnable,
+    Control.LLVM.Code,
+    Control.LLVM.Text,
+    Control.LLVM.Stage,
+    Control.LLVM.Text.Execute,
+    Control.LLVM.Text.Assemble,
+    Control.LLVM.Text.Binary,
+    Control.LLVM.Text.Compile,
+    Control.LLVM.Text.Link,
+    Control.LLVM.Text.Convert,
+    Control.LLVM.Text.Optimize,
+    Control.LLVM.Text.Build,
+    Control.LLVM.Text.Combine,
     Data.MonadIO,
     Data.LLVM,
     Data.Walk,
@@ -60,6 +73,7 @@ modules =
     Data.LLVM.Builders.Ops,
     Data.LLVM.Builders.Sugar,
     Data.LLVM.Builders.Control,
+    Data.LLVM.Builders.Suggestions,
     Data.LLVM.Builders.Builder.Complex,
     Data.LLVM.Builders.Builder.Builder,
     Data.LLVM.Builders.Builder.Types,
@@ -73,6 +87,8 @@ modules =
     System.LLVM.Stage,
     System.LLVM.Optimize,
     System.LLVM.Build
+
+
 
 -- main file (i.e. file to load at REPL)
 -- main =

@@ -1,7 +1,9 @@
 module Data.LLVM.Builders.Helper
 
+
 --import Data.LLVM.Class
 import Data.LLVM.IR.Core       
+import Language.Reflection
 --import Data.LLVM.Write.Text.Encode
 import Data.LLVM.IR.Core
 import Data.LLVM.IR.Program
@@ -15,6 +17,7 @@ import Data.LLVM.Builders.Math
 import Data.LLVM.Builders.Control
 import Data.Table
 import public Data.Buffer
+
 public export 
 lowerTypeReflect : (a : Type) -> LType 
 lowerTypeReflect a = case a of 
@@ -65,3 +68,4 @@ foriegnDec :
     {default LVoid resType : LType} ->
     LClause
 foriegnDec name {args} {resType} = functionDec name resType args
+
