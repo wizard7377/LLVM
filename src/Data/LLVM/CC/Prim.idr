@@ -33,71 +33,75 @@ CUInt64 = Bits64
 public export
 CULongLong : Type 
 CULongLong = Bits64 -- TODO: Check this
-public export
+export
 LLVMContext : Type 
 LLVMContext = CPtr
-public export
+export
 LLVMType : Type 
 LLVMType = CPtr 
-public export
+export
 LLVMValue : Type
 LLVMValue = CPtr
-public export
+export
 LLVMBool : Type 
 LLVMBool = Int -- Not sure who thought of this, but apparently bool is a Int
-public export
+export
 -- Additional useful type aliases and constants
 LLVMBuilder : Type
 LLVMBuilder = CPtr
-public export
+export
 LLVMModule : Type 
 LLVMModule = CPtr
-public export
+export
 LLVMBasicBlock : Type
 LLVMBasicBlock = CPtr
-public export
+export
 LLVMInstruction : Type
 LLVMInstruction = CPtr
-public export
+export
 LLVMGenericValue : Type
 LLVMGenericValue = CPtr
-public export
+export
 LLVMExecutionEngine : Type
 LLVMExecutionEngine = CPtr
-public export
+export
 LLVMPassManager : Type
 LLVMPassManager = CPtr
-public export
+export
 LLVMTargetData : Type
 LLVMTargetData = CPtr
-public export
+export
 LLVMTargetMachine : Type
 LLVMTargetMachine = CPtr
-public export
+export
 LLVMMemoryBuffer : Type
 LLVMMemoryBuffer = CPtr
-public export
+export
 LLVMAttribute : Type
 LLVMAttribute = CPtr
-public export
+export
 LLVMUse : Type
 LLVMUse = CPtr
-public export
+export
 LLVMDiagnosticInfo : Type
 LLVMDiagnosticInfo = CPtr
-public export
+export
 LLVMComdat : Type
 LLVMComdat = CPtr
-public export
+export
 LLVMModuleFlag : Type
 LLVMModuleFlag = CPtr
-public export
+export
 LLVMContextYieldType : Type 
 LLVMContextYieldType = CPtr -> CPtr -> PM ()
 
-public export 
+export 
 LLVMBlock : Type 
 LLVMBlock = CPtr
+  
+export 
+LLVMMetadata : Type 
+LLVMMetadata = CPtr
 -- TODO: Contexts?
 namespace CPrim 
   -- Contexts 

@@ -48,19 +48,22 @@ public export
 debugCompile : String -> LModule -> IO ()
 debugCompile file value = seperate $ do 
     putStrLn $ "Compiling " ++ file ++ "..."
-    let context' = context "./generated/llvm/" {output = "main" ++ file}
-    res <- compile {context = context'} (bytecode {modules = [( file, value)]}) 
+    let context' = context ("./generated/" ++ file ++ "/llvm") {output = "main" ++ file}
+    res <- runStage {context=context'} $ compile (bytecode [(file, value)]) 
     case res of 
-        Right res' => putStrLn $ "Test output written to " ++ res' ++ "\n\n" ++ showGreen "TEST SUCCEEDED" ++ "\n\n"
+        Right res' => do 
+          Right _ <- (codeToFile res' ("main" ++ file)) | Left _ => ?todo2 
+          putStrLn $ "Test output written to " ++ ("main" ++ file) ++ "\n\n" ++ showGreen "TEST SUCCEEDED" ++ "\n\n"
         Left e => putStrLn $ (showRed "TEST FAILED") ++ "\nTEST " ++ file ++ " FAILED WITH" ++ show e ++ "\n\n"
     pure ()
 
 public export
 debugRun : String -> LModule -> IO ()
 debugRun file value = seperate $ do
-    let context' = context "generated/llvm/"
-    res <- exec {context = context'} (bytecode {modules = [( file, value)]})  
-    pure ()
+    ?todo
+    --let context' = context "generated/llvm/"
+    --res <- exec {context = context'} (bytecode {modules = [( file, value)]})  
+    --pure ()
     --putStrLn $ "Test output written to " ++ res
 public export
 encodeTest : {a : Type} -> Encode ATM a VString => String -> a -> String -> IO ()

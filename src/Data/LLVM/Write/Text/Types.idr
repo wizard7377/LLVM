@@ -17,9 +17,10 @@ record ATState where
     exprContext : List LStatement 
     blockContext : Table BasicBlock
     generatedId : Int 
+    indent : Int
 
 defaultATState : ATState
-defaultATState = MkATState [] [] 0
+defaultATState = MkATState [] [] 0 0
 public export
 ATM : Type -> Type 
 ATM = State ATState
@@ -44,15 +45,21 @@ Semigroup VString where
 
 public export
 infixl 8 <++> 
+public export
+infixl 8 +++
 -- Infix operator for VString concatenation without spacing.
 -- Unlike the semigroup operation, this concatenates strings directly
 -- without inserting spaces, useful for building composite tokens.
 
 ||| Concatenate VString values without inserting spaces
 public export
+%deprecate
 (<++>) : VString -> VString -> VString
 (MkVString a) <++> (MkVString b) = MkVString (a ++ b)
 
+public export 
+(+++) : VString -> VString -> VString 
+(+++) (MkVString a) (MkVString b) = MkVString (a ++ b)
 ||| Monoid instance for VString with empty string as neutral element
 public export
 Monoid VString where
@@ -192,6 +199,7 @@ public export
 |||
 ||| Each list element appears on its own line, indented with a tab.
 public export 
+%deprecate
 [tabbed] {a : Type} -> Encode ATM a VString => Encode ATM (List a) VString where 
     encode [] = pure ""
     encode xs = pure $ intercalate "\n\t" (map (runATM . encode) xs)
@@ -306,3 +314,39 @@ MonadIO () ATM where
     unliftIO m = 
         let (_, res) = runState defaultATState m in pure $ Right res
 
+
+public export
+inBlock : ATM a -> ATM a
+inBlock m = do 
+  modify { indent $= (+ 1) }
+  r <- m 
+  modify { indent $= (\x => x - 1) }
+  pure r
+  
+getTabs : Int -> VString 
+getTabs 0 = ""
+getTabs x = if x > 0 then "\t" +++ (getTabs (x - 1)) else ""
+public export
+newline : ATM VString
+newline = do 
+    st <- get 
+    let start = getTabs st.indent
+    pure ("\n" +++ start)
+
+  
+public export
+paragraph : {a : Type} -> Encode ATM a VString => List a -> ATM VString
+paragraph (x :: xs) = do 
+  nl <- newline 
+  rs <- paragraph xs
+  r <- encode x
+  pure (r +++ nl +++ rs)
+paragraph [] = newline
+
+public export 
+listing : {a : Type} -> Encode ATM a VString => {default "" note : VString} -> List a -> ATM VString
+listing {note} (x :: xs) = do 
+  r <- encode x
+  rs <- listing xs 
+  pure (r +++ "," <+> note <+> rs)
+listing {} [] = pure ""

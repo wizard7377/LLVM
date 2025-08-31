@@ -6,6 +6,7 @@ export
 ||| Convert from bitcode to machine assembly
 compileObj : Code -> Stage Code 
 compileObj c = do 
+    showMsg "Compiling to object"
     context <- ask 
     f <- asFile c 
     o <- newFile

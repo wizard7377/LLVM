@@ -6,6 +6,7 @@ import Control.LLVM.Code
 export
 link : Code -> Stage Code
 link c = do
+    showMsg "Linking"
     context <- ask
     f <- asFile c 
     o <- newFile 

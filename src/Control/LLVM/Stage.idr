@@ -108,7 +108,7 @@ data Stage : Type -> Type where
 unStage : Stage a -> (EitherT (List StageError) (RWST StageContext StageWriter StageState  IO)) a
 unStage (MkStage m) = m
 public export
-runStage : {auto context : StageContext} -> {default defaultState state : StageState} -> Stage a -> IO (Either (List StageError) a)
+runStage : {context : StageContext} -> {default defaultState state : StageState} -> Stage a -> IO (Either (List StageError) a)
 runStage {context} {state} (MkStage m) = let 
     r0 = runEitherT m
     r1 = (unRWST r0 context state defaultWriter)
@@ -176,7 +176,7 @@ export
 runCmd : {default 10 verb : Int} -> String -> Stage (String, Int)
 runCmd {verb} cmd = do
     context <- ask
-    _ <- (when $ verb < context.currentVerbosity) (putStrLn $ "Running command: " ++ cmd)
+    _ <- (when $ verb <= context.currentVerbosity) (putStrLn $ "Running command: " ++ cmd)
     (sout, res) <- run cmd
     pure (sout, res)
 
@@ -185,7 +185,7 @@ export
 showMsg : {default 10 verb : Int} -> String -> Stage ()
 showMsg {verb} msg = do
     context <- ask
-    _ <- (when $ verb < context.currentVerbosity) (putStrLn msg)
+    _ <- (when $ verb <= context.currentVerbosity) (putStrLn msg)
     pure () 
 
 export 
@@ -200,13 +200,14 @@ newFile : Stage String
 newFile = do 
     context <- ask
     n <- getUid 
-    let f0 = "TEMP_" ++ show n
+    let f0 = "TEMP_" ++ show n 
     let f = context.tempDir ++ "/" ++ f0
     pure f
 export
-asFile : Code -> Stage String 
+asFile : Code -> Stage String
 asFile c = do 
     context <- ask
     f <- newFile
-    res <- liftIO $ codeToFile c f   
-    pure ?_
+    Right f' <- openFile f ReadWrite | Left e => throwError [StageFileError e]
+    closeFile f' 
+    pure f

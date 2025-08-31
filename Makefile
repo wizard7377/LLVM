@@ -27,15 +27,15 @@ check-llvm:
 	@echo "Checking LLVM installation..."
 	@llvm-config --version
 array.so : support/array.c support/array.h 
-	$(CC) -c -fPIC support/array.c -o support/array.o 
-	$(CC) -o $@ -shared support/array.o 
+	@$(CC) -c -fPIC support/array.c -o support/array.o 
+	@$(CC) -o $@ -shared support/array.o 
 build: array.so $(srcFiles) check-llvm
 	$(IDRIS) $(OPTS) --build llvm.ipkg
 
 install: array.so $(srcFiles) check-llvm
 	$(IDRIS) $(OPTS) --install llvm.ipkg
 
-test: install
+test: clean-test build
 	@echo "Building and running LLVM tests..."
 	$(IDRIS) $(OPTS) --build test.ipkg
 	@echo "Running test executable..."
@@ -57,8 +57,10 @@ clean: clean-test
 	@$(PACK) clean llvm.ipkg
 clean-test:
 	@echo "Cleaning test build artifacts..."
-	rm -rf generated 
-	mkdir -p generated
+	@rm -rf generated 
+	@mkdir -p generated
+	@mkdir -p generated/llvm
+	@mkdir -p generated/temp
 
 docs: install
 	$(IDRIS) $(OPTS) --mkdoc llvm.ipkg

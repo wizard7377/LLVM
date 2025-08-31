@@ -6,6 +6,7 @@ export
 ||| Combine multiple LLVM modules into one.
 combine : List Code -> Stage Code
 combine cs = do 
+    showMsg "Combining"
     fs <- traverseStage asFile cs
     out <- newFile
     let cmd = "llvm-link -o " ++ out ++ intercalate " " fs 

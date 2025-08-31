@@ -49,8 +49,8 @@ export
 |||
 ||| @ mainMod Optional name of the main module
 ||| @ modules List of (name, module) pairs for all modules in the bytecode
-bytecode : {default Nothing mainMod : Maybe String} -> {default [] modules : List (String, LModule)} -> {default [] bitcode : Table Buffer} -> Bytecode
-bytecode {mainMod} {modules} {bitcode} = MkBytecode mainMod modules bitcode
+bytecode : {default Nothing mainMod : Maybe String} -> (modules : Table LModule) -> {default [] bitcode : Table Buffer} -> Bytecode
+bytecode {mainMod} modules {bitcode} = MkBytecode mainMod modules bitcode
 
 export 
 ||| Create a foreign function declaration clause.
