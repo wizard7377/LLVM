@@ -12,7 +12,7 @@ import Data.LLVM.Write.Foreign
 import Test.Groups.ModuleSetA
 import Test.Groups.ModuleSetB
 import Test.Groups.ModuleSetC
-%hide Data.LLVM.Builders.Core.emptyModule
+%hide Data.LLVM.Ops.Core.emptyModule
 
 export
 moduleTests : IO ()

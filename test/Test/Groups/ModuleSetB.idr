@@ -4,12 +4,12 @@ import Data.LLVM
 import Data.LLVM.IR
 import Data.LLVM.Write.Text.Encode
 import Data.LLVM.Class
-import Data.LLVM.Builders.Math
+import Data.LLVM.Ops.Math
 import Test.Helper
 import Data.LLVM.Write.Foreign
 import Data.Table
 
-%hide Data.LLVM.Builders.Core.emptyModule
+%hide Data.LLVM.Ops.Core.emptyModule
 export
 moduleWithPhiAndSelect : LModule
 moduleWithPhiAndSelect = tempModule
@@ -56,10 +56,10 @@ moduleWithPhiAndSelect = MkLModule {
                     "cond_bool" <<- (icmp CNe (:# 32) (?^ "cond") ( (## 0)))
                 ] (CondBr (?^ "cond_bool") (#^ "bb_true") (#^ "bb_false")),
                 MkPair "bb_true" $ MkBasicBlock [
-                    "val_true" <<- (Add (:# 32) (?^ "x") ( (## 1)))
+                    "val_true" <<- ((Add NoWrap) (:# 32) (?^ "x") ( (## 1)))
                 ] (JumpBr (#^ "merge")),
                 MkPair "bb_false" $ MkBasicBlock [
-                    "val_false" <<- (Sub (:# 32) (?^ "y") ( (## 1)))
+                    "val_false" <<- ((Sub NoWrap) (:# 32) (?^ "y") ( (## 1)))
                 ] (JumpBr (#^ "merge")),
                 MkPair "merge" $ MkBasicBlock [
                     "phi_result" <<- (Phi (:# 32) [((?^ "val_true"), (#^ "bb_true")), ((?^ "val_false"), (#^ "bb_false"))]),
@@ -149,7 +149,7 @@ moduleWithCastsAndComparisons = MkLModule {
                     -- Zero extend b to i64
                     "b_zext" <<- (ZExt (MkWithType (:# 32) (?^ "b")) (:# 64)),
                     -- Compare a and b
-                    "cmp" <<- (ICmp CEq (:# 32) (?^ "a") (?^ "b")),
+                    "cmp" <<- ((ICmp False) CEq (:# 32) (?^ "a") (?^ "b")),
                     -- Bitcast a to i32 (no-op)
                     "a_bitcast" <<- (BitCast (MkWithType (:# 32) (?^ "a")) (:# 32))
                 ] (Ret (:# 1) (?^ "a_trunc"))
@@ -192,13 +192,13 @@ moduleWithConversionsAndMemory = MkLModule {
                     -- Truncate b to i32
                     "b_trunc" <<- (Trunc NoSigned (MkWithType (:# 64) (?^ "b")) (:# 32)),
                     -- Compare a and b (signed less than)
-                    "cmp" <<- (ICmp CSLt (:# 32) (?^ "a") (?^ "b_trunc")),
+                    "cmp" <<- ((ICmp False) CSLt (:# 32) (?^ "a") (?^ "b_trunc")),
                     -- Allocate i64 local
                     "local_ptr" <<- (Alloc (:# 64) Nothing (Just 8) Nothing),
                     -- Store a_sext to local_ptr
                     -<< (StoreRegular False (MkWithType (:# 64) (?^ "a_sext")) (?^ "local_ptr") (Just 8) False False),
                     -- Load from local_ptr
-                    "loaded" <<- (LoadRegular False (:# 64) (?^ "local_ptr") (Just 8) False False False False Nothing Nothing Nothing False)
+                    "loaded" <<- (Load False (:# 64) (?^ "local_ptr") (Just 8) False False False False Nothing Nothing Nothing False)
                 ] (Ret (:# 64) (?^ "loaded"))
             ],
             tags = neutral
@@ -234,16 +234,16 @@ moduleWithAllComparisons = MkLModule {
             metadata = [],
             body = [
                 MkPair "entry" $ MkBasicBlock [
-                    "eq" <<- (ICmp CEq (:# 32) (?^ "x") (?^ "y")),
-                    "ne" <<- (ICmp CNe (:# 32) (?^ "x") (?^ "y")),
-                    "ugt" <<- (ICmp CUGt (:# 32) (?^ "x") (?^ "y")),
-                    "uge" <<- (ICmp CUGe (:# 32) (?^ "x") (?^ "y")),
-                    "ult" <<- (ICmp CULt (:# 32) (?^ "x") (?^ "y")),
-                    "ule" <<- (ICmp CULe (:# 32) (?^ "x") (?^ "y")),
-                    "sgt" <<- (ICmp CSGt (:# 32) (?^ "x") (?^ "y")),
-                    "sge" <<- (ICmp CSGe (:# 32) (?^ "x") (?^ "y")),
-                    "slt" <<- (ICmp CSLt (:# 32) (?^ "x") (?^ "y")),
-                    "sle" <<- (ICmp CSLe (:# 32) (?^ "x") (?^ "y"))
+                    "eq" <<- ((ICmp False) CEq (:# 32) (?^ "x") (?^ "y")),
+                    "ne" <<- ((ICmp False) CNe (:# 32) (?^ "x") (?^ "y")),
+                    "ugt" <<- ((ICmp False) CUGt (:# 32) (?^ "x") (?^ "y")),
+                    "uge" <<- ((ICmp False) CUGe (:# 32) (?^ "x") (?^ "y")),
+                    "ult" <<- ((ICmp False) CULt (:# 32) (?^ "x") (?^ "y")),
+                    "ule" <<- ((ICmp False) CULe (:# 32) (?^ "x") (?^ "y")),
+                    "sgt" <<- ((ICmp False) CSGt (:# 32) (?^ "x") (?^ "y")),
+                    "sge" <<- ((ICmp False) CSGe (:# 32) (?^ "x") (?^ "y")),
+                    "slt" <<- ((ICmp False) CSLt (:# 32) (?^ "x") (?^ "y")),
+                    "sle" <<- ((ICmp False) CSLe (:# 32) (?^ "x") (?^ "y"))
                 ] (Ret (:# 32) ( (## 0)))
             ],
             tags = neutral

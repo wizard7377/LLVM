@@ -6,10 +6,10 @@ import Data.LLVM
 import Data.LLVM.IR
 import Data.LLVM.Write.Text.Encode
 import Data.LLVM.Class
-import Data.LLVM.Builders.Math
+import Data.LLVM.Ops.Math
 import Test.Helper
 import Data.LLVM.Write.Foreign
-import Data.LLVM.Builders.Sugar
+import Data.LLVM.Ops.Sugar
 import Data.Table
 %default partial
 export
@@ -89,7 +89,7 @@ moduleWithSimpleFunction = MkLModule {
             metadata = [],
             body = [
                 MkPair "entry" $ MkBasicBlock [
-                    "result" <<- (Add (:# 32) (?^ "a") (?^ "b"))
+                    "result" <<- ((Add NoWrap) (:# 32) (?^ "a") (?^ "b"))
                 ] (Ret (:# 32) (?% "result"))
             ],
             tags = neutral
@@ -130,11 +130,11 @@ moduleWithMkLStatements = MkLModule {
             body = [
                 MkPair "entry" $ MkBasicBlock [
                     -- Multiply x and y
-                    "mul_result" <<- (Mul (:# 32) (?^ "x") (?^ "y")),
-                    -- Add 10 to the result
-                    "add_result" <<- (Add (:# 32) (?% "mul_result") (## 10)),
+                    "mul_result" <<- ((Mul NoWrap) (:# 32) (?^ "x") (?^ "y")),
+                    -- (Add NoWrap) 10 to the result
+                    "add_result" <<- ((Add NoWrap) (:# 32) (?% "mul_result") (## 10)),
                     -- Shift left by 1
-                    "shift_result" <<- (Shl (:# 32) (?% "add_result") (## 1))
+                    "shift_result" <<- ((Shl NoWrap) (:# 32) (?% "add_result") (## 1))
                 ] (Ret (:# 32) (?% "shift_result"))
             ],
             tags = neutral
@@ -173,9 +173,9 @@ moduleWithMkLStatementsLifted = MkLModule {
             metadata = [],
             body = [
                 MkPair "entry" $ MkBasicBlock [
-                    "add_result" <<- (Add (:# 32) (#! (Mul (:# 32) (?^ "x") (?^ "y"))) (## 10)),
+                    "add_result" <<- ((Add NoWrap) (:# 32) (#! ((Mul NoWrap) (:# 32) (?^ "x") (?^ "y"))) (## 10)),
                     -- Shift left by 1
-                    "shift_result" <<- (Shl (:# 32) (?% "add_result") (## 1))
+                    "shift_result" <<- ((Shl NoWrap) (:# 32) (?% "add_result") (## 1))
                 ] (Ret (:# 32) (?% "shift_result"))
             ],
             tags = neutral
@@ -271,12 +271,12 @@ completeModule = MkLModule {
             body = [
                 MkPair "entry" $ MkBasicBlock [
                     -- Perform various operations
-                    "sum" <<- (Add (:# 32) (?^ "a") (?^ "b")),
-                    "diff" <<- (Sub (:# 32) (?^ "a") (?^ "b")),
-                    "product" <<- (Mul (:# 32) (?^ "sum") (?^ "diff")),
+                    "sum" <<- ((Add NoWrap) (:# 32) (?^ "a") (?^ "b")),
+                    "diff" <<- ((Sub NoWrap) (:# 32) (?^ "a") (?^ "b")),
+                    "product" <<- ((Mul NoWrap) (:# 32) (?^ "sum") (?^ "diff")),
                     -- Use aggregate operation
                     "array_val" <<- ((ExtractValue (MkWithType (LArray 5 (:# 32)) (id (LVar (Global "data_array")))) 0)),
-                    "final_result" <<- (Add (:# 32) (?^ "product") (?^ "array_val"))
+                    "final_result" <<- ((Add NoWrap) (:# 32) (?^ "product") (?^ "array_val"))
                 ] (Ret (:# 32) (?^ "final_result"))
             ],
             tags = neutral
@@ -519,19 +519,19 @@ moduleWithControlFlow = MkLModule {
                 
                 MkPair "recursive_case" $ MkBasicBlock [
                     -- Calculate fib(n-1)
-                    "n_minus_1" <<- (Sub (:# 32) (?^ "n") (## 1)),
+                    "n_minus_1" <<- ((Sub NoWrap) (:# 32) (?^ "n") (## 1)),
                     "fib_n_minus_1" <<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (:# 32) [LInt 32]) 
                         (id (LVar (Global "fibonacci"))) 
                         [MkWithType (:# 32) (?^ "n_minus_1")] []))),
                     -- Calculate fib(n-2)
-                    "n_minus_2" <<- (Sub (:# 32) (?^ "n") (## 2)),
+                    "n_minus_2" <<- ((Sub NoWrap) (:# 32) (?^ "n") (## 2)),
                     "fib_n_minus_2" <<- ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                         (LFun (:# 32) [LInt 32]) 
                         (id (LVar (Global "fibonacci"))) 
                         [MkWithType (:# 32) (?^ "n_minus_2")] []))),
-                    -- Add results
-                    "result" <<- (Add (:# 32) (?^ "fib_n_minus_1") (?^ "fib_n_minus_2"))
+                    -- (Add NoWrap) results
+                    "result" <<- ((Add NoWrap) (:# 32) (?^ "fib_n_minus_1") (?^ "fib_n_minus_2"))
                 ] (Ret (:# 32) (?^ "result"))
             ],
             tags = neutral

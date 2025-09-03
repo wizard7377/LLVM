@@ -121,11 +121,11 @@ Encode ATM IntrinsicName VString where
 
 export
 Encode ATM Name VString where
-    encode (Temporary name) = pure $ "%" <++> (go $ show name)
-    encode (Unnamed name) = pure $ "%" <++> (go $ show name)
-    encode (Local name) = pure $ "%" <++> go name
-    encode (Parameter name) = pure $ "%" <++> go name
-    encode (Global name) = pure $ "@" <++> go name
+    encode (Temporary name) = pure $ "%" <+> (go $ show name)
+    encode (Numbered name) = pure $ "@" <+> (go $ show name)
+    encode (Local name) = pure $ "%" <+> "\"" <+> go name <+> "\""
+    encode (Parameter name) = pure $ "%" <+> "\"" <+> go name <+> "\""
+    encode (Global name) = pure $ "@" <+> "\"" <+> go name <+> "\""
     encode (Intrinsic name) = encode name
 
 export
@@ -369,6 +369,7 @@ Encode ATM InvokeCall VString where
         ]
 export
 Encode ATM Wrapping VString where
+    encode NoWrap = pure ""
     encode NoSigned = pure "nsw"
     encode NoUnsigned = pure "nuw"
     encode NoSignedUnsigned = pure "nuw nsw"
@@ -436,9 +437,11 @@ Encode ATM TailCall VString where
     encode Tail = pure "tail"
     encode MustTail = pure "musttail"
     encode NoTail = pure "notail"
+  
+{-
 public export
 Encode ATM FnCall VString where
-    encode (MkFnCall tail fastMath cc returnAttrs addressSpace tpe fnval args attrs) = do
+    encode (MkFnCall tail fastMath cc returnAttrs addressSpace tpe fnval args attrs bundle) = do
         tailStr <- encode {a=TailCall} {b=VString} tail
         fastMathStr <- encode @{nosep} fastMath
         ccStr <- encodeIf cc
@@ -462,8 +465,32 @@ Encode ATM FnCall VString where
             ")",
             attrsStr
         ]
-
-
+-}
+encodeFnCall : TailCall -> FastMath -> Maybe CallingConvention -> List Attribute -> Maybe AddressSpace -> LType -> LValue False -> List (WithType (LValue False)) -> List Attribute -> List OperandBundle -> ATM VString
+encodeFnCall tail fastMath cc returnAttrs addressSpace tpe fnval args attrs bundle = do
+        tailStr <- encode {a=TailCall} {b=VString} tail
+        fastMathStr <- encode @{nosep} fastMath
+        ccStr <- encodeIf cc
+        returnAttrsStr <- encode @{nosep} returnAttrs
+        addrSpaceStr <- encodeIf addressSpace
+        tpeStr <- encode tpe
+        fnvalStr <- encode fnval
+        argsStr <- encode @{each} args
+        attrsStr <- encode @{nosep} attrs
+        pure $ spacedVString [
+            tailStr,
+            "call",
+            fastMathStr,
+            ccStr,
+            returnAttrsStr,
+            addrSpaceStr,
+            tpeStr,
+            fnvalStr,
+            "(",
+            argsStr,
+            ")",
+            attrsStr
+        ]
 
 
 public export
@@ -565,7 +592,7 @@ Encode ATM LExpr VString where
     encode (Freeze expr) = do
         exprStr <- encode expr
         pure $ "freeze" <+> exprStr
-    encode (FnCallOp fnCall) = encode fnCall
+    encode (FnCallOp a b c d e f g h i j) = encodeFnCall a b c d e f g h i j 
     encode (LandingPad tpe clauses) = do
         tpeStr <- encode tpe
         clausesStr <- encode @{spacing} clauses
@@ -588,7 +615,7 @@ Encode ATM LExpr VString where
         alignStr <- maybe (pure "") (\n => pure $ ", align " <+> vshow n) align
         addrStr <- maybe (pure "") (\a => pure $ ", addrspace(" <++> runATM (encode a) <++> ")") addrSpace
         pure $ "alloca" <+> tpeStr <+> numElemsStr <+> alignStr <+> addrStr
-    encode (LoadRegular v tpe addr align nontemp invLoad invGroup nonNull deref derefOrNull aligned noUndef) = do
+    encode (Load v tpe addr align nontemp invLoad invGroup nonNull deref derefOrNull aligned noUndef) = do
         tpeStr <- encode tpe
         addrStr <- encode addr
         alignStr <- maybe (pure "") (\n => pure $ ", align" <+> vshow n) align
@@ -607,16 +634,16 @@ Encode ATM LExpr VString where
         addrStr <- encode addr
         pure $ "store atomic" <+> (if v then "volatile" else "") <+> tpeStr <+> "," <+> addrStr
     encode (Fence scope ordering) = pure "fence"
-    encode (FNeg tpe val) = do
+    encode (FNeg fm tpe val) = do -- TODO:
         tpeStr <- encode tpe
         valStr <- encode val
         pure $ "fneg" <+> tpeStr <+> valStr
-    encode (Add tpe a b) = do
+    encode ((Add NoWrap) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "add" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (AddWrap wrap tpe a b) = do
+    encode (Add wrap tpe a b) = do
         wrapStr <- encode wrap
         tpeStr <- encode tpe
         aStr <- encode a
@@ -628,12 +655,12 @@ Encode ATM LExpr VString where
         aStr <- encode a
         bStr <- encode b
         pure $ "fadd" <+> fmStr <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (Sub tpe a b) = do
+    encode ((Sub NoWrap) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "sub" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (SubWrap wrap tpe a b) = do
+    encode (Sub wrap tpe a b) = do
         wrapStr <- encode wrap
         tpeStr <- encode tpe
         aStr <- encode a
@@ -645,12 +672,12 @@ Encode ATM LExpr VString where
         aStr <- encode a
         bStr <- encode b
         pure $ "fsub" <+> fmStr <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (Mul tpe a b) = do
+    encode ((Mul NoWrap) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "mul" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (MulWrap wrap tpe a b) = do
+    encode (Mul wrap tpe a b) = do
         wrapStr <- encode wrap
         tpeStr <- encode tpe
         aStr <- encode a
@@ -662,22 +689,22 @@ Encode ATM LExpr VString where
         aStr <- encode a
         bStr <- encode b
         pure $ "fmul" <+> fmStr <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (UDiv tpe a b) = do
+    encode ((UDiv False) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "udiv" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (UDivExact tpe a b) = do
+    encode ((UDiv True) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "udiv exact" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (SDiv tpe a b) = do
+    encode ((SDiv False) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "sdiv" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (SDivExact tpe a b) = do
+    encode ((SDiv True) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
@@ -704,33 +731,33 @@ Encode ATM LExpr VString where
         aStr <- encode a
         bStr <- encode b
         pure $ "frem" <+> fmStr <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (Shl tpe a b) = do
+    encode ((Shl NoWrap) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "shl" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (ShlWrap wrap tpe a b) = do
+    encode (Shl wrap tpe a b) = do
         wrapStr <- encode wrap
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "shl" <+> wrapStr <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (LShr tpe a b) = do
+    encode ((LShr False) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "lshr" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (LShrExact tpe a b) = do
+    encode ((LShr True) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "lshr exact" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (AShr tpe a b) = do
+    encode ((AShr False) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "ashr" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (AShrExact tpe a b) = do
+    encode ((AShr True) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
@@ -740,12 +767,12 @@ Encode ATM LExpr VString where
         aStr <- encode a
         bStr <- encode b
         pure $ "and" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (Or tpe a b) = do
+    encode ((Or False) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "or" <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (DisjointOr tpe a b) = do
+    encode ((Or True) tpe a b) = do
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
@@ -828,26 +855,26 @@ Encode ATM LExpr VString where
         vStr <- encode v
         tpeStr <- encode tpe
         pure $ "addrspacecast" <+> addrStr <+> vStr <+> "to" <+> tpeStr
-    encode (ICmp cmp tpe a b) = do
+    encode ((ICmp False) cmp tpe a b) = do
         cmpStr <- encode cmp
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "icmp" <+> cmpStr <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (ICmpSign cmp tpe a b) = do
+    encode ((ICmp True) cmp tpe a b) = do
         cmpStr <- encode cmp
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "icmp sign" <+> cmpStr <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (FCmpOrd fm cmp tpe a b) = do
+    encode ((FCmp True) fm cmp tpe a b) = do
         fmStr <- encode @{nosep} fm
         cmpStr <- encode cmp
         tpeStr <- encode tpe
         aStr <- encode a
         bStr <- encode b
         pure $ "fcmp ord" <+> fmStr <+> cmpStr <+> tpeStr <+> aStr <+> "," <+> bStr
-    encode (FCmpUnOrd fm cmp tpe a b) = do
+    encode ((FCmp False) fm cmp tpe a b) = do
         fmStr <- encode @{nosep} fm
         cmpStr <- encode cmp
         tpeStr <- encode tpe

@@ -4,6 +4,7 @@ import public Control.Monad.Either
 import public Data.LLVM
 import public Data.Table
 import public System.File
+import public System.Directory
 import System
 ||| Compilation error types for LLVM operations.
 |||
@@ -113,6 +114,8 @@ runStage {context} {state} (MkStage m) = let
     r0 = runEitherT m
     r1 = (unRWST r0 context state defaultWriter)
     in do 
+        _ <- createDir context.tempDir
+        _ <- createDir context.buildDir
         (res, _, _) <- r1
         pure res
 

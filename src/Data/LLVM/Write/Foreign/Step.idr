@@ -3,8 +3,8 @@ module Data.LLVM.Write.Foreign.Step
 
 import Data.LLVM.Class
 import Data.LLVM.IR
-import Data.LLVM.CC
-import Data.LLVM.CC
+import System.FFI.LLVM
+import System.FFI.LLVM
 import public Control.Monad.State
 import public Control.Monad.Either 
 import public Data.LLVM.Write.Types
@@ -18,7 +18,7 @@ import Data.LLVM.Write.Foreign.Values
 %default partial 
 
 public export 
-Encode FCM Label LLVMBlock where 
+Encode FCM Label LLVMBasicBlock where 
   encode (NamedLabel n) = getBlock n
 public export
 Encode FCM Terminator CPtr where
@@ -51,48 +51,48 @@ Encode FCM LExpr CPtr where
       Phi ty pairs => throwError (InternalError "Phi node encoding not implemented")
       Select fm c t f => throwError (InternalError "Select encoding not implemented")
       Freeze v => throwError (InternalError "Freeze encoding not implemented")
-      FnCallOp fncall => encode fncall
+      FnCallOp tail fm cc attr0 space ty val args attr1 bundles => ?todo0
       LandingPad ty clauses => throwError (InternalError "LandingPad encoding not implemented")
       LandingPadCleanup ty clauses => throwError (InternalError "LandingPadCleanup encoding not implemented")
       CatchPad name v => throwError (InternalError "CatchPad encoding not implemented")
       CleanupPad name v => throwError (InternalError "CleanupPad encoding not implemented")
       Alloc ty mcount malign maddrspace => throwError (InternalError "Alloc encoding not implemented")
-      LoadRegular v tpe addr align nontemp invLoad invGroup nonNull deref derefOrNull aligned noUndef => throwError (InternalError "LoadRegular encoding not implemented")
+      Load v tpe addr align nontemp invLoad invGroup nonNull deref derefOrNull aligned noUndef => throwError (InternalError "Load encoding not implemented")
       LoadAtomic v tpe addr scope ordering align nontemp invGroup => throwError (InternalError "LoadAtomic encoding not implemented")
       StoreRegular v tpe addr align nontemp invGroup => throwError (InternalError "StoreRegular encoding not implemented")
       StoreAtomic v tpe addr scope ordering align invGroup => throwError (InternalError "StoreAtomic encoding not implemented")
       Fence scope ordering => throwError (InternalError "Fence encoding not implemented")
-      FNeg ty v => do
+      FNeg fm ty v => do
         v' <- encode' (MkWithType ty v)
         liftFCM $ LLVMBuildFNeg builder v' "fneg"
-      Add ty a b => do
+      (Add NoWrap) ty a b => do
         a' <- encode' (MkWithType ty a)
         b' <- encode' (MkWithType ty b)
         liftFCM $ LLVMBuildAdd builder a' b' "add"
-      AddWrap wrap ty a b => throwError (InternalError "AddWrap encoding not implemented")
+      Add wrap ty a b => throwError (InternalError "Add encoding not implemented")
       FAdd fm ty a b => throwError (InternalError "FAdd encoding not implemented")
-      Sub ty a b => do
+      (Sub NoWrap) ty a b => do
         a' <- encode' (MkWithType ty a)
         b' <- encode' (MkWithType ty b)
         liftFCM $ LLVMBuildSub builder a' b' "sub"
-      SubWrap wrap ty a b => throwError (InternalError "SubWrap encoding not implemented")
+      Sub wrap ty a b => throwError (InternalError "Sub encoding not implemented")
       FSub fm ty a b => throwError (InternalError "FSub encoding not implemented")
-      Mul ty a b => do
+      (Mul NoWrap) ty a b => do
         a' <- encode' (MkWithType ty a)
         b' <- encode' (MkWithType ty b)
         liftFCM $ LLVMBuildMul builder a' b' "mul"
-      MulWrap wrap ty a b => throwError (InternalError "MulWrap encoding not implemented")
+      (Mul wrap) ty a b => throwError (InternalError "((Mul NoWrap) NoWrap) encoding not implemented")
       FMul fm ty a b => throwError (InternalError "FMul encoding not implemented")
-      UDiv ty a b => do
+      (UDiv False) ty a b => do
         a' <- encode' (MkWithType ty a)
         b' <- encode' (MkWithType ty b)
         liftFCM $ LLVMBuildUDiv builder a' b' "udiv"
-      UDivExact ty a b => throwError (InternalError "UDivExact encoding not implemented")
-      SDiv ty a b => do
+      (UDiv True) ty a b => throwError (InternalError "(UDiv True) encoding not implemented")
+      (SDiv False) ty a b => do
         a' <- encode' (MkWithType ty a)
         b' <- encode' (MkWithType ty b)
         liftFCM $ LLVMBuildSDiv builder a' b' "sdiv"
-      SDivExact ty a b => throwError (InternalError "SDivExact encoding not implemented")
+      (SDiv True) ty a b => throwError (InternalError "(SDiv True) encoding not implemented")
       FDiv fm ty a b => throwError (InternalError "FDiv encoding not implemented")
       URem ty a b => do
         a' <- encode' (MkWithType ty a)
@@ -103,32 +103,32 @@ Encode FCM LExpr CPtr where
         b' <- encode' (MkWithType ty b)
         liftFCM $ LLVMBuildSRem builder a' b' "srem"
       FRem fm ty a b => throwError (InternalError "FRem encoding not implemented")
-      Shl ty a b => do
+      (Shl NoWrap) ty a b => do
         a' <- encode' (MkWithType ty a)
         b' <- encode' (MkWithType ty b)
         liftFCM $ LLVMBuildShl builder a' b' "shl"
-      ShlWrap wrap ty a b => throwError (InternalError "ShlWrap encoding not implemented")
-      LShr ty a b => do
+      Shl wrap ty a b => throwError (InternalError "Shl encoding not implemented")
+      (LShr False) ty a b => do
         a' <- encode' (MkWithType ty a)
         b' <- encode' (MkWithType ty b)
         liftFCM $ LLVMBuildLShr builder a' b' "lshr"
-      LShrExact ty a b => throwError (InternalError "LShrExact encoding not implemented")
-      AShr ty a b => do
+      (LShr True) ty a b => throwError (InternalError "(LShr True) encoding not implemented")
+      (AShr False) ty a b => do
         a' <- encode' (MkWithType ty a)
         b' <- encode' (MkWithType ty b)
         liftFCM $ LLVMBuildAShr builder a' b' "ashr"
-      AShrExact ty a b => throwError (InternalError "AShrExact encoding not implemented")
+      (AShr True) ty a b => throwError (InternalError "(AShr True) encoding not implemented")
       And ty a b => do
 
         a' <- encode' (MkWithType ty a)
         b' <- encode' (MkWithType ty b)
         liftFCM $ LLVMBuildAnd builder a' b' "and"
-      Or ty a b => do
+      (Or False) ty a b => do
 
         a' <- encode' (MkWithType ty a)
         b' <- encode' (MkWithType ty b)
         liftFCM $ LLVMBuildOr builder a' b' "or"
-      DisjointOr ty a b => throwError (InternalError "DisjointOr encoding not implemented")
+      (Or True) ty a b => throwError (InternalError "(Or True) encoding not implemented")
       Xor ty a b => do
 
         a' <- encode' (MkWithType ty a)
@@ -151,10 +151,10 @@ Encode FCM LExpr CPtr where
       PtrToInt v tpe => throwError (InternalError "PtrToInt encoding not implemented")
       BitCast v tpe => throwError (InternalError "BitCast encoding not implemented")
       AddrSpaceCast addr v tpe => throwError (InternalError "AddrSpaceCast encoding not implemented")
-      ICmp cmp ty a b => throwError (InternalError "ICmp encoding not implemented")
-      ICmpSign cmp ty a b => throwError (InternalError "ICmpSign encoding not implemented")
-      FCmpOrd fm cmp ty a b => throwError (InternalError "FCmpOrd encoding not implemented")
-      FCmpUnOrd fm cmp ty a b => throwError (InternalError "FCmpUnOrd encoding not implemented")
+      (ICmp False) cmp ty a b => throwError (InternalError "(ICmp False) encoding not implemented")
+      (ICmp True) cmp ty a b => throwError (InternalError "(ICmp True) encoding not implemented")
+      (FCmp True) fm cmp ty a b => throwError (InternalError "(FCmp True) encoding not implemented")
+      (FCmp False) fm cmp ty a b => throwError (InternalError "(FCmp False) encoding not implemented")
       FCmpFalse ty a b => throwError (InternalError "FCmpFalse encoding not implemented")
       FCmpTrue ty a b => throwError (InternalError "FCmpTrue encoding not implemented")
     pushBuilder builder

@@ -64,7 +64,7 @@ record AttributeGroupDef where
 ||||   ret i32 0
 ||| }
 ||| ```
-||| Or with more attributes:
+||| (Or False) with more attributes:
 ||| ```llvm
 ||| define private fastcc nounwind i32 @helper(i32 %x) 
 |||        unnamed_addr section ".text" align 16 gc "shadow-stack" {

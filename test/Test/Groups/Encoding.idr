@@ -74,7 +74,7 @@ encodingTests = do
     {- 
     -- Test address spaces
     encodeFCMTest "Named Address Space" (NamedSpace "cuda")
-    encodeFCMTest "Unnamed Address Space" (UnnamedSpace 1)
+    encodeFCMTest "Numbered Address Space" (UnnamedSpace 1)
     
     -- Test DLL storage
     encodeFCMTest "DLL Export" DLLExport
@@ -89,15 +89,15 @@ encodingTests = do
     encodeFCMTest "Non-Preemptible" NonPreemptible
     
     -- Test address info
-    encodeFCMTest "Unnamed Global" UnnamedGlobal
-    encodeFCMTest "Unnamed Local" UnnamedLocal
+    encodeFCMTest "Numbered Global" UnnamedGlobal
+    encodeFCMTest "Numbered Local" UnnamedLocal
     
     -- Test binary opcodes
-    encodeFCMTest "Add Opcode" Add
-    encodeFCMTest "Sub Opcode" Sub
-    encodeFCMTest "Mul Opcode" Mul
+    encodeFCMTest "(Add NoWrap) Opcode" (Add NoWrap)
+    encodeFCMTest "(Sub NoWrap) Opcode" (Sub NoWrap)
+    encodeFCMTest "(Mul NoWrap) Opcode" (Mul NoWrap)
     encodeFCMTest "And Opcode" And
-    encodeFCMTest "Or Opcode" Or
+    encodeFCMTest "(Or False) Opcode" (Or False)
     encodeFCMTest "Xor Opcode" Xor
     
     -- Test unary opcodes

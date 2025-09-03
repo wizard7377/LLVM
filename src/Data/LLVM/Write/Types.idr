@@ -5,8 +5,8 @@ import Data.LLVM.Class
 import Data.Walk
 import Data.LLVM.Class
 import Data.LLVM.IR
-import Data.LLVM.CC
-import Data.LLVM.CC
+import System.FFI.LLVM
+import System.FFI.LLVM
 import public Control.Monad.State
 import public Control.Monad.Either 
 import public Control.Monad.RWS

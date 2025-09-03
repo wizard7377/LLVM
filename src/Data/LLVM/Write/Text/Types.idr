@@ -4,8 +4,8 @@ import Data.LLVM.Class
 import Data.Walk
 import Data.LLVM.Class
 import Data.LLVM.IR
-import Data.LLVM.CC
-import Data.LLVM.CC
+import System.FFI.LLVM
+import System.FFI.LLVM
 import public Control.Monad.State
 import public Control.Monad.Either 
 import public Control.Monad.RWS
@@ -110,7 +110,7 @@ encodeIf x = writeIf <$> encode x
 encodeIf' : Encode ATM a VString => Maybe a -> VString
 encodeIf' x = writeIf <$> encode x
 -}
-||| Add a prefix to a monoid value.
+||| (Add NoWrap) a prefix to a monoid value.
 |||
 ||| Returns a function that prepends the given prefix to its argument.
 |||
@@ -119,7 +119,7 @@ public export
 prefixed : Monoid m => m -> (m -> m)
 prefixed p f = p <+> f
 
-||| Add a suffix to a monoid value.
+||| (Add NoWrap) a suffix to a monoid value.
 |||
 ||| Returns a function that appends the given suffix to its argument.
 |||

@@ -3,8 +3,8 @@ module Data.LLVM.Write.Foreign.Values
 
 import Data.LLVM.Class
 import Data.LLVM.IR
-import Data.LLVM.CC
-import Data.LLVM.CC
+import System.FFI.LLVM
+import System.FFI.LLVM
 import public Control.Monad.State
 import public Control.Monad.Either 
 import public Data.LLVM.Write.Types
@@ -162,11 +162,11 @@ Encode FCM LType LLVMType where
     liftFCM $ LLVMFunctionType ret' (castPtr argList) (cast $ length args + 1) 1
   encode _ = ?h10
 public export
-[ewt] {a : Type} -> Encode FCM a b => Encode FCM (WithType a) b where 
+[ewt] {a, b : Type} -> Encode FCM a b => Encode FCM (WithType a) b where 
     encode = ?h11
 
 public export
-{a : Type} -> Encode FCM a b => Encode FCM (WithType a) b where 
+{a, b : Type} -> Encode FCM a b => Encode FCM (WithType a) b where 
     encode = ?h12
 
 withIndex : List a -> List (Int, a)
@@ -199,13 +199,13 @@ mutual
       encode (MkWithType ty v) = step "Make with type" $ do 
         ty' <- delay <$> encode' ty
         case v of 
-          LInt x => ?h00
-          LFloat s => ?h01
-          LBool b => ?h02
-          LNull => ?h03
+          LInt x => liftFCM $ LLVMConstInt ty' (cast x) 0 -- TODO: should sign extend?
+          LFloat s => liftFCM $ LLVMConstRealOfStringAndSize ty' s (cast $ (the (String -> Nat) length) s)
+          LBool b => liftFCM $ LLVMConstInt ty' (cast $ the Int $ cast b) 0
+          LNull => liftFCM $ LLVMConstNull ty'
           LToken => ?h04
-          LString s => ?h05
-          LArray elems => ?h06
+          LString s => liftFCM $ LLVMConstStringInContext2 !inCon s (cast $ strLength s) 0 -- TODO: End with nullptr?
+          LArray elems => liftFCM $ ?h06 
           LVector elems => ?h07
           LStruct elems => ?h08
           LUndefined => ?h09
