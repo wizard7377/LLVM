@@ -7,10 +7,10 @@ import Data.LLVM
 import Data.LLVM.IR
 import Data.LLVM.Write.Text.Encode
 import Data.LLVM.Class
-import Data.LLVM.Builders.Math
+import Data.LLVM.Ops.Math
 import Test.Helper
 import Data.LLVM.Write.Foreign
-import Data.LLVM.Builders.Sugar
+import Data.LLVM.Ops.Sugar
 import Data.Table
 export
 -- Module with switch statements and multiple cases
@@ -68,7 +68,7 @@ moduleWithSwitch = MkLModule {
     tags = neutral
 }
 
--- TODO: Add to tests
+-- TODO: (Add NoWrap) to tests
 export
 -- Module with switch statements and multiple cases
 moduleWithSwitchLifted : LModule
@@ -156,7 +156,7 @@ moduleWithStructs = MkLModule {
                 MkLStatement (Local "y") ((ExtractValue 
                     (MkWithType (LStruct [LInt 32, LInt 32]) (id (LPtr (Local "point")))) 1)),
                 -- Calculate sum
-                MkLStatement (Local "sum") (Add (:# 32) (id (LPtr (Local "x"))) (id (LPtr (Local "y")))),
+                MkLStatement (Local "sum") ((Add NoWrap) (:# 32) (id (LPtr (Local "x"))) (id (LPtr (Local "y")))),
                 -- Create new struct with modified values
                 MkLStatement (Local "new_point") ((InsertValue 
                     (MkWithType (LStruct [LInt 32, LInt 32]) (id (LPtr (Local "point"))))
@@ -197,7 +197,7 @@ moduleWithAliases = MkLModule {
             personality = Nothing,
             metadata = [],
             body = [MkPair "entry" $ MkBasicBlock [
-                "result" $<- (Mul (:# 32) (?^ "x") (## 2))
+                "result" <<- ((Mul NoWrap) (:# 32) (?^ "x") (## 2))
             ] (Ret (:# 32) (?^ "result"))],
             tags = neutral
         },
@@ -271,7 +271,7 @@ moduleWithExceptions = MkLModule {
             body = [
                 MkPair "entry" $ MkBasicBlock [
                     -- Invoke that might throw
-                    "result" $<- (id (Invoke (MkInvokeCall (Just C) [] Nothing 
+                    "result" <<- (id (Invoke (MkInvokeCall (Just C) [] Nothing 
                         (LFun (:# 32) [LInt 32]) 
                         (id (LVar (Global "might_throw"))) 
                         [?^ "x"]
@@ -284,7 +284,7 @@ moduleWithExceptions = MkLModule {
                 
                 MkPair "exception" $ MkBasicBlock [
                     -- Landing pad for exception handling (simplified for demo)
-                    "landing_pad" $<- (Add (:# 32) (## 0) (## 0))
+                    "landing_pad" <<- ((Add NoWrap) (:# 32) (## 0) (## 0))
                 ] (Ret (:# 32) (id (LInt (-1))))
             ],
             tags = neutral
@@ -334,11 +334,11 @@ moduleWithAtomics = MkLModule {
             metadata = [],
             body = [MkPair "entry" $ MkBasicBlock [
                 -- Simple memory operations using variants
-                "old_value" $<- ((LoadRegular False (:# 32)
+                "old_value" <<- ((Load False (:# 32)
                     (id (LVar (Global "atomic_counter")))
                     Nothing False False False False Nothing Nothing Nothing False)),
                 -- Store atomic value
-                $<< ((StoreRegular False
+                -<< ((StoreRegular False
                     (MkWithType (:# 32) (?^ "value"))
                     (id (LVar (Global "atomic_counter")))
                     Nothing False False))
@@ -382,7 +382,7 @@ moduleWithInlineAssembly = MkLModule {
             metadata = [],
             body = [MkPair "entry" $ MkBasicBlock [
                 -- Inline assembly to add two numbers (simplified for demo)
-                "result" $<- (Add (:# 32) (?^ "a") (?^ "b"))
+                "result" <<- ((Add NoWrap) (:# 32) (?^ "a") (?^ "b"))
             ] (Ret (:# 32) (?^ "result"))],
             tags = neutral
         }
@@ -418,16 +418,16 @@ moduleWithDebugInfo = MkLModule {
             metadata = [],
             body = [MkPair "entry" $ MkBasicBlock [
                 -- Allocate local variable
-                "local_var_ptr" $<- ((Alloc (:# 32) Nothing Nothing Nothing)),
+                "local_var_ptr" <<- ((Alloc (:# 32) Nothing Nothing Nothing)),
                 -- Calculate the value
-                "local_var" $<- (Add (:# 32) (?^ "param") (## 1)),
+                "local_var" <<- ((Add NoWrap) (:# 32) (?^ "param") (## 1)),
                 -- Store the value
-                $<< ((StoreRegular False 
+                -<< ((StoreRegular False 
                     (MkWithType (:# 32) (?^ "local_var"))
                     (?^ "local_var_ptr")
                     Nothing False False)),
                 -- Call debug intrinsic with pointer
-                $<< ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
+                -<< ((FnCallOp (MkFnCall NoTail [] (Just C) [] Nothing 
                     (LFun LVoid [LPtr, LPtr, LPtr]) 
                     (id (LVar (Global "llvm.dbg.declare"))) 
                     [
@@ -492,7 +492,7 @@ moduleWithComplexTypes = MkLModule {
             metadata = [],
             body = [MkPair "entry" $ MkBasicBlock [
                 -- Get element pointer using a simpler approach
-                "nested_ptr" $<- ((ExtractValue
+                "nested_ptr" <<- ((ExtractValue
                     (MkWithType (LStruct [
                         LInt 8,  -- flags
                         LPackedStruct [LInt 16, LInt 16],  -- packed coordinates
@@ -504,11 +504,11 @@ moduleWithComplexTypes = MkLModule {
                         ]
                     ]) (?^ "complex_ptr")) 3)),
                 -- Extract vector from nested struct
-                "vector_ptr" $<- ((ExtractValue
+                "vector_ptr" <<- ((ExtractValue
                     (MkWithType (LStruct [LPtr, LVector 4 (:# 32), LFun LVoid [LInt 32]]) 
                      (?^ "nested_ptr")) 1)),
                 -- Load the vector using simple load
-                "vector" $<- ((LoadRegular False (LVector 4 (:# 32))
+                "vector" <<- ((Load False (LVector 4 (:# 32))
                     (?^ "vector_ptr")
                     Nothing False False False False Nothing Nothing Nothing False))
             ] RetVoid],

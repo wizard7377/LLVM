@@ -9,6 +9,7 @@ PACK ?= pack
 testFiles := $(patsubst %.ll,%.ss,$(wildcard generated/*.ll)) 
 loud ?= 0
 srcFiles := $(wildcard *.idr)
+ffiFiles := $(wildcard llvm-ffi/*.idr)
 OPTS += $(CG_D) $(cg)
 DBG ?=
 VERB ?=
@@ -26,16 +27,24 @@ IDRIS ?= idris2
 check-llvm: 
 	@echo "Checking LLVM installation..."
 	@llvm-config --version
+
 array.so : support/array.c support/array.h 
-	$(CC) -c -fPIC support/array.c -o support/array.o 
-	$(CC) -o $@ -shared support/array.o 
-build: array.so $(srcFiles) check-llvm
+	@$(CC) -c -fPIC support/array.c -o support/array.o 
+	@$(CC) -o $@ -shared support/array.o 
+build_ffi: array.so $(ffiFiles) check-llvm
+	$(IDRIS) $(OPTS) --build llvm_ffi.ipkg
+
+install_ffi: array.so $(ffiFiles) check-llvm build_ffi
+	$(IDRIS) $(OPTS) --install llvm_ffi.ipkg
+
+
+build: array.so $(srcFiles) check-llvm install_ffi
 	$(IDRIS) $(OPTS) --build llvm.ipkg
 
-install: array.so $(srcFiles) check-llvm
+install: array.so $(srcFiles) check-llvm install_ffi
 	$(IDRIS) $(OPTS) --install llvm.ipkg
 
-test: install
+test: clean-test build 
 	@echo "Building and running LLVM tests..."
 	$(IDRIS) $(OPTS) --build test.ipkg
 	@echo "Running test executable..."
@@ -57,8 +66,10 @@ clean: clean-test
 	@$(PACK) clean llvm.ipkg
 clean-test:
 	@echo "Cleaning test build artifacts..."
-	rm -rf generated 
-	mkdir -p generated
+	@rm -rf generated 
+	@mkdir -p generated
+	@mkdir -p generated/llvm
+	@mkdir -p generated/temp
 
 docs: install
 	$(IDRIS) $(OPTS) --mkdoc llvm.ipkg
@@ -81,3 +92,7 @@ holes: $(srcFiles)
 	@echo "Number of holes"
 	@echo ""
 	@rg --regexp='\?[_\w]+' --context=1 --glob '*.idr' --count
+
+getSrc: 
+	@echo "Getting all source files"
+	@python ./scripts/getsrc.py

@@ -13,7 +13,7 @@ authors = "Asher Frost"
 -- langversion
 
 -- packages to add to search path
-depends = llvm, contrib 
+depends = llvm_ffi, llvm, contrib 
 
 -- modules to install
 modules = Test.Helper, Test.Groups, Test.Groups.Encoding
@@ -25,8 +25,8 @@ main = Main
 executable = "llvm-test"
 -- opts =
 sourcedir = "test"
--- builddir =
--- outputdir =
+builddir = "build/test"
+outputdir = "out/test"
 
 -- script to run before building
 -- prebuild =

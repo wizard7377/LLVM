@@ -13,29 +13,54 @@ authors = "Asher Frost"
 -- langversion
 
 -- packages to add to search path
--- depends =
-
+depends =
+    llvm_ffi
 -- modules to install
 modules = 
+    Control.LLVM,
     Control.Runnable,
+    Control.LLVM.Code,
+    Control.LLVM.Text,
+    Control.LLVM.Stage,
+    Control.LLVM.Text.Execute,
+    Control.LLVM.Text.Assemble,
+    Control.LLVM.Text.Binary,
+    Control.LLVM.Text.Compile,
+    Control.LLVM.Text.Link,
+    Control.LLVM.Text.Convert,
+    Control.LLVM.Text.Optimize,
+    Control.LLVM.Text.Build,
+    Control.LLVM.Text.Combine,
     Data.MonadIO,
     Data.LLVM,
     Data.Walk,
     Data.Table,
     Data.LLVM.Verify,
-    Data.LLVM.Builders,
     Data.LLVM.Write,
     Data.LLVM.IR,
     Data.LLVM.Pass,
+    Data.LLVM.Builder,
     Data.LLVM.Interface,
     Data.LLVM.Logic,
     Data.LLVM.Foreign,
-    Data.LLVM.CC,
+    Data.LLVM.Ops,
     Data.LLVM.Class,
     Data.LLVM.Casts,
     Data.LLVM.Logic.Infer,
     Data.LLVM.Logic.Casting,
     Data.LLVM.Logic.Types,
+    Data.LLVM.Ops.Helper,
+    Data.LLVM.Ops.Inst,
+    Data.LLVM.Ops.Math,
+    Data.LLVM.Ops.Core,
+    Data.LLVM.Ops.Metadata,
+    Data.LLVM.Ops.Ops,
+    Data.LLVM.Ops.Sugar,
+    Data.LLVM.Ops.Control,
+    Data.LLVM.Ops.Suggestions,
+    Data.LLVM.Ops.Builder.Complex,
+    Data.LLVM.Ops.Builder.Builder,
+    Data.LLVM.Ops.Builder.Types,
     Data.LLVM.IR.Core,
     Data.LLVM.IR.Alias,
     Data.LLVM.IR.Util,
@@ -48,21 +73,12 @@ modules =
     Data.LLVM.Write.Foreign.Step,
     Data.LLVM.Write.Foreign.Monad,
     Data.LLVM.Write.Foreign.Values,
-    Data.LLVM.CC.Prim,
-    Data.LLVM.CC.Macros,
-    Data.LLVM.CC.Support,
-    Data.LLVM.CC.Reflect,
-    Data.LLVM.Builders.Helper,
-    Data.LLVM.Builders.Inst,
-    Data.LLVM.Builders.Math,
-    Data.LLVM.Builders.Core,
-    Data.LLVM.Builders.Metadata,
-    Data.LLVM.Builders.Ops,
-    Data.LLVM.Builders.Sugar,
-    Data.LLVM.Builders.Control,
-    Data.LLVM.Builders.Builder.Complex,
-    Data.LLVM.Builders.Builder.Builder,
-    Data.LLVM.Builders.Builder.Types,
+    Data.LLVM.Builder.Util,
+    Data.LLVM.Builder.Instances,
+    Data.LLVM.Builder.State,
+    Data.LLVM.Builder.Types,
+    Data.LLVM.Builder.Builder.Core,
+    Data.LLVM.Builder.Builder.Group,
     System.LLVM,
     System.LLVM.Common,
     System.LLVM.Foreign,
@@ -74,6 +90,10 @@ modules =
     System.LLVM.Optimize,
     System.LLVM.Build
 
+
+
+
+
 -- main file (i.e. file to load at REPL)
 -- main =
 
@@ -81,8 +101,8 @@ modules =
 -- executable =
 -- opts = ""
 sourcedir = "src"
-builddir = "build"
-outputdir = "out"
+builddir = "build/llvm"
+outputdir = "out/llvm"
 
 -- script to run before building
 -- prebuild =

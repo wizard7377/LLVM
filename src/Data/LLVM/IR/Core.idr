@@ -5,7 +5,7 @@
 ||| It also provides utility functions for name escaping and type manipulation.
 module Data.LLVM.IR.Core
 
-
+%default total
 ||| Escape special characters in identifiers to make them safe for LLVM IR.
 |||
 ||| Converts non-alphanumeric characters to underscore-delimited names to ensure
@@ -352,8 +352,8 @@ data Name : Type where
   Temporary : Nat -> Name
   Local : String -> Name 
   Parameter : String -> Name
-  ||| Unnamed parameter 
-  Unnamed : Nat -> Name
+  ||| Numbered parameter 
+  Numbered : Nat -> Name
   Global : String -> Name
   Intrinsic : IntrinsicName -> Name
 
@@ -371,7 +371,7 @@ implementation Eq Name where
   (==) (Global n1) (Global n2) = n1 == n2
   (==) (Temporary id1) (Temporary id2) = id1 == id2
   (==) (Parameter p1) (Parameter p2) = p1 == p2
-  (==) (Unnamed id1) (Unnamed id2) = id1 == id2
+  (==) (Numbered id1) (Numbered id2) = id1 == id2
   (==) (Intrinsic n1) (Intrinsic n2) = n1.name == n2.name -- TODO: Check type params
   (==) _ _ = False
 
@@ -381,7 +381,7 @@ tagOf (Local _) = 0
 tagOf (Global _) = 1
 tagOf (Temporary _) = 2
 tagOf (Parameter _) = 3
-tagOf (Unnamed _) = 4
+tagOf (Numbered _) = 4
 tagOf (Intrinsic _) = 5
 export
 implementation Ord Name where
@@ -389,7 +389,7 @@ implementation Ord Name where
   compare (Global x) (Global y) = compare x y
   compare (Temporary x) (Temporary y) = compare x y
   compare (Parameter x) (Parameter y) = compare x y
-  compare (Unnamed x) (Unnamed y) = compare x y
+  compare (Numbered x) (Numbered y) = compare x y
   compare (Intrinsic x) (Intrinsic y) = compare x.name y.name
   compare x y = compare (tagOf x) (tagOf y)
 
@@ -399,7 +399,7 @@ implementation Show Name where
   show (Global n) = "global " ++ unescape n
   show (Temporary id) = "temp " ++ show id
   show (Parameter n) = "arg " ++ unescape n
-  show (Unnamed id) = "arg at " ++ show id
+  show (Numbered id) = "arg at " ++ show id
   show (Intrinsic n) = "intrinsic llvm." ++ unescape n.name
 
 ||| Function and parameter attributes in LLVM IR.
@@ -652,6 +652,10 @@ mutual
         MustTail : TailCall
         ||| Disable tail call optimization
         NoTail : TailCall
+
+    public export 
+    data OperandBundle : Type where 
+      OperandString : String -> OperandBundle
     ||| Function call instruction specification.
     ||| Models LLVM IR call instructions like:
     ||| ```llvm
@@ -680,7 +684,8 @@ mutual
         args : List (WithType (LValue False))
         ||| Function attributes
         fnAttrs : List Attribute
-        --operandBundles : ?
+        operandBundles : List OperandBundle
+      -- TailCall -> FastMath -> Maybe CallingConvention -> List Attribute -> Maybe AddressSpace -> LType -> (LValue False) -> List (WithType (LValue False)) -> List Attribute -> List OperandBundle -> FnCall 
     ||| Terminator instructions that end basic blocks.
     ||| Models LLVM IR terminator instructions like:
     ||| ```llvm
@@ -759,6 +764,8 @@ mutual
     ||| ```
     public export
     data Wrapping : Type where
+        ||| Default (none)
+        NoWrap : Wrapping
         ||| No signed wrap (nsw)
         NoSigned : Wrapping
         ||| No unsigned wrap (nuw)
@@ -800,19 +807,73 @@ mutual
     ||| ```
     public export
     data LExpr : Type where 
-        ||| PHI node for SSA form
-        Phi : LType -> List ((LValue False), Label) -> LExpr
-        ||| Conditional select instruction
-        Select : FastMath -> WithType (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> LExpr
-        ||| Freeze instruction (converts poison to undef)
-        Freeze : WithType (LValue False)-> LExpr
-        ||| Function call operation
-        FnCallOp : FnCall -> LExpr
-        -- [ ]: VaArg
-        LandingPad : LType -> List CatchClause -> LExpr
-        LandingPadCleanup : LType -> List CatchClause -> LExpr
-        CatchPad : Name -> (LValue False)-> LExpr
-        CleanupPad : Name -> (LValue False)-> LExpr
+
+        -- TODO: Cmpxchg, atomicrmw, etc.
+        ||| Unary operation opcodes.
+        ||| Models LLVM IR unary instructions like:
+        ||| ```llvm
+        ||| %result = fneg float %x
+        ||| ```
+
+        ||| Floating point negation
+        FNeg : FastMath -> LType -> (LValue False) -> LExpr
+
+        ||| Binary operation opcodes for arithmetic and logical operations.
+        ||| Models LLVM IR binary instructions like:
+        ||| ```llvm
+        ||| %result = add i32 %a, %b
+        ||| %result = fadd float %x, %y
+        ||| %result = and i1 %p, %q
+        ||| %result = shl i32 %val, 2
+        ||| ```
+        |||All the simple binary opcodes
+
+        Add : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
+        FAdd : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
+        Sub : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
+        FSub : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
+        Mul : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
+        FMul : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
+        UDiv : (exact : Bool) -> LType -> (LValue False)-> (LValue False)-> LExpr
+        SDiv : (exact : Bool) -> LType -> (LValue False)-> (LValue False)-> LExpr
+        FDiv : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
+        URem : LType -> (LValue False)-> (LValue False)-> LExpr
+        SRem : LType -> (LValue False)-> (LValue False)-> LExpr
+        FRem : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
+        Shl : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
+        LShr : (exact : Bool) -> LType -> (LValue False)-> (LValue False)-> LExpr
+        AShr : (exact : Bool) -> LType -> (LValue False)-> (LValue False)-> LExpr
+        And : LType -> (LValue False)-> (LValue False)-> LExpr
+        Or : (disjoint : Bool) -> LType -> (LValue False)-> (LValue False)-> LExpr
+        
+        Xor : LType -> (LValue False)-> (LValue False)-> LExpr
+        ||| Vector operation opcodes.
+        ||| Models LLVM IR vector manipulation instructions like:
+        ||| ```llvm
+        ||| %result = insertelement <4 x i32> %vec, i32 %val, i32 0
+        ||| %result = extractelement <4 x i32> %vec, i32 2
+        ||| %result = shufflevector <4 x i32> %v1, <4 x i32> %v2, <4 x i32> <i32 0, i32 5, i32 2, i32 7>
+        ||| ```
+
+        ||| Insert element into vector at specified index
+        InsertElement : WithType (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> LExpr
+        ||| Shuffle two vectors according to mask
+        ShuffleVector : WithType (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> LExpr
+        ||| Extract element from vector at specified index
+        ExtractElement : WithType (LValue False)-> WithType (LValue False)-> LExpr
+
+        ||| Aggregate operation opcodes for structs and arrays.
+        ||| Models LLVM IR aggregate manipulation instructions like:
+        ||| ```llvm
+        ||| %result = extractvalue {i32, float} %agg, 0
+        ||| %result = insertvalue {i32, float} %agg, i32 42, 0
+        ||| ```
+
+        ||| Extract value from aggregate at specified index
+        ExtractValue : WithType (LValue False)-> List Int -> LExpr
+        ||| Insert value into aggregate at specified index
+        InsertValue : WithType (LValue False)-> WithType (LValue False)-> List Int -> LExpr
+
         ||| Memory operation opcodes for memory allocation and access.
         ||| Models LLVM IR memory instructions like:
         ||| ```llvm
@@ -833,7 +894,7 @@ mutual
         Alloc : LType -> Maybe (WithType Nat) -> Maybe Nat -> Maybe AddressSpace -> LExpr
         -- TODO: Load, because im not dealing with that right now
         ||| Many of the args are written as Bools, as the spec has them as useless metadata
-        LoadRegular : 
+        Load : 
             (volatile : Bool) ->
             (tpe : LType) ->
             (address : (LValue False)) -> 
@@ -880,80 +941,8 @@ mutual
             (ordering : Maybe AtomicOrder) ->
             LExpr
         CmpXChg : (weak : Bool) -> (volatile : Bool) -> (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> (syncscope : Maybe String) -> AtomicOrder -> AtomicOrder -> LExpr 
-        
-        -- TODO: Cmpxchg, atomicrmw, etc.
-        ||| Unary operation opcodes.
-        ||| Models LLVM IR unary instructions like:
-        ||| ```llvm
-        ||| %result = fneg float %x
-        ||| ```
-
-        ||| Floating point negation
-        FNeg : LType -> (LValue False)-> LExpr
-
-        ||| Binary operation opcodes for arithmetic and logical operations.
-        ||| Models LLVM IR binary instructions like:
-        ||| ```llvm
-        ||| %result = add i32 %a, %b
-        ||| %result = fadd float %x, %y
-        ||| %result = and i1 %p, %q
-        ||| %result = shl i32 %val, 2
-        ||| ```
-        |||All the simple binary opcodes
-
-        Add : LType -> (LValue False)-> (LValue False)-> LExpr
-        AddWrap : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
-        FAdd : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
-        Sub : LType -> (LValue False)-> (LValue False)-> LExpr
-        SubWrap : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
-        FSub : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
-        Mul : LType -> (LValue False)-> (LValue False)-> LExpr
-        MulWrap : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
-        FMul : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
-        UDiv : LType -> (LValue False)-> (LValue False)-> LExpr
-        UDivExact : LType -> (LValue False)-> (LValue False)-> LExpr
-        SDiv : LType -> (LValue False)-> (LValue False)-> LExpr
-        SDivExact : LType -> (LValue False)-> (LValue False)-> LExpr
-        FDiv : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
-        URem : LType -> (LValue False)-> (LValue False)-> LExpr
-        SRem : LType -> (LValue False)-> (LValue False)-> LExpr
-        FRem : FastMath -> LType -> (LValue False)-> (LValue False)-> LExpr
-        Shl : LType -> (LValue False)-> (LValue False)-> LExpr
-        ShlWrap : Wrapping -> LType -> (LValue False)-> (LValue False)-> LExpr
-        LShr : LType -> (LValue False)-> (LValue False)-> LExpr
-        LShrExact : LType -> (LValue False)-> (LValue False)-> LExpr
-        AShr : LType -> (LValue False)-> (LValue False)-> LExpr
-        AShrExact : LType -> (LValue False)-> (LValue False)-> LExpr
-        And : LType -> (LValue False)-> (LValue False)-> LExpr
-        Or : LType -> (LValue False)-> (LValue False)-> LExpr
-        DisjointOr : LType -> (LValue False)-> (LValue False)-> LExpr
-        Xor : LType -> (LValue False)-> (LValue False)-> LExpr
-        ||| Vector operation opcodes.
-        ||| Models LLVM IR vector manipulation instructions like:
-        ||| ```llvm
-        ||| %result = insertelement <4 x i32> %vec, i32 %val, i32 0
-        ||| %result = extractelement <4 x i32> %vec, i32 2
-        ||| %result = shufflevector <4 x i32> %v1, <4 x i32> %v2, <4 x i32> <i32 0, i32 5, i32 2, i32 7>
-        ||| ```
-
-        ||| Insert element into vector at specified index
-        InsertElement : WithType (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> LExpr
-        ||| Shuffle two vectors according to mask
-        ShuffleVector : WithType (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> LExpr
-        ||| Extract element from vector at specified index
-        ExtractElement : WithType (LValue False)-> WithType (LValue False)-> LExpr
-
-        ||| Aggregate operation opcodes for structs and arrays.
-        ||| Models LLVM IR aggregate manipulation instructions like:
-        ||| ```llvm
-        ||| %result = extractvalue {i32, float} %agg, 0
-        ||| %result = insertvalue {i32, float} %agg, i32 42, 0
-        ||| ```
-
-        ||| Extract value from aggregate at specified index
-        ExtractValue : WithType (LValue False)-> Nat -> LExpr
-        ||| Insert value into aggregate at specified index
-        InsertValue : WithType (LValue False)-> WithType (LValue False)-> Nat -> LExpr
+        GetElemenentPtr : Wrapping -> GEPRange -> LType -> LValue False -> List (WithType (LValue True)) -> LExpr
+        -- TODO: GetElementPtrVector
         ||| Type conversion operation opcodes.
         ||| Models LLVM IR conversion instructions like:
         ||| ```llvm
@@ -984,18 +973,26 @@ mutual
         ||| %result = fcmp true float %a, %b    ; always true
         ||| ```
 
-        ICmp : Comparison -> LType -> (LValue False)-> (LValue False)-> LExpr
-        ICmpSign : Comparison -> LType -> (LValue False)-> (LValue False)-> LExpr
-        FCmpOrd : FastMath -> Comparison -> LType -> (LValue False)-> (LValue False)-> LExpr
-        FCmpUnOrd : FastMath -> Comparison -> LType -> (LValue False)-> (LValue False)-> LExpr
+        ICmp : (sameSign : Bool) -> Comparison -> LType -> (LValue False)-> (LValue False)-> LExpr
+        FCmp : (ordered : Bool) -> FastMath -> Comparison -> LType -> (LValue False)-> (LValue False)-> LExpr
         FCmpFalse : LType -> (LValue False)-> (LValue False)-> LExpr
         FCmpTrue : LType -> (LValue False)-> (LValue False)-> LExpr
-        ||| A special function not found within LLVM Assembly, although it does exist in the C API.
-        ||| Essientally this specifies a way to "abstract" the ending of a function
-        ||| It splits a basic block into two, end the first with the terminator of the function given the second block.
-        ||| E.g, `WithCont Br` becomes `Br bb.unique: bb.unique`
-        WithCont : (Label -> Terminator) -> LExpr
-        CallIntrinsic : IntrinsicName -> LType -> List (WithType (LValue False)) -> LExpr
+        
+        ||| PHI node for SSA form
+        Phi : LType -> List ((LValue False), Label) -> LExpr
+        ||| Conditional select instruction
+        Select : FastMath -> WithType (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> LExpr
+        ||| Freeze instruction (converts poison to undef)
+        Freeze : WithType (LValue False)-> LExpr
+        ||| Function call operation
+        FnCallOp : TailCall -> FastMath -> Maybe CallingConvention -> List Attribute -> Maybe AddressSpace -> LType -> LValue False -> List (WithType (LValue False)) -> List Attribute -> List OperandBundle -> LExpr
+        -- [ ]: VaArg
+        LandingPad : LType -> List CatchClause -> LExpr
+        LandingPadCleanup : LType -> List CatchClause -> LExpr
+        CatchPad : Name -> (LValue False)-> LExpr
+        CleanupPad : Name -> (LValue False)-> LExpr
+        
+        
     ||| LLVM statements that can appear in basic blocks.
     ||| Models different forms of LLVM IR statements like:
     ||| ```llvm
@@ -1021,7 +1018,21 @@ mutual
         statements : List LStatement
         ||| Terminator instruction that ends the block
         terminator : Terminator
-        
+    public export 
+    data GEPRange : Type where 
+      GEPAll : GEPRange
+      GEPInbounds : GEPRange
+      GEPNUSW : GEPRange
+      GEPNUW : GEPRange
+    public export 
+    record GEP (isConst : Bool) where 
+        constructor MkGEP
+        bounds : GEPRange
+        base : LType
+        ptr : (LValue isConst)
+        indices : List (WithType (LValue True))
+
+    -- GEPRange -> LType -> LValue False -> List (WithType (LValue True)) -> GEP False
     ||| Type alias for basic block labels.
     |||
     ||| Labels are represented as expressions for flexibility in referencing
@@ -1059,6 +1070,9 @@ mutual
         LConstExtractElement : (LValue True) -> (LValue True) -> LConstExpr
         LConstInsertElement : (LValue True) -> (LValue True) -> LConstExpr
         LConstShuffleVector : (LValue True) -> (LValue True) -> LConstExpr
+        LConstExtractValue : (LValue True) -> Nat -> LConstExpr
+        LConstInsertValue : (LValue True) -> (LValue True) -> Nat -> LConstExpr
+        LConstGEP : GEP True -> LConstExpr
         LConstAdd : (LValue True) -> (LValue True) -> LConstExpr
         LConstSub : (LValue True) -> (LValue True) -> LConstExpr
         LConstXor : (LValue True) -> (LValue True) -> LConstExpr

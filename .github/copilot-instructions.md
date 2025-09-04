@@ -8,20 +8,20 @@ This is an Idris2 library providing complete LLVM IR functionality through a typ
 ### Core Modules
 - **`Data.LLVM`**: IR representation, builders, and serialization
   - `Data.LLVM.IR.Core`: Fundamental LLVM types and values
-  - `Data.LLVM.Builders.*`: DSL for constructing IR programmatically
+  - `Data.LLVM.Ops.*`: DSL for constructing IR programmatically
   - `Data.LLVM.Write.*`: Text encoding and serialization to LLVM IR
-  - `Data.LLVM.CC.*`: C FFI integration and low-level primitives
+  - `System.FFI.LLVM.*`: C FFI integration and low-level primitives
 - **`System.LLVM`**: Compilation pipeline and system interface
   - `System.LLVM.Compile`: IR to bytecode compilation
   - `System.LLVM.Optimize`: Pass manager integration 
   - `System.LLVM.Link`: Linking multiple modules
   - `System.LLVM.Run`: Execution of compiled programs
 
-### DSL Syntax Conventions (Data.LLVM.Builders.Sugar)
+### DSL Syntax Conventions (Data.LLVM.Ops.Sugar)
 The library provides extensive syntactic sugar with specific operator meanings:
 - **`?`** prefix: Creates variables (`?^ "var"` for variable reference)
 - **`#`** prefix: Creates constant values (`## 42` for integer literal, `#^ "label"` for label reference)
-- **`$`** infix: Creates statements (`"name" $<- instruction`)
+- **`$`** infix: Creates statements (`"name" <<- instruction`)
 - **`:`** infix: Creates types (`:# 32` for i32 type, `4 :<> (:# 32)` for vector type)
 - **`^`** suffix: Creates metadata/annotations
 - **`&`** prefix: Creates modifiers
@@ -61,8 +61,8 @@ functionWithInstructions = MkFunction {
   args = [MkArgument (:# 32) [] (Just "x"), MkArgument (:# 32) [] (Just "y")],
   body = [
     MkPair "entry" $ MkBasicBlock [
-      "sum" $<- (Add (:# 32) (?^ "x") (?^ "y")),
-      "cmp" $<- (ICmp CEq (:# 32) (?^ "sum") ( (## 42)))
+      "sum" <<- ((Add NoWrap) (:# 32) (?^ "x") (?^ "y")),
+      "cmp" <<- ((ICmp False) CEq (:# 32) (?^ "sum") ( (## 42)))
     ] (Ret (:# 32) (?^ "sum"))
   ]
 }
@@ -72,8 +72,8 @@ functionWithInstructions = MkFunction {
 ```idris
 -- Vector type construction and operations
 vectorExample = [
-  "vec" $<- (InsertElement ((4 :<> (:# 32)) <::> undef) ((:# 32) <::> ( (## 1))) ((:# 32) <::> ( (## 0)))),
-  "elem" $<- (ExtractElement ((4 :<> (:# 32)) <::> (?^ "vec")) ((:# 32) <::> ( (## 2))))
+  "vec" <<- (InsertElement ((4 :<> (:# 32)) <::> undef) ((:# 32) <::> ( (## 1))) ((:# 32) <::> ( (## 0)))),
+  "elem" <<- (ExtractElement ((4 :<> (:# 32)) <::> (?^ "vec")) ((:# 32) <::> ( (## 2))))
 ]
 ```
 
@@ -119,14 +119,14 @@ make clean
 Tests use systematic approach with `Test.Helper` providing utilities:
 - `encodeFCMTest'`: Test IR encoding to text format
 - `debugCompile`: Test compilation with debug output  
-- Coverage areas: arithmetic (`ICmp`, `Add`), control flow (`CondBr`, `Switch`), vectors (`ExtractElement`, `InsertElement`), atomics, metadata
+- Coverage areas: arithmetic (`(ICmp False)`, `(Add NoWrap)`), control flow (`CondBr`, `Switch`), vectors (`ExtractElement`, `InsertElement`), atomics, metadata
 - Test modules in `test/Test/Groups/Module.idr` show comprehensive LLVM feature usage
 
 ## Integration Points
 
 ### LLVM Dependencies
 - Requires LLVM installation (`llvm-config`, `opt`, `llc`, `lli`)
-- C FFI through `Data.LLVM.CC.Prim` with 100+ LLVM-C API bindings
+- C FFI through `System.FFI.LLVM.Prim` with 100+ LLVM-C API bindings
 - Native array support via `support/array.c` shared library
 
 ### Pass Integration
@@ -147,13 +147,13 @@ Compile a = EitherT CompilationError IO a
 Extensive use of builder combinators for type-safe IR construction:
 ```idris
 myFunction = functionDef "main" LVoid [] $ MkBasicBlock [
-  "result" $<- (Add (:# 32) (?^ "x") (?^ "y")),
+  "result" <<- ((Add NoWrap) (:# 32) (?^ "x") (?^ "y")),
   ret (:# 32) (?^ "result")
 ]
 ```
 
 ### Foreign C API Integration
-- All LLVM-C API functions wrapped in `Data.LLVM.CC.Prim` (100+ bindings)
+- All LLVM-C API functions wrapped in `System.FFI.LLVM.Prim` (100+ bindings)
 - Uses `EitherT CompilationError IO` monad for safe foreign calls
 - Custom array support via `support/array.c` for C interop
 

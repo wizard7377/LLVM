@@ -1,5 +1,6 @@
 module Data.Table
 
+import public Control.LLVM.Code
 public export %inline %tcinline
 Table : Type -> Type 
 Table a = List (String, a)

@@ -2,7 +2,7 @@ module Data.LLVM.Interface
 import Data.LLVM.Class
 import Data.LLVM.Write.Text.Encode
 import Data.LLVM.IR
-import public Data.LLVM.Builders
+import public Data.LLVM.Ops
 import Data.Walk
 public export
 interface Startable a b where 

@@ -3,8 +3,8 @@ module Data.LLVM.Write.Foreign.Monad
 
 import Data.LLVM.Class
 import Data.LLVM.IR
-import Data.LLVM.CC
-import Data.LLVM.CC
+import System.FFI.LLVM
+import System.FFI.LLVM
 import public Control.Monad.State
 import public Control.Monad.Either 
 import public Data.LLVM.Write.Types
@@ -48,7 +48,7 @@ public export
 record WorkingFunction where 
   constructor MkWorkingFunction 
   args : List (Maybe String)
-  blocks : SortedMap String LLVMBlock
+  blocks : SortedMap String LLVMBasicBlock
   val : LLVMValue
 mutual 
   public export 
@@ -329,7 +329,7 @@ inBuilder f = do
   pushBuilder b
   pure r
 public export
-getBlock : String -> FCM LLVMBlock
+getBlock : String -> FCM LLVMBasicBlock
 getBlock name = do 
   cf <- popFun 
   case lookup name cf.blocks of 
@@ -340,7 +340,7 @@ getBlock name = do
       pure cb
     Just cb => pure cb
 public export 
-setBlock : String -> LLVMBlock -> FCM ()
+setBlock : String -> LLVMBasicBlock -> FCM ()
 setBlock name cb = do
   cf <- popFun
   case lookup name cf.blocks of

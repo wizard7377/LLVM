@@ -1,0 +1,45 @@
+package llvm_ffi
+-- version =
+authors = "Asher Frost"
+-- maintainers =
+-- license =
+-- brief =
+-- readme =
+-- homepage =
+-- sourceloc =
+-- bugtracker =
+
+-- the Idris2 version required (e.g. langversion >= 0.5.1)
+-- langversion
+
+-- packages to add to search path
+-- depends =
+
+-- modules to install
+modules = 
+    System.FFI.LLVM,
+    System.FFI.LLVM.Macros,
+    System.FFI.LLVM.Prim, 
+    System.FFI.LLVM.Reflect,
+    System.FFI.LLVM.Support
+sourcedir = "llvm_ffi"
+builddir = "build/ffi"
+outputdir = "out/ffi"
+
+-- script to run before building
+-- prebuild =
+
+-- script to run after building
+-- postbuild =
+
+-- script to run after building, before installing
+-- preinstall =
+
+-- script to run after installing
+-- postinstall =
+
+-- script to run before cleaning
+-- preclean =
+
+-- script to run after cleaning
+-- postclean =

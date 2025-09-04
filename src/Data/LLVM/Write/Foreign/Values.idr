@@ -3,8 +3,8 @@ module Data.LLVM.Write.Foreign.Values
 
 import Data.LLVM.Class
 import Data.LLVM.IR
-import Data.LLVM.CC
-import Data.LLVM.CC
+import System.FFI.LLVM
+import System.FFI.LLVM
 import public Control.Monad.State
 import public Control.Monad.Either 
 import public Data.LLVM.Write.Types
@@ -162,11 +162,11 @@ Encode FCM LType LLVMType where
     liftFCM $ LLVMFunctionType ret' (castPtr argList) (cast $ length args + 1) 1
   encode _ = ?h10
 public export
-[ewt] {a : Type} -> Encode FCM a CPtr => Encode FCM (WithType a) CPtr where 
+[ewt] {a, b : Type} -> Encode FCM a b => Encode FCM (WithType a) b where 
     encode = ?h11
 
 public export
-{a : Type} -> Encode FCM a CPtr => Encode FCM (WithType a) CPtr where 
+{a, b : Type} -> Encode FCM a b => Encode FCM (WithType a) b where 
     encode = ?h12
 
 withIndex : List a -> List (Int, a)
@@ -177,7 +177,7 @@ withIndex xs = go 0 xs
     go n (x :: xs) = (n, x) :: go (n + 1) xs
 mutual
     export
-    Encode FCM Metadata CPtr where
+    Encode FCM Metadata LLVMMetadata where
         encode (MetadataTuple elems) = do
             elems' <- traverse encode' elems
             elemList <- liftIO $ toCList' elems'
@@ -195,34 +195,34 @@ mutual
             liftFCM $ LLVMMDStringInContext !inCon custom (cast $ length custom)
     
     export
-    {t : Bool} -> Encode FCM (WithType (LValue t)) CPtr where
+    Encode FCM (WithType (LValue True)) LLVMValue where
       encode (MkWithType ty v) = step "Make with type" $ do 
-        ty' <- encode' ty
+        ty' <- delay <$> encode' ty
         case v of 
-          LVar name => step ("get name value: " ++ show name) $ do 
-            case name of 
-              Temporary n => ?ewte10
-              Local n => getScope name
-              Global n => liftFCM $ LLVMGetNamedGlobal !inMod n  
-              Parameter n => getScope name
-              Unnamed n => ?ewte13
-          Core.LToken => ?ewte30
-          LBool b => do 
-            if b then liftFCM $ LLVMConstInt ty' 1 0 else liftFCM $ LLVMConstInt ty' 0 0
-          LInt i => liftFCM $ LLVMConstInt ty' (cast i) 0
+          LInt x => liftFCM $ LLVMConstInt ty' (cast x) 0 -- TODO: should sign extend?
+          LFloat s => liftFCM $ LLVMConstRealOfStringAndSize ty' s (cast $ (the (String -> Nat) length) s)
+          LBool b => liftFCM $ LLVMConstInt ty' (cast $ the Int $ cast b) 0
           LNull => liftFCM $ LLVMConstNull ty'
-          Core.LFloat f => liftFCM $ LLVMConstReal ty' ?ewte2
+          LToken => ?h04
+          LString s => liftFCM $ LLVMConstStringInContext2 !inCon s (cast $ strLength s) 0 -- TODO: End with nullptr?
+          LArray elems => liftFCM $ ?h06 
+          LVector elems => ?h07
+          LStruct elems => ?h08
+          LUndefined => ?h09
+          LPoison => ?h010
+          LZero => ?h011
+          LMetadata m => ?h012
+          LPtr m => ?h013
+          LConstE e => ?h014
+          _ => ?todo0
           
-          Core.LString s => liftFCM $ LLVMConstString s (cast $ length s + 1) 0
-          Core.LPoison => liftFCM $ LLVMGetPoison ty'
-          Core.LZero => liftFCM $ LLVMConstNull ty'
-          Core.LUndefined => liftFCM $ LLVMGetUndef ty'
-          Core.LMetadata md => do 
-            md' <- encode md 
-            liftFCM $ LLVMMetadataAsValue !inCon md'
-          Core.LPtr p => do 
-            p' <- encode $ MkWithType ty $ Core.LVar p 
-            pure p' -- TODO: is this correct?
+          
+    export 
+    Encode FCM (WithType (LValue False)) LLVMValue where 
+      encode (MkWithType ty v) = step "Make with type (non-constant)" $ do 
+        ty' <- encode' ty
+        ?todo2
+          
 
           
 
