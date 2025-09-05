@@ -7,12 +7,12 @@
 *.ibc
 *.o
 .vscode/
-build/
+**/build/
 personal/
-generated/
-*~
+**/generated/
+**/*~
 repl/
 
 .ast-grep/**
-out/
-build/
+**/out/
+**/build/

@@ -16,7 +16,7 @@ data BuilderError : Type where
   BasicError : String -> BuilderError
   NoBlock : BuilderError
   CantInfer : LValue False -> BuilderError
-
+  OutsideFunction : String -> BuilderError
 public export
 record BuilderContext where 
     constructor MkBuilderContext
@@ -89,5 +89,5 @@ execBuilder x context state = do
  
 
 public export 
-MonadBuilder : (Type -> Type) -> Type
+MonadBuilder : (m : Type -> Type) -> Type
 MonadBuilder m = (Monad m , MonadState BuilderState m, MonadReader BuilderContext m , MonadError (List BuilderError) m , MonadWriter BuilderLog m) 

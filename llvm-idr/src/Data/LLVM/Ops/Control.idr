@@ -11,6 +11,126 @@ import Data.LLVM.IR.Util
 import Data.LLVM.Ops.Core
 import Data.LLVM.Ops.Ops
 import Data.Table
+export
+||| Create a function definition with comprehensive configuration options.
+|||
+||| Builds a complete function definition with all possible LLVM function attributes
+||| and metadata. Most parameters have sensible defaults to reduce verbosity.
+|||
+||| @ name The function name (identifier)
+||| @ symbolInfo Symbol information including linkage, preemption, visibility, and storage
+||| @ callingConvention The calling convention (C, FastCC, etc.)
+||| @ returnAttrs Attributes applied to the return value
+||| @ retType The return type of the function
+||| @ args List of function argument specifications with types and attributes
+||| @ addressInfo Address information for the function
+||| @ addressSpace Address space where the function resides
+||| @ fnAttributes Function-level attributes (noinline, readonly, etc.)
+||| @ section Optional section name for the function
+||| @ partition Optional partition name for the function
+||| @ comdat Optional COMDAT group name
+||| @ alignment Optional function alignment requirement
+||| @ gc Optional garbage collector specification
+||| @ fprefix Optional function prefix constant
+||| @ prologue Optional prologue constant
+||| @ personality Optional personality function for exception handling
+||| @ metadata List of metadata attached to the function
+||| @ body The function body containing statements
+||| @ tags Additional tags for the function
+functionDef' :  
+    (name : String) ->
+    {default emptySymbolInfo symbolInfo : SymbolInfo} ->
+    {default Nothing callingConvention : Maybe CallingConvention} ->
+    {default [] returnAttrs : List Attribute} ->
+    (retType : LType) ->
+    (args : List Argument) -> 
+    {default Nothing addressInfo : Maybe AddressInfo} -> 
+    {default Nothing addressSpace : Maybe AddressSpace} -> 
+    {default [] fnAttributes : List Attribute} ->
+    {default Nothing section : Maybe String} ->
+    {default Nothing partition : Maybe String} ->
+    {default Nothing comdat : Maybe Name} ->
+    {default Nothing alignment : Maybe Int} ->
+    {default Nothing gc : Maybe String} ->
+    {default Nothing fprefix : Maybe (LValue True)} ->
+    {default Nothing prologue : Maybe (LValue True)} ->
+    {default Nothing personality : Maybe (LValue True)} ->
+    {default [] metadata : List Metadata} ->
+    (body : Table BasicBlock) ->
+    {default neutral tags : Annotation} ->
+    FunctionDef
+functionDef' name {symbolInfo} {callingConvention} {returnAttrs} retType args {addressInfo} {addressSpace} {fnAttributes} {section} {partition} {comdat} {alignment} {gc} {fprefix} {prologue} {personality} {metadata} body {tags} =
+    MkFunctionDef
+        name
+        symbolInfo
+        callingConvention
+        returnAttrs
+        retType
+        args
+        addressInfo
+        addressSpace
+        fnAttributes
+        section
+        partition
+        comdat
+        alignment
+        gc
+        fprefix
+        prologue
+        personality
+        metadata
+        body 
+        tags
+        
+
+export 
+||| Create a function declaration (forward declaration without body).
+|||
+||| Creates a function declaration that specifies the function signature
+||| without providing an implementation. Used for external functions
+||| or forward declarations.
+|||
+||| @ name The function name (identifier)
+||| @ symbolInfo Symbol information including linkage, preemption, visibility, and storage
+||| @ callingConvention The calling convention (C, FastCC, etc.)
+||| @ returnAttrs Attributes applied to the return value
+||| @ retType The return type of the function
+||| @ args List of function argument specifications with types and attributes
+||| @ addressInfo Address information for the function
+||| @ alignment Optional function alignment requirement
+||| @ gc Optional garbage collector specification
+||| @ fprefix Optional function prefix constant
+||| @ prologue Optional prologue constant
+||| @ tags Additional tags for the function
+functionDec' : 
+    (name : String) ->
+    {default emptySymbolInfo symbolInfo : SymbolInfo} ->
+    {default Nothing callingConvention : Maybe CallingConvention} ->
+    {default [] returnAttrs : List Attribute} ->
+    (retType : LType) -> 
+    (args : List Argument) ->
+    {default Nothing addressInfo : Maybe AddressInfo} ->
+    {default Nothing alignment : Maybe Int} ->
+    {default Nothing gc : Maybe String} ->
+    {default Nothing fprefix : Maybe (LValue True)} ->
+    {default Nothing prologue : Maybe (LValue True)} ->
+    {default neutral tags : Annotation} ->
+    FunctionDec
+functionDec' name {symbolInfo} {callingConvention} {returnAttrs} retType args {addressInfo} {alignment} {gc} {fprefix} {prologue} {tags} =
+    MkFunctionDec
+        name
+        symbolInfo
+        callingConvention
+        returnAttrs
+        retType
+        args
+        addressInfo
+        alignment
+        gc
+        fprefix
+        prologue
+        tags
+
 
 export
 ||| Create a function definition with comprehensive configuration options.

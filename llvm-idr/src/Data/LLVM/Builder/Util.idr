@@ -25,3 +25,14 @@ genId = do
     pure newId
 
  
+export 
+userSpace : Show a => a -> String
+userSpace s = "\"idris.LLVM.User." ++ show s ++ "\""
+export
+internalSpace : Show a => a -> String
+internalSpace s = "\"idris.LLVM.Internal." ++ show s ++ "\""
+
+
+export 
+perhaps : MonadError _ m => m ? -> m ()
+perhaps x = catchError (x >> pure ()) (\_ => pure ())

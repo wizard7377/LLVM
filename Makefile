@@ -1,4 +1,5 @@
-
+# TODO: Clean up 
+# TODO: Cleaning work with new structure
 cg ?= chez
 ifeq ($(cg), chez) 
 	CG_D ?= --inc
@@ -9,7 +10,7 @@ PACK ?= pack
 testFiles := $(patsubst %.ll,%.ss,$(wildcard generated/*.ll)) 
 loud ?= 0
 srcFiles := $(wildcard *.idr)
-ffiFiles := $(wildcard llvm-ffi/*.idr)
+ffiFiles := $(wildcard llvm-ffi/llvm-ffi/*.idr)
 OPTS += $(CG_D) $(cg)
 DBG ?=
 VERB ?=
@@ -32,23 +33,23 @@ array.so : support/array.c support/array.h
 	@$(CC) -c -fPIC support/array.c -o support/array.o 
 	@$(CC) -o $@ -shared support/array.o 
 build_ffi: array.so $(ffiFiles) check-llvm
-	$(IDRIS) $(OPTS) --build llvm_ffi.ipkg
+	$(IDRIS) $(OPTS) --build llvm-ffi/llvm-ffi.ipkg
 
 install_ffi: array.so $(ffiFiles) check-llvm build_ffi
-	$(IDRIS) $(OPTS) --install llvm_ffi.ipkg
+	$(IDRIS) $(OPTS) --install llvm-ffi/llvm-ffi.ipkg
 
 
 build: array.so $(srcFiles) check-llvm install_ffi
-	$(IDRIS) $(OPTS) --build llvm.ipkg
+	$(IDRIS) $(OPTS) --build llvm-idr/llvm-idr.ipkg
 
 install: array.so $(srcFiles) check-llvm install_ffi
-	$(IDRIS) $(OPTS) --install llvm.ipkg
+	$(IDRIS) $(OPTS) --install llvm-idr/llvm-idr.ipkg
 
 test: clean-test build 
 	@echo "Building and running LLVM tests..."
-	$(IDRIS) $(OPTS) --build test.ipkg
+	$(IDRIS) $(OPTS) --build llvm-test/llvm-test.ipkg
 	@echo "Running test executable..."
-	$(DBG) ./build/exec/llvm-test
+	@$(DBG) ./llvm-test/out/llvm-test
 
 clean: clean-test
 	@echo "Cleaning build artifacts..."
@@ -58,12 +59,12 @@ clean: clean-test
 	@rm -rf docs  
 	@mkdir -p generated
 	@mkdir -p docs
-	@$(IDRIS) $(OPTS) --clean test.ipkg
-	@$(IDRIS) $(OPTS) --clean llvm.ipkg
+	@$(IDRIS) $(OPTS) --clean llvm-test/llvm-test.ipkg
+	@$(IDRIS) $(OPTS) --clean llvm-idr/llvm-idr.ipkg
 	@rm -f support/array.so 
 	@rm -f support/array.o
 	@rm -f array.so
-	@$(PACK) clean llvm.ipkg
+	@$(PACK) clean llvm-idr/llvm-idr.ipkg
 clean-test:
 	@echo "Cleaning test build artifacts..."
 	@rm -rf generated 
@@ -72,7 +73,7 @@ clean-test:
 	@mkdir -p generated/temp
 
 docs: install
-	$(IDRIS) $(OPTS) --mkdoc llvm.ipkg
+	$(IDRIS) $(OPTS) --mkdoc llvm-idr/llvm-idr.ipkg
 	@cp -r build/docs/. docs
 .PHONY: build install test clean-test clean 
 
@@ -82,7 +83,7 @@ generated/%.ss: generated/%.ll
 
 repl: install 
 	@echo "Starting $(IDRIS) REPL with LLVM package..."
-	$(REPL) $(IDRIS) $(OPTS) --repl llvm.ipkg
+	$(REPL) $(IDRIS) $(OPTS) --repl llvm-idr/llvm-idr.ipkg
 
 
 

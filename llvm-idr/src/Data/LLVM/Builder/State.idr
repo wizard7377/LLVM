@@ -17,20 +17,20 @@ WithScope a = (Scope Name, a)
 public export 
 record ValueRef where 
   constructor MkValueRef
-  inBlock : Int 
+  inBlock : String 
   value : LValue False
 
 public export 
 record BlockRef where 
   constructor MkBlockRef
-  label : Int
+  label : String
 public export 
 record FunctionRef where 
   constructor MkFunctionRef
-  name : Int
+  name : String
 record GlobalRef where 
   constructor MkGlobalRef
-  name : Int
+  name : String
 export 
 Cast ValueRef (LValue False) where 
   cast (MkValueRef _ v) = v
@@ -53,14 +53,15 @@ record ModuleState where
 public export 
 record FunctionState where 
   constructor MkFunctionState 
-  name : Int
+  name : String
   val : FunctionDef
 
 public export 
 record DeclarationState where 
   constructor MkDeclarationState 
-  name : Int
+  name : String
   val : FunctionDec
+
 public export
 data TopLevel : Type where 
   InFunction : FunctionState -> TopLevel

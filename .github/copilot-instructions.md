@@ -111,7 +111,7 @@ make clean
 ```
 
 ### Package Structure
-- `llvm.ipkg`: Main library package with 75+ modules
+- `llvm-idr.ipkg`: Main library package with 75+ modules
 - `test.ipkg`: Test suite depending on main library + contrib
 - Source in `src/`, tests in `test/`, C support in `support/`
 

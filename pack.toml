@@ -1,0 +1,14 @@
+[custom.all.llvm-ffi]
+type = "local"
+path = "llvm-ffi"
+ipkg = "llvm-ffi.ipkg"
+
+[custom.all.llvm]
+type = "local"
+path = "llvm-idr"
+ipkg = "llvm-idr.ipkg"
+
+[custom.all.llvm-test]
+type = "local"
+path = "llvm-test"
+ipkg = "test.ipkg"

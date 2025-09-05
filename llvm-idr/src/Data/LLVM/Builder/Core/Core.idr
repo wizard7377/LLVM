@@ -1,4 +1,4 @@
-module Data.LLVM.Builder.Builder.Core
+module Data.LLVM.Builder.Core.Core
 
 import Data.LLVM.Builder.Types
 import Data.LLVM.IR

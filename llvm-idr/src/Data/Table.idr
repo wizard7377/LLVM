@@ -1,11 +1,11 @@
 module Data.Table
 
 import public Control.LLVM.Code
-public export %inline %tcinline
+public export 
 Table : Type -> Type 
 Table a = List (String, a)
 
-public export %inline %tcinline
+public export 
 Entry : Type -> Type 
 Entry a = (String, a)
 tableLookup : String -> Table a -> Maybe a
