@@ -313,9 +313,9 @@ export
 ||| @ possibleDests List of possible destination labels for static analysis
 indirectBr :
     (address : (LValue _)) ->
-    (possibleDests : List (LValue _)) ->
+    (possibleDests : List Label) ->
     Terminator
-indirectBr address dests = (id (IndirectBr (toRuntime address) (toRuntime <$> dests))) 
+indirectBr address dests = (id (IndirectBr (toRuntime address) dests)) 
 
 export
 ||| Create an invoke instruction (function call with exception handling).
@@ -627,10 +627,11 @@ export
 ||| @ ty The type of all the incoming values (must be the same)
 ||| @ incomingValues List of (value, label) pairs for each predecessor block
 phi :
+    {default [] fm : FastMath} ->
     (ty : LType) ->
     (incomingValues : List ((LValue _), Label)) ->
     LExpr
-phi ty incoming = (Phi ty $ each <$> incoming)
+phi {fm} ty incoming = (Phi fm ty $ each <$> incoming)
   where 
     each : (LValue _, Label) -> (LValue False, Label) 
     each (v, l) = (cast v, l)

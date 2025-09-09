@@ -32,8 +32,8 @@ popTopLevel = do
 export
 logMsg : {default 0 verb : Int} -> {default Info ty : MsgType} -> String -> {m : Type -> Type} -> MonadBuilder m => m ()
 logMsg {verb} {ty} msg = do 
-  tell (MkBuilderLog [(ty, msg, verb)])
+  tell (MkBuilderLog $ pure (ty, msg, verb))
   
 export 
 appendClause : {m : Type -> Type} -> MonadBuilder m => LClause -> m ()
-appendClause c = modify { clauses $= (c ::) }
+appendClause c = modify { clauses $= (:< c) }

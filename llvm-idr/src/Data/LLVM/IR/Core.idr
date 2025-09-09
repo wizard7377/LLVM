@@ -708,7 +708,7 @@ mutual
         ||| Switch statement with multiple cases
         Switch : LType -> (LValue False)-> Label -> List CaseBranch -> Terminator
         ||| Indirect branch through computed address
-        IndirectBr : (LValue False)-> List (LValue False)-> Terminator
+        IndirectBr : (LValue False) -> List Label -> Terminator
         ||| Invoke instruction (function call with exception handling)
         Invoke : InvokeCall -> Terminator
         ||| Call branch instruction (inline assembly with possible branches)
@@ -979,7 +979,7 @@ mutual
         FCmpTrue : LType -> (LValue False)-> (LValue False)-> LExpr
         
         ||| PHI node for SSA form
-        Phi : LType -> List ((LValue False), Label) -> LExpr
+        Phi : FastMath -> LType -> List ((LValue False), Label) -> LExpr
         ||| Conditional select instruction
         Select : FastMath -> WithType (LValue False)-> WithType (LValue False)-> WithType (LValue False)-> LExpr
         ||| Freeze instruction (converts poison to undef)

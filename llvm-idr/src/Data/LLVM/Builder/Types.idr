@@ -11,25 +11,41 @@ import public Control.Monad.Error.Interface
 import public Control.Monad.State.Interface
 import public Control.Monad.Reader.Interface
 import public Control.Monad.Writer.Interface
+import public Data.SnocList
+import Data.LLVM.Builder.Debug 
+||| The set of errors that can occur during building
 public export 
 data BuilderError : Type where 
   BasicError : String -> BuilderError
   NoBlock : BuilderError
   CantInfer : LValue False -> BuilderError
   OutsideFunction : String -> BuilderError
+  NoInstruction : String -> BuilderError
+  AlreadyTerminated : String -> BuilderError
+
+||| The context in which the builder is running
 public export
 record BuilderContext where 
     constructor MkBuilderContext
+    debugLevel : Int
 
-
+  
+public export 
+record DebugInfo where 
+    constructor MkDebugInfo
+    file : Maybe FileInfo
+  
+defaultDebugInfo : DebugInfo
+defaultDebugInfo = MkDebugInfo Nothing
 public export 
 record BuilderState where 
   constructor MkBuilderState
   uid : Int 
+  currentModule : Maybe ModuleState
   currentTopLevel : TopLevel
   currentBlock : Maybe BlockState 
-  clauses : List LClause
- 
+  clauses : SnocList LClause
+  debugInfo : DebugInfo
 public export
 data MsgType : Type where
   BeginGroup : MsgType 
@@ -40,7 +56,7 @@ data MsgType : Type where
 public export
 record BuilderLog where 
   constructor MkBuilderLog
-  msgs : List (MsgType, String, Int )
+  msgs : SnocList (MsgType, String, Int )
 
 
 export
@@ -48,11 +64,13 @@ Semigroup BuilderLog where
   (<+>) (MkBuilderLog a) (MkBuilderLog b) = MkBuilderLog (a <+> b)
 export 
 Monoid BuilderLog where
-  neutral = MkBuilderLog []
+  neutral = MkBuilderLog Lin
 
 -----------------------
 -- THE BUILDER MONAD --
 -----------------------
+||| The core builder monad transformer
+||| Handles state, context, logging and errors
 export
 data Builder : (m : Type -> Type) -> (a : Type) -> Type where 
   MkBuilder : EitherT (List BuilderError) (RWST BuilderContext BuilderLog BuilderState m) a -> Builder m a
@@ -61,7 +79,7 @@ data Builder : (m : Type -> Type) -> (a : Type) -> Type where
 
 
 defaultBuilderState : BuilderState
-defaultBuilderState = MkBuilderState 0 (InNothing) Nothing []
+defaultBuilderState = MkBuilderState 0 Nothing (InNothing) Nothing Lin defaultDebugInfo
 
 
 export 
